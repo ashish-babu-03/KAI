@@ -109,6 +109,8 @@ val defaultWorkflow = workflow("default") {
 
 See [examples/README.md](examples/README.md) for runnable CLI examples and the current v0.1 behavior.
 
+For launch posts, demos, and community announcements, see [docs/LAUNCH_KIT.md](docs/LAUNCH_KIT.md).
+
 ## Current Status
 
 KAI OS is early v0.1 infrastructure. Today it includes:
@@ -135,6 +137,7 @@ Commands:
 ```bash
 ./gradlew clean test installDist
 build/install/kaios-cli/bin/kaios run "draft a launch plan"
+scripts/demo.sh "analyze crypto market"
 ```
 
 ## Contributing

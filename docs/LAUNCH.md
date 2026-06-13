@@ -58,3 +58,5 @@ Stars should come from real interest, not automation or artificial engagement. T
 - short video or GIF of process table
 - quick follow-up releases
 - visible issue responses
+
+See [LAUNCH_KIT.md](LAUNCH_KIT.md) for copy-paste launch posts and the first demo flow.
