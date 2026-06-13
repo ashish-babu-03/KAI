@@ -23,13 +23,16 @@ Each node becomes an agent process. The CLI writes a JSON snapshot under `.kaios
 Generate an editable `kaios.json`:
 
 ```bash
-build/install/kaios-cli/bin/kaios init
+build/install/kaios-cli/bin/kaios config templates
+build/install/kaios-cli/bin/kaios init --template research
+build/install/kaios-cli/bin/kaios config validate
+build/install/kaios-cli/bin/kaios config show
 ```
 
-Run the configured workflow:
+Run the configured workflow. When `kaios.json` exists in the current directory, `kaios run` uses it automatically:
 
 ```bash
-build/install/kaios-cli/bin/kaios run --config kaios.json "map the JVM agent runtime"
+build/install/kaios-cli/bin/kaios run "map the JVM agent runtime"
 ```
 
 The generated config starts with the default process graph:
@@ -61,6 +64,19 @@ The generated config starts with the default process graph:
 ```
 
 Change the agent ids, instructions, tools, and `dependsOn` edges to shape your own DAG. The CLI validates unknown tools, unknown dependencies, duplicate agents, and dependency cycles before it spawns any agent process.
+
+Use a specific config file when you have more than one workflow:
+
+```bash
+build/install/kaios-cli/bin/kaios init --template release --config workflows/release.json
+build/install/kaios-cli/bin/kaios run --config workflows/release.json "prepare v0.2.0"
+```
+
+Force the built-in default workflow even when `kaios.json` exists:
+
+```bash
+build/install/kaios-cli/bin/kaios run --default "quick smoke test"
+```
 
 ## Inspect Processes
 

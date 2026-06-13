@@ -695,7 +695,7 @@
             </article>
             <article class="feature">
               <h3>Project configs</h3>
-              <p>Generate kaios.json and run custom agent DAGs without recompiling Kotlin.</p>
+              <p>Generate template workflows, validate configs, show the DAG, and auto-run kaios.json without recompiling Kotlin.</p>
               <span class="tag">kaios init</span>
             </article>
             <article class="feature">
@@ -711,7 +711,7 @@
         <div class="section-inner quickstart">
           <div class="section-heading">
             <h2>Install it, check it, inspect it.</h2>
-            <p>The v0.1.7 CLI installs locally with no API key. Run doctor first, then launch the planner -> executor -> validator demo workflow or generate your own kaios.json DAG.</p>
+            <p>The v0.1.8 CLI installs locally with no API key. Run doctor first, then launch the demo workflow or generate a template kaios.json DAG.</p>
             <div class="link-grid">
               <a class="button primary" href="https://github.com/morning-verlu/KAI">Open repository</a>
               <a class="button secondary" href="https://github.com/morning-verlu/KAI/releases">View releases</a>
@@ -721,8 +721,10 @@
 brew install kaios
 kaios doctor
 kaios run "analyze crypto market"
-kaios init
-kaios run --config kaios.json "map the JVM agent runtime"
+kaios config templates
+kaios init --template research
+kaios config show
+kaios run "map the JVM agent runtime"
 kaios ps &lt;run-id&gt;
 
 # or:

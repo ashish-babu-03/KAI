@@ -9,6 +9,9 @@ brew tap morning-verlu/tap
 brew install kaios
 kaios doctor
 kaios run "analyze crypto market"
+kaios init --template research
+kaios config show
+kaios run "map the JVM agent runtime"
 ```
 
 ## Hosted Installer
@@ -20,6 +23,9 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
 kaios doctor
 kaios run "analyze crypto market"
+kaios init --template research
+kaios config validate
+kaios run "map the JVM agent runtime"
 ```
 
 Set `KAIOS_INSTALL_DIR` to install somewhere else:
@@ -31,10 +37,12 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.7.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.7/kaios-0.1.7.zip
-unzip kaios-0.1.7.zip
-./kaios-0.1.7/bin/kaios doctor
-./kaios-0.1.7/bin/kaios run "analyze crypto market"
+curl -L -o kaios-0.1.8.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.8/kaios-0.1.8.zip
+unzip kaios-0.1.8.zip
+./kaios-0.1.8/bin/kaios doctor
+./kaios-0.1.8/bin/kaios run "analyze crypto market"
+./kaios-0.1.8/bin/kaios init --template research
+./kaios-0.1.8/bin/kaios run "map the JVM agent runtime"
 ```
 
 ## Build From Source
@@ -45,4 +53,7 @@ cd KAI
 ./gradlew test installDist
 build/install/kaios-cli/bin/kaios doctor
 build/install/kaios-cli/bin/kaios run "analyze crypto market"
+build/install/kaios-cli/bin/kaios init --template research
+build/install/kaios-cli/bin/kaios config show
+build/install/kaios-cli/bin/kaios run "map the JVM agent runtime"
 ```

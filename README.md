@@ -49,8 +49,9 @@ kaios run "analyze crypto market"
 Create a local workflow config when you want your own agent process graph:
 
 ```bash
-kaios init
-kaios run --config kaios.json "analyze crypto market"
+kaios init --template research
+kaios config show
+kaios run "analyze crypto market"
 ```
 
 Or install with the hosted script:
@@ -151,7 +152,7 @@ See [examples/README.md](examples/README.md) for runnable CLI examples and the c
 
 ## Project Config
 
-Use `kaios init` to generate `kaios.json`, then edit the agent DAG without recompiling Kotlin:
+Use `kaios init` to generate `kaios.json`, then edit the agent DAG without recompiling Kotlin. Built-in templates include `default`, `research`, `code-review`, and `release`.
 
 ```json
 {
@@ -181,10 +182,14 @@ Use `kaios init` to generate `kaios.json`, then edit the agent DAG without recom
 Run it with:
 
 ```bash
-kaios run --config kaios.json "map the JVM agent runtime"
+kaios config validate
+kaios config show
+kaios run "map the JVM agent runtime"
 ```
 
-See [docs/CONFIG.md](docs/CONFIG.md) for the config fields, validation rules, built-in tools, and fallback routing.
+When `kaios.json` exists in the current directory, `kaios run "task"` uses it automatically. Use `kaios run --default "task"` to force the built-in workflow, or `kaios run --config path/to/workflow.json "task"` for a specific file.
+
+See [docs/CONFIG.md](docs/CONFIG.md) for templates, config fields, validation rules, built-in tools, and fallback routing.
 
 For launch posts, demos, and community announcements, see [docs/LAUNCH_KIT.md](docs/LAUNCH_KIT.md).
 
@@ -204,7 +209,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Process metrics: PID, state, token usage, context size, syscall count, duration.
 - Coroutine-based DAG scheduler with parallel-ready nodes, fallback routing, timeout policy, and sibling cancellation.
 - Permissioned tools: `echo`, `clock`, `mock-http`, scoped `file`.
-- Project workflow config with `kaios init` and `kaios run --config`.
+- Project workflow templates, config validation, config graph display, and auto-detected `kaios.json` runs.
 - Session memory and JSON snapshots under `.kaios/runs/`.
 - SQLite memory adapter for persisted agent process memory.
 - CLI process table and run inspector.

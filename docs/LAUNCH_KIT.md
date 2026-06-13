@@ -61,6 +61,7 @@ The v0.1 release is a runnable Kotlin/JVM seed:
 - static Agent Process Manager report
 - install-first onboarding through Homebrew or the checksum-verifying installer
 - kaios doctor for local environment diagnostics
+- kaios init templates, config validation, and editable agent DAGs
 
 Try:
 
@@ -68,13 +69,16 @@ brew tap morning-verlu/tap
 brew install kaios
 kaios doctor
 kaios run "analyze crypto market"
+kaios init --template research
+kaios config show
+kaios run "map the JVM agent runtime"
 kaios ps <run-id>
 kaios report <run-id>
 
 Repo: https://github.com/morning-verlu/KAI
 Site: https://morning-verlu.github.io/KAI/
 GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
-Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.7/kaios-0.1.7.zip
+Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.8/kaios-0.1.8.zip
 Installer: curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 ```
 
@@ -148,10 +152,13 @@ kaios report <run-id>
 Download ZIP:
 
 ```bash
-curl -L -o kaios-0.1.7.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.7/kaios-0.1.7.zip
-unzip kaios-0.1.7.zip
-./kaios-0.1.7/bin/kaios doctor
-./kaios-0.1.7/bin/kaios run "analyze crypto market"
+curl -L -o kaios-0.1.8.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.8/kaios-0.1.8.zip
+unzip kaios-0.1.8.zip
+./kaios-0.1.8/bin/kaios doctor
+./kaios-0.1.8/bin/kaios run "analyze crypto market"
+./kaios-0.1.8/bin/kaios init --template research
+./kaios-0.1.8/bin/kaios config show
+./kaios-0.1.8/bin/kaios run "map the JVM agent runtime"
 ```
 
 Build from source:

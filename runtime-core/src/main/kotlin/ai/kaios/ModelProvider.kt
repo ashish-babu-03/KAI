@@ -32,7 +32,13 @@ class MockModelProvider : ModelProvider {
 
         val content = when {
             "planner" in agentName -> "plan:$fingerprint inspect task, execute with tools, validate output"
+            "researcher" in agentName -> "research:$fingerprint gathered context for '$task' $dependencySummary"
+            "synthesizer" in agentName -> "synthesize:$fingerprint distilled answer for '$task' $dependencySummary"
+            "inspector" in agentName -> "inspect:$fingerprint mapped code surfaces for '$task' $dependencySummary"
+            "reviewer" in agentName -> "review:$fingerprint prioritized risks for '$task' $dependencySummary"
             "executor" in agentName -> "execute:$fingerprint synthesized result for '$task' $dependencySummary"
+            "verifier" in agentName -> "verify:$fingerprint checked release evidence from $dependencySummary"
+            "announcer" in agentName -> "announce:$fingerprint prepared release notes from $dependencySummary"
             "validator" in agentName -> "validate:$fingerprint accepted result from $dependencySummary"
             else -> "agent:$fingerprint processed '$task'"
         }
@@ -43,6 +49,18 @@ class MockModelProvider : ModelProvider {
             )
             "executor" in agentName && "mock-http" in request.availableTools -> listOf(
                 ToolCall("mock-http", mapOf("method" to "GET", "url" to "mock://kaios/tasks/$fingerprint")),
+            )
+            "researcher" in agentName && "mock-http" in request.availableTools -> listOf(
+                ToolCall("mock-http", mapOf("method" to "GET", "url" to "mock://kaios/research/$fingerprint")),
+            )
+            ("inspector" in agentName || "verifier" in agentName) && "file" in request.availableTools -> listOf(
+                ToolCall("file", mapOf("op" to "exists", "path" to ".")),
+            )
+            "reviewer" in agentName && "echo" in request.availableTools -> listOf(
+                ToolCall("echo", mapOf("message" to "reviewed:$fingerprint")),
+            )
+            "announcer" in agentName && "echo" in request.availableTools -> listOf(
+                ToolCall("echo", mapOf("message" to "announced:$fingerprint")),
             )
             "validator" in agentName && "echo" in request.availableTools -> listOf(
                 ToolCall("echo", mapOf("message" to "validated:$fingerprint")),

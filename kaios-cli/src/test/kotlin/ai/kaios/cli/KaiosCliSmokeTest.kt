@@ -117,6 +117,120 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `init template writes a useful workflow and run auto-detects kaios config`() {
+        val workspace = Files.createTempDirectory("kaios-cli-template")
+        val cli = cliFor(workspace)
+        val initOut = ByteArrayOutputStream()
+
+        val initCode = cli.run(
+            arrayOf("init", "--template", "research"),
+            PrintStream(initOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val configText = Files.readString(workspace.resolve("kaios.json"))
+
+        assertEquals(0, initCode)
+        assertTrue(initOut.toString().contains("template: research"))
+        assertTrue(configText.contains("\"researcher\""))
+        assertTrue(configText.contains("\"synthesizer\""))
+
+        val runOut = ByteArrayOutputStream()
+        val runCode = cli.run(
+            arrayOf("run", "summarize", "agent", "operating", "systems"),
+            PrintStream(runOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val runText = runOut.toString()
+        val runId = Regex("run_id: (\\S+)").find(runText)?.groupValues?.get(1)
+
+        assertEquals(0, runCode)
+        assertTrue(runText.contains("config: ${workspace.resolve("kaios.json")}"))
+        assertTrue(runId != null)
+
+        val psOut = ByteArrayOutputStream()
+        val psCode = cli.run(arrayOf("ps", runId), PrintStream(psOut), PrintStream(ByteArrayOutputStream()))
+        val psText = psOut.toString()
+
+        assertEquals(0, psCode)
+        assertTrue(psText.contains("workflow=research"))
+        assertTrue(psText.contains("researcher"))
+        assertTrue(psText.contains("synthesizer"))
+        assertTrue(psText.contains("validator"))
+    }
+
+    @Test
+    fun `run default ignores an auto-detected project config`() {
+        val workspace = Files.createTempDirectory("kaios-cli-default-flag")
+        val cli = cliFor(workspace)
+        cli.run(arrayOf("init", "--template", "release"), PrintStream(ByteArrayOutputStream()), PrintStream(ByteArrayOutputStream()))
+
+        val runOut = ByteArrayOutputStream()
+        val runCode = cli.run(
+            arrayOf("run", "--default", "draft", "a", "release", "note"),
+            PrintStream(runOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val runText = runOut.toString()
+        val runId = Regex("run_id: (\\S+)").find(runText)?.groupValues?.get(1)
+
+        assertEquals(0, runCode)
+        assertTrue(!runText.contains("config:"))
+        assertTrue(runId != null)
+
+        val psOut = ByteArrayOutputStream()
+        val psCode = cli.run(arrayOf("ps", runId), PrintStream(psOut), PrintStream(ByteArrayOutputStream()))
+
+        assertEquals(0, psCode)
+        assertTrue(psOut.toString().contains("workflow=default"))
+    }
+
+    @Test
+    fun `config commands validate show and list templates`() {
+        val workspace = Files.createTempDirectory("kaios-cli-config-commands")
+        val cli = cliFor(workspace)
+        val initCode = cli.run(
+            arrayOf("init", "--template", "code-review"),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        assertEquals(0, initCode)
+
+        val validateOut = ByteArrayOutputStream()
+        val validateCode = cli.run(
+            arrayOf("config", "validate"),
+            PrintStream(validateOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val validateText = validateOut.toString()
+
+        assertEquals(0, validateCode)
+        assertTrue(validateText.contains("status: valid"))
+        assertTrue(validateText.contains("workflow: code-review"))
+
+        val showOut = ByteArrayOutputStream()
+        val showCode = cli.run(arrayOf("config", "show"), PrintStream(showOut), PrintStream(ByteArrayOutputStream()))
+        val showText = showOut.toString()
+
+        assertEquals(0, showCode)
+        assertTrue(showText.contains("inspector tools=echo,file dependsOn=-"))
+        assertTrue(showText.contains("inspector -> reviewer"))
+        assertTrue(showText.contains("reviewer -> validator"))
+
+        val templatesOut = ByteArrayOutputStream()
+        val templatesCode = cli.run(
+            arrayOf("config", "templates"),
+            PrintStream(templatesOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val templatesText = templatesOut.toString()
+
+        assertEquals(0, templatesCode)
+        assertTrue(templatesText.contains("research"))
+        assertTrue(templatesText.contains("code-review"))
+        assertTrue(templatesText.contains("release"))
+    }
+
+    @Test
     fun `run with config executes configured workflow agents`() {
         val workspace = Files.createTempDirectory("kaios-cli-config-run")
         val cli = cliFor(workspace)

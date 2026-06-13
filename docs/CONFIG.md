@@ -3,8 +3,11 @@
 KAI OS can run the built-in `planner -> executor -> validator` workflow, or load an editable project workflow from `kaios.json`.
 
 ```bash
-kaios init
-kaios run --config kaios.json "map the JVM agent runtime"
+kaios config templates
+kaios init --template research
+kaios config validate
+kaios config show
+kaios run "map the JVM agent runtime"
 ```
 
 `kaios init` refuses to overwrite an existing file unless you pass `--force`:
@@ -13,11 +16,38 @@ kaios run --config kaios.json "map the JVM agent runtime"
 kaios init --force
 ```
 
+When `kaios.json` exists in the current directory, `kaios run "task"` uses it automatically. Use `--default` to force the built-in workflow:
+
+```bash
+kaios run --default "quick smoke test"
+```
+
 Use a different path with `--config`:
 
 ```bash
-kaios init --config workflows/research.json
+kaios init --template research --config workflows/research.json
 kaios run --config workflows/research.json "analyze a release plan"
+```
+
+## Templates
+
+List templates:
+
+```bash
+kaios config templates
+```
+
+Built-in templates:
+
+- `default`: planner -> executor -> validator baseline workflow.
+- `research`: researcher -> synthesizer -> validator for research and answers.
+- `code-review`: inspector -> reviewer -> validator for code review style tasks.
+- `release`: planner -> executor -> verifier -> announcer for release operations.
+
+Generate a template:
+
+```bash
+kaios init --template code-review
 ```
 
 ## Shape
@@ -76,7 +106,14 @@ Tool names are validated before any agent process starts. Unknown tools fail fas
 
 ## Validation
 
-The CLI validates project configs before spawning agents:
+The CLI validates project configs before spawning agents. Run validation directly with:
+
+```bash
+kaios config validate
+kaios config validate --config workflows/research.json
+```
+
+Validation checks:
 
 - workflow name is not blank.
 - at least one non-fallback agent exists.
@@ -85,6 +122,29 @@ The CLI validates project configs before spawning agents:
 - every dependency points to a known agent.
 - every fallback points to a known agent and does not point to itself.
 - dependency edges do not contain cycles.
+
+## Show the DAG
+
+Print the configured process graph before running it:
+
+```bash
+kaios config show
+```
+
+Example output:
+
+```text
+config: /path/to/kaios.json
+workflow: research
+agents:
+  researcher tools=clock,echo,mock-http dependsOn=-
+  synthesizer tools=echo dependsOn=researcher
+  validator tools=echo dependsOn=synthesizer
+graph:
+  <input> -> researcher
+  researcher -> synthesizer
+  synthesizer -> validator
+```
 
 ## Observability
 

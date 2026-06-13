@@ -28,7 +28,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.7"
+private const val KAIOS_VERSION = "0.1.8"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -52,6 +52,7 @@ class KaiosCli(
         return when (args.first()) {
             "init" -> initProject(args.drop(1), out, err)
             "run" -> runWorkflow(args.drop(1), out, err)
+            "config" -> configCommand(args.drop(1), out, err)
             "runs" -> listRuns(out)
             "ps" -> printProcessTable(args.drop(1), out, err)
             "inspect" -> inspectRun(args.drop(1), out, err)
@@ -85,9 +86,10 @@ class KaiosCli(
             return 1
         }
         val runtime = AgentRuntime()
-        val tools = builtInToolRegistry(fileRoot = workingDir.resolve(".kaios").resolve("files"))
+        val tools = toolRegistry()
+        val configPath = command.configPath ?: defaultConfigPath().takeIf { !command.useBuiltInDefault && it.exists() }
         val workflow = runCatching {
-            command.configPath?.let { loadProjectWorkflow(it, memory, tools) } ?: defaultWorkflow(memory)
+            configPath?.let { loadProjectWorkflow(it, memory, tools) } ?: defaultWorkflow(memory)
         }.getOrElse { error ->
             err.println(error.message)
             return 1
@@ -105,7 +107,7 @@ class KaiosCli(
         out.println("run_id: ${result.runId.value}")
         out.println("success: ${result.success}")
         out.println("snapshot: $path")
-        command.configPath?.let { out.println("config: $it") }
+        configPath?.let { out.println("config: $it") }
         out.println()
         out.println(result.finalOutput)
         out.println()
@@ -119,10 +121,16 @@ class KaiosCli(
     private fun initProject(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val command = runCatching { parseInitCommand(args) }.getOrElse { error ->
             err.println(error.message)
-            err.println("Usage: kaios init [--config kaios.json] [--force]")
+            err.println("Usage: kaios init [--template default|research|code-review|release] [--config kaios.json] [--force]")
             return 1
         }
 
+        if (command.listTemplates) {
+            printTemplates(out)
+            return 0
+        }
+
+        val template = requireProjectTemplate(command.templateId)
         val path = command.configPath
         if (path.exists() && !command.force) {
             err.println("Config '$path' already exists. Use --force to overwrite it.")
@@ -130,13 +138,95 @@ class KaiosCli(
         }
 
         path.parent?.let { Files.createDirectories(it) }
-        path.writeText(defaultProjectConfigText())
+        path.writeText(projectConfigText(command.templateId))
 
         out.println("created: $path")
+        out.println("template: ${command.templateId}")
         out.println()
         out.println("next:")
-        out.println("  kaios run --config ${displayPath(path)} \"analyze crypto market\"")
+        out.println("  kaios config show --config ${displayPath(path)}")
+        out.println("  kaios run \"${template.exampleTask}\"")
         out.println("  kaios ps <run-id>")
+        return 0
+    }
+
+    private fun configCommand(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val subcommand = args.firstOrNull()
+        if (subcommand == null) {
+            err.println("Usage: kaios config <validate|show|templates> [--config kaios.json]")
+            return 1
+        }
+
+        return when (subcommand) {
+            "templates" -> {
+                printTemplates(out)
+                0
+            }
+            "validate" -> validateConfig(args.drop(1), out, err)
+            "show" -> showConfig(args.drop(1), out, err)
+            else -> {
+                err.println("Unknown config command '$subcommand'.")
+                err.println("Usage: kaios config <validate|show|templates> [--config kaios.json]")
+                1
+            }
+        }
+    }
+
+    private fun validateConfig(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val path = runCatching { parseConfigPath(args) }.getOrElse { error ->
+            err.println(error.message)
+            err.println("Usage: kaios config validate [--config kaios.json]")
+            return 1
+        }
+
+        return runCatching { loadProjectWorkflow(path, SessionMemoryStore(), toolRegistry()) }
+            .fold(
+                onSuccess = { workflow ->
+                    out.println("config: $path")
+                    out.println("status: valid")
+                    out.println("workflow: ${workflow.name}")
+                    out.println("agents: ${workflow.nodes.size}")
+                    0
+                },
+                onFailure = { error ->
+                    err.println(error.message)
+                    1
+                },
+            )
+    }
+
+    private fun showConfig(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val path = runCatching { parseConfigPath(args) }.getOrElse { error ->
+            err.println(error.message)
+            err.println("Usage: kaios config show [--config kaios.json]")
+            return 1
+        }
+
+        val workflow = runCatching { loadProjectWorkflow(path, SessionMemoryStore(), toolRegistry()) }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+
+        out.println("config: $path")
+        out.println("workflow: ${workflow.name}")
+        out.println("agents:")
+        workflow.nodes.forEach { node ->
+            val tools = node.agent.allowedTools.sorted().ifEmpty { listOf("-") }.joinToString(",")
+            val dependencies = node.dependencies.sorted().ifEmpty { listOf("-") }.joinToString(",")
+            val fallback = node.fallback?.let { " fallback=$it" }.orEmpty()
+            val fallbackOnly = if (node.fallbackOnly) " fallbackOnly=true" else ""
+            out.println("  ${node.id} tools=$tools dependsOn=$dependencies$fallback$fallbackOnly")
+        }
+        out.println("graph:")
+        workflow.nodes.forEach { node ->
+            if (node.dependencies.isEmpty()) {
+                out.println("  <input> -> ${node.id}")
+            } else {
+                node.dependencies.sorted().forEach { dependency ->
+                    out.println("  $dependency -> ${node.id}")
+                }
+            }
+        }
         return 0
     }
 
@@ -319,8 +409,7 @@ class KaiosCli(
             return DoctorCheck("project config", DoctorStatus.OK, "no $KAIOS_CONFIG_FILE found; using built-in default workflow")
         }
 
-        val tools = builtInToolRegistry(fileRoot = workingDir.resolve(".kaios").resolve("files"))
-        return runCatching { loadProjectWorkflow(path, SessionMemoryStore(), tools) }
+        return runCatching { loadProjectWorkflow(path, SessionMemoryStore(), toolRegistry()) }
             .fold(
                 onSuccess = { workflow ->
                     DoctorCheck(
@@ -368,9 +457,13 @@ class KaiosCli(
             KAI OS - AI Agent Operating System in Kotlin
 
             Usage:
-              kaios init
+              kaios init [--template default|research|code-review|release]
+              kaios config validate [--config kaios.json]
+              kaios config show [--config kaios.json]
+              kaios config templates
               kaios run "task"
               kaios run --config kaios.json "task"
+              kaios run --default "task"
               kaios runs
               kaios ps <run-id>
               kaios inspect <run-id>
@@ -421,6 +514,9 @@ class KaiosCli(
 
     private fun defaultConfigPath(): Path = workingDir.resolve(KAIOS_CONFIG_FILE).normalize()
 
+    private fun toolRegistry() =
+        builtInToolRegistry(fileRoot = workingDir.resolve(".kaios").resolve("files"))
+
     private fun resolvePath(value: String): Path {
         val path = Paths.get(value)
         return if (path.isAbsolute) path.normalize() else workingDir.resolve(path).normalize()
@@ -435,6 +531,7 @@ class KaiosCli(
 
     private fun parseRunCommand(args: List<String>): RunCommand {
         var configPath: Path? = null
+        var useBuiltInDefault = false
         val taskParts = mutableListOf<String>()
         var index = 0
 
@@ -452,6 +549,10 @@ class KaiosCli(
                     configPath = resolvePath(value)
                     index += 1
                 }
+                arg == "--default" -> {
+                    useBuiltInDefault = true
+                    index += 1
+                }
                 arg == "--" -> {
                     taskParts += args.drop(index + 1)
                     index = args.size
@@ -465,17 +566,24 @@ class KaiosCli(
 
         val task = taskParts.joinToString(" ").trim()
         require(task.isNotBlank()) { "Task cannot be blank." }
-        return RunCommand(task, configPath)
+        require(!(configPath != null && useBuiltInDefault)) { "Use either --config or --default, not both." }
+        return RunCommand(task, configPath, useBuiltInDefault)
     }
 
     private fun parseInitCommand(args: List<String>): InitCommand {
         var configPath = defaultConfigPath()
         var force = false
+        var templateId = "default"
+        var listTemplates = false
         var index = 0
 
         while (index < args.size) {
             val arg = args[index]
             when {
+                arg == "--list-templates" -> {
+                    listTemplates = true
+                    index += 1
+                }
                 arg == "--force" || arg == "-f" -> {
                     force = true
                     index += 1
@@ -491,22 +599,70 @@ class KaiosCli(
                     configPath = resolvePath(value)
                     index += 1
                 }
+                arg == "--template" || arg == "-t" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a template id.")
+                    requireProjectTemplate(value)
+                    templateId = value.lowercase().trim()
+                    index += 2
+                }
+                arg.startsWith("--template=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--template requires a template id." }
+                    requireProjectTemplate(value)
+                    templateId = value.lowercase().trim()
+                    index += 1
+                }
                 else -> error("Unknown init option '$arg'.")
             }
         }
 
-        return InitCommand(configPath, force)
+        return InitCommand(configPath, force, templateId, listTemplates)
+    }
+
+    private fun parseConfigPath(args: List<String>): Path {
+        var configPath = defaultConfigPath()
+        var index = 0
+
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--config" || arg == "-c" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    configPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--config=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--config requires a path." }
+                    configPath = resolvePath(value)
+                    index += 1
+                }
+                else -> error("Unknown config option '$arg'.")
+            }
+        }
+
+        return configPath
+    }
+
+    private fun printTemplates(out: PrintStream) {
+        out.println("TEMPLATES")
+        projectConfigTemplates.forEach { template ->
+            out.println("${template.id.padEnd(12)} ${template.description}")
+        }
     }
 }
 
 private data class RunCommand(
     val task: String,
     val configPath: Path?,
+    val useBuiltInDefault: Boolean,
 )
 
 private data class InitCommand(
     val configPath: Path,
     val force: Boolean,
+    val templateId: String,
+    val listTemplates: Boolean,
 )
 
 private enum class DoctorStatus {
