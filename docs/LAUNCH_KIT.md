@@ -19,6 +19,8 @@ It runs planner -> executor -> validator as inspectable agent processes with PID
 
 No API key needed for the first demo.
 
+It can also generate a static Agent Process Manager report for screenshots.
+
 Repo: https://github.com/morning-verlu/KAI
 ```
 
@@ -43,12 +45,14 @@ The v0.1 release is a runnable Kotlin/JVM seed:
 - OpenAI-compatible and Ollama providers
 - JSON run snapshots
 - CLI process table
+- static Agent Process Manager report
 
 Try:
 
 ./gradlew test installDist
 build/install/kaios-cli/bin/kaios run "analyze crypto market"
 build/install/kaios-cli/bin/kaios ps <run-id>
+build/install/kaios-cli/bin/kaios report <run-id>
 
 Repo: https://github.com/morning-verlu/KAI
 ```
@@ -101,6 +105,7 @@ cd KAI
 build/install/kaios-cli/bin/kaios run "analyze crypto market"
 build/install/kaios-cli/bin/kaios ps <run-id>
 build/install/kaios-cli/bin/kaios inspect <run-id>
+build/install/kaios-cli/bin/kaios report <run-id>
 ```
 
 ## Launch Checklist

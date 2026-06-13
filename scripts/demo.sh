@@ -22,3 +22,7 @@ build/install/kaios-cli/bin/kaios ps "$RUN_ID"
 echo
 echo "== lifecycle events =="
 build/install/kaios-cli/bin/kaios inspect "$RUN_ID"
+
+echo
+echo "== process manager report =="
+build/install/kaios-cli/bin/kaios report "$RUN_ID"

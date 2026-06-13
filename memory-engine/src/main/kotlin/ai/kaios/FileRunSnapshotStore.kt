@@ -7,6 +7,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.io.path.exists
+import kotlin.io.path.extension
+import kotlin.io.path.isRegularFile
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
@@ -63,6 +65,22 @@ class FileRunSnapshotStore(
         val path = root.resolve("${runId.value}.json")
         require(path.exists()) { "Run snapshot '${runId.value}' was not found under $root." }
         return json.decodeFromString(path.readText())
+    }
+
+    fun list(): List<StoredRunSnapshot> {
+        if (!root.exists()) return emptyList()
+
+        return Files.list(root).use { paths ->
+            paths
+                .toList()
+                .asSequence()
+                .filter { path -> path.isRegularFile() && path.extension == "json" }
+                .map { path -> runCatching { json.decodeFromString<StoredRunSnapshot>(path.readText()) }.getOrNull() }
+                .filter { snapshot -> snapshot != null }
+                .map { snapshot -> snapshot!! }
+                .sortedByDescending { snapshot -> snapshot.runId }
+                .toList()
+        }
     }
 
     fun pathFor(runId: RunId): Path = root.resolve("${runId.value}.json")

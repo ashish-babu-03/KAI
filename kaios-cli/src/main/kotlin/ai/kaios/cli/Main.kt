@@ -18,7 +18,10 @@ import ai.kaios.workflow
 import ai.kaios.Workflow
 import ai.kaios.WorkflowScheduler
 import java.io.PrintStream
+import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
@@ -28,6 +31,8 @@ fun main(args: Array<String>) {
 
 class KaiosCli(
     private val snapshotStore: FileRunSnapshotStore = FileRunSnapshotStore(defaultSnapshotRoot()),
+    private val reportRoot: Path = defaultReportRoot(),
+    private val reportRenderer: ProcessReportRenderer = ProcessReportRenderer(),
 ) {
     fun run(args: Array<String>, out: PrintStream, err: PrintStream): Int {
         if (args.isEmpty()) {
@@ -37,8 +42,10 @@ class KaiosCli(
 
         return when (args.first()) {
             "run" -> runWorkflow(args.drop(1), out, err)
+            "runs" -> listRuns(out)
             "ps" -> printProcessTable(args.drop(1), out, err)
             "inspect" -> inspectRun(args.drop(1), out, err)
+            "report" -> generateReport(args.drop(1), out, err)
             "help", "--help", "-h" -> {
                 printUsage(out)
                 0
@@ -83,7 +90,34 @@ class KaiosCli(
         out.println("next:")
         out.println("  kaios ps ${result.runId.value}")
         out.println("  kaios inspect ${result.runId.value}")
+        out.println("  kaios report ${result.runId.value}")
         return if (result.success) 0 else 2
+    }
+
+    private fun listRuns(out: PrintStream): Int {
+        val snapshots = snapshotStore.list()
+        if (snapshots.isEmpty()) {
+            out.println("No run snapshots found.")
+            return 0
+        }
+
+        out.println("RUNS (${snapshots.size})")
+        out.println("RUN ID        STATUS     WORKFLOW      PROCS  TOKENS  TASK")
+        snapshots.forEach { snapshot ->
+            val status = if (snapshot.success) "success" else "failed"
+            val tokens = snapshot.processes.sumOf { it.tokens }
+            out.println(
+                listOf(
+                    snapshot.runId.padEnd(13),
+                    status.padEnd(10),
+                    snapshot.workflowName.padEnd(13),
+                    snapshot.processes.size.toString().padEnd(6),
+                    tokens.toString().padEnd(7),
+                    snapshot.task,
+                ).joinToString(""),
+            )
+        }
+        return 0
     }
 
     private fun printProcessTable(args: List<String>, out: PrintStream, err: PrintStream): Int {
@@ -101,6 +135,31 @@ class KaiosCli(
         out.println("RUN ${snapshot.runId}  workflow=${snapshot.workflowName}  success=${snapshot.success}")
         out.println(formatProcessHeader())
         snapshot.processes.forEach { out.println(formatProcess(it)) }
+        return 0
+    }
+
+    private fun generateReport(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val runId = args.firstOrNull()?.let(::RunId)
+        if (runId == null) {
+            err.println("Usage: kaios report <run-id>")
+            return 1
+        }
+
+        val snapshots = snapshotStore.list()
+        val snapshot = runCatching { snapshotStore.load(runId) }.getOrElse {
+            err.println(it.message)
+            return 1
+        }
+        val allRuns = if (snapshots.any { it.runId == snapshot.runId }) snapshots else listOf(snapshot) + snapshots
+
+        Files.createDirectories(reportRoot)
+        allRuns.forEach { run ->
+            reportRoot.resolve("${run.runId}.html").writeText(reportRenderer.render(run, allRuns))
+        }
+
+        val reportPath = reportRoot.resolve("${snapshot.runId}.html").toAbsolutePath().normalize()
+        out.println("report: $reportPath")
+        out.println("open: $reportPath")
         return 0
     }
 
@@ -138,8 +197,10 @@ class KaiosCli(
 
             Usage:
               kaios run "task"
+              kaios runs
               kaios ps <run-id>
               kaios inspect <run-id>
+              kaios report <run-id>
             """.trimIndent(),
         )
     }
@@ -223,3 +284,7 @@ fun defaultWorkflow(memory: MemoryStore): Workflow {
 private fun defaultSnapshotRoot() =
     System.getenv("KAIOS_RUNS_DIR")?.takeIf { it.isNotBlank() }?.let { Paths.get(it) }
         ?: Paths.get(".kaios", "runs")
+
+private fun defaultReportRoot() =
+    System.getenv("KAIOS_REPORTS_DIR")?.takeIf { it.isNotBlank() }?.let { Paths.get(it) }
+        ?: Paths.get(".kaios", "reports")

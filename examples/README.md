@@ -41,6 +41,14 @@ build/install/kaios-cli/bin/kaios inspect <run-id>
 
 The event log shows process lifecycle transitions and syscall activity.
 
+## Generate a Process Manager Report
+
+```bash
+build/install/kaios-cli/bin/kaios report <run-id>
+```
+
+The report is a standalone HTML file under `.kaios/reports/` with a run list, process table, workflow graph, lifecycle timeline, and final output. It is intended for screenshots and quick visual debugging.
+
 ## Try Other Tasks
 
 ```bash

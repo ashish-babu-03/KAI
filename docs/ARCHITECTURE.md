@@ -68,10 +68,14 @@ Snapshots are JSON files under `.kaios/runs/` and are used by the CLI to inspect
 `kaios-cli` exposes the runtime as a local developer experience:
 
 - `kaios run "task"`
+- `kaios runs`
 - `kaios ps <run-id>`
 - `kaios inspect <run-id>`
+- `kaios report <run-id>`
 
 `kaios-cli` defaults to `MockModelProvider`, but can select real providers through `KAIOS_MODEL_PROVIDER`.
+
+Reports are static HTML files generated from JSON snapshots under `.kaios/runs/`. They render a run list, process table, workflow graph, lifecycle event timeline, and final output without a web server.
 
 The default workflow is:
 

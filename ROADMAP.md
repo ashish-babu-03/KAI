@@ -12,6 +12,7 @@ KAI OS is starting with a small, inspectable runtime. The goal is to grow into a
 - session memory
 - JSON run snapshots
 - CLI run, process table, and inspector
+- static Agent Process Manager report
 
 ## v0.2 - Real Providers and Safer Tools
 

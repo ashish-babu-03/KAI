@@ -57,4 +57,34 @@ class MemoryEngineTest {
         assertEquals(5, loaded.processes.single().tokens)
         assertEquals("SUCCEEDED", loaded.processes.single().state)
     }
+
+    @Test
+    fun `snapshot store lists saved run snapshots`() {
+        val root = Files.createTempDirectory("kaios-runs-list")
+        val store = FileRunSnapshotStore(root)
+        val runtime = AgentRuntime(clock)
+
+        listOf("run-list-a", "run-list-b").forEach { value ->
+            val runId = RunId(value)
+            val process = runtime.spawn(AgentSpec(AgentId("planner")), runId)
+            runtime.start(process.pid)
+            runtime.succeed(process.pid, TokenUsage(input = 1, output = 2), contextSize = 10)
+            store.save(
+                task = "task $value",
+                result = WorkflowResult(
+                    runId = runId,
+                    workflowName = "default",
+                    success = true,
+                    outputs = emptyMap(),
+                    finalOutput = "ok",
+                    processes = runtime.processes(runId),
+                    events = runtime.events(runId),
+                ),
+            )
+        }
+
+        val listed = store.list()
+
+        assertEquals(setOf("run-list-a", "run-list-b"), listed.map { it.runId }.toSet())
+    }
 }

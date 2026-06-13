@@ -67,6 +67,12 @@ Inspect lifecycle events:
 build/install/kaios-cli/bin/kaios inspect run-97381ae9
 ```
 
+Generate a standalone Agent Process Manager report:
+
+```bash
+build/install/kaios-cli/bin/kaios report run-97381ae9
+```
+
 ## Architecture
 
 ```text
@@ -87,7 +93,7 @@ Modules:
 - `tool-runtime`: built-in syscall tools.
 - `memory-engine`: in-memory session memory and JSON run snapshots.
 - `model-providers`: OpenAI-compatible and Ollama model provider implementations.
-- `kaios-cli`: `kaios run`, `kaios ps`, and `kaios inspect`.
+- `kaios-cli`: `kaios run`, `kaios runs`, `kaios ps`, `kaios inspect`, and `kaios report`.
 
 Read the deeper design notes in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -126,6 +132,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Permissioned tools: `echo`, `clock`, `mock-http`.
 - Session memory and JSON snapshots under `.kaios/runs/`.
 - CLI process table and run inspector.
+- Static Agent Process Manager HTML reports under `.kaios/reports/`.
 
 Next milestones are tracked in [ROADMAP.md](ROADMAP.md).
 
