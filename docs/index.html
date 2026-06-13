@@ -705,15 +705,23 @@
       <section id="quickstart">
         <div class="section-inner quickstart">
           <div class="section-heading">
-            <h2>Install it, run it, inspect it.</h2>
-            <p>The v0.1.5 CLI installs locally with no API key. The demo workflow is planner -> executor -> validator and writes snapshots under .kaios/runs.</p>
+            <h2>Install it, check it, inspect it.</h2>
+            <p>The v0.1.6 CLI installs locally with no API key. Run doctor first, then launch the planner -> executor -> validator demo workflow.</p>
             <div class="link-grid">
               <a class="button primary" href="https://github.com/morning-verlu/KAI">Open repository</a>
               <a class="button secondary" href="https://github.com/morning-verlu/KAI/releases">View releases</a>
             </div>
           </div>
-          <pre class="command"><code>curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
+          <pre class="command"><code>brew tap morning-verlu/tap
+brew install kaios
+kaios doctor
+kaios run "analyze crypto market"
+kaios ps &lt;run-id&gt;
+
+# or:
+curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
+kaios doctor
 kaios run "analyze crypto market"
 kaios ps &lt;run-id&gt;
 kaios inspect &lt;run-id&gt;

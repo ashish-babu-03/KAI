@@ -22,8 +22,13 @@ import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.io.path.createDirectories
+import kotlin.io.path.deleteIfExists
+import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
+
+private const val KAIOS_VERSION = "0.1.6"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -34,6 +39,8 @@ class KaiosCli(
     private val snapshotStore: FileRunSnapshotStore = FileRunSnapshotStore(defaultSnapshotRoot()),
     private val reportRoot: Path = defaultReportRoot(),
     private val reportRenderer: ProcessReportRenderer = ProcessReportRenderer(),
+    private val snapshotRoot: Path = defaultSnapshotRoot(),
+    private val env: (String) -> String? = System::getenv,
 ) {
     fun run(args: Array<String>, out: PrintStream, err: PrintStream): Int {
         if (args.isEmpty()) {
@@ -47,6 +54,7 @@ class KaiosCli(
             "ps" -> printProcessTable(args.drop(1), out, err)
             "inspect" -> inspectRun(args.drop(1), out, err)
             "report" -> generateReport(args.drop(1), out, err)
+            "doctor" -> doctor(out)
             "help", "--help", "-h" -> {
                 printUsage(out)
                 0
@@ -66,11 +74,11 @@ class KaiosCli(
             return 1
         }
 
-        val memory = runCatching { memoryStoreFromEnv() }.getOrElse { error ->
+        val memory = runCatching { memoryStoreFromEnv(env) }.getOrElse { error ->
             err.println(error.message)
             return 1
         }
-        val modelProvider = runCatching { modelProviderFromEnv() }.getOrElse { error ->
+        val modelProvider = runCatching { modelProviderFromEnv(env) }.getOrElse { error ->
             err.println(error.message)
             return 1
         }
@@ -167,6 +175,109 @@ class KaiosCli(
         return 0
     }
 
+    private fun doctor(out: PrintStream): Int {
+        val checks = listOf(
+            javaCheck(),
+            directoryCheck("runs directory", snapshotRoot),
+            directoryCheck("reports directory", reportRoot),
+            modelProviderCheck(),
+            memoryStoreCheck(),
+            snapshotsCheck(),
+        )
+
+        out.println("KAI OS doctor")
+        out.println("version: $KAIOS_VERSION")
+        out.println("cwd: ${Paths.get("").toAbsolutePath().normalize()}")
+        out.println()
+        checks.forEach { check ->
+            out.println("[${check.status.name}] ${check.name}: ${check.detail}")
+        }
+        out.println()
+
+        val failed = checks.count { it.status == DoctorStatus.FAIL }
+        val warnings = checks.count { it.status == DoctorStatus.WARN }
+        when {
+            failed > 0 -> out.println("summary: $failed failed, $warnings warning(s)")
+            warnings > 0 -> out.println("summary: ready with $warnings warning(s)")
+            else -> out.println("summary: ready")
+        }
+
+        return if (failed > 0) 2 else 0
+    }
+
+    private fun javaCheck(): DoctorCheck {
+        val version = System.getProperty("java.version").orEmpty()
+        val major = javaMajorVersion(version)
+        return when {
+            major == null -> DoctorCheck("Java runtime", DoctorStatus.WARN, "could not parse version '$version'")
+            major >= 17 -> DoctorCheck("Java runtime", DoctorStatus.OK, "$version")
+            else -> DoctorCheck("Java runtime", DoctorStatus.FAIL, "$version found; Java 17+ is required")
+        }
+    }
+
+    private fun directoryCheck(name: String, path: Path): DoctorCheck =
+        runCatching {
+            path.createDirectories()
+            val probe = Files.createTempFile(path, ".kaios-doctor-", ".tmp")
+            probe.deleteIfExists()
+            DoctorCheck(name, DoctorStatus.OK, "${path.toAbsolutePath().normalize()} writable")
+        }.getOrElse { error ->
+            DoctorCheck(name, DoctorStatus.FAIL, "${path.toAbsolutePath().normalize()} not writable (${error.message})")
+        }
+
+    private fun modelProviderCheck(): DoctorCheck {
+        val selected = env("KAIOS_MODEL_PROVIDER")?.lowercase()?.trim().orEmpty().ifBlank { "mock" }
+        return runCatching { modelProviderFromEnv(env) }
+            .fold(
+                onSuccess = {
+                    val detail = when (selected) {
+                        "mock" -> "mock (deterministic local provider, no API key needed)"
+                        "openai", "openai-compatible" -> "openai-compatible (${env("OPENAI_MODEL")})"
+                        "ollama" -> "ollama (${env("OLLAMA_MODEL")})"
+                        else -> selected
+                    }
+                    DoctorCheck("model provider", DoctorStatus.OK, detail)
+                },
+                onFailure = { error ->
+                    DoctorCheck("model provider", DoctorStatus.FAIL, error.message ?: "invalid model provider configuration")
+                },
+            )
+    }
+
+    private fun memoryStoreCheck(): DoctorCheck {
+        val selected = env("KAIOS_MEMORY_STORE")?.lowercase()?.trim().orEmpty().ifBlank { "session" }
+        return runCatching { memoryStoreFromEnv(env) }
+            .fold(
+                onSuccess = {
+                    val detail = when (selected) {
+                        "session" -> "session (in-memory process memory)"
+                        "sqlite" -> "sqlite (${env("KAIOS_SQLITE_PATH") ?: Paths.get(".kaios", "kaios.db")})"
+                        else -> selected
+                    }
+                    DoctorCheck("memory store", DoctorStatus.OK, detail)
+                },
+                onFailure = { error ->
+                    DoctorCheck("memory store", DoctorStatus.FAIL, error.message ?: "invalid memory store configuration")
+                },
+            )
+    }
+
+    private fun snapshotsCheck(): DoctorCheck =
+        runCatching { snapshotStore.list() }
+            .fold(
+                onSuccess = { snapshots ->
+                    val detail = if (snapshotRoot.exists()) {
+                        "${snapshots.size} run snapshot(s) under ${snapshotRoot.toAbsolutePath().normalize()}"
+                    } else {
+                        "no run directory yet (${snapshotRoot.toAbsolutePath().normalize()})"
+                    }
+                    DoctorCheck("run snapshots", DoctorStatus.OK, detail)
+                },
+                onFailure = { error ->
+                    DoctorCheck("run snapshots", DoctorStatus.WARN, error.message ?: "could not list run snapshots")
+                },
+            )
+
     private fun inspectRun(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val runId = args.firstOrNull()?.let(::RunId)
         if (runId == null) {
@@ -205,6 +316,7 @@ class KaiosCli(
               kaios ps <run-id>
               kaios inspect <run-id>
               kaios report <run-id>
+              kaios doctor
             """.trimIndent(),
         )
     }
@@ -247,6 +359,24 @@ class KaiosCli(
         5 -> 8
         else -> 10
     }
+}
+
+private enum class DoctorStatus {
+    OK,
+    WARN,
+    FAIL,
+}
+
+private data class DoctorCheck(
+    val name: String,
+    val status: DoctorStatus,
+    val detail: String,
+)
+
+private fun javaMajorVersion(version: String): Int? {
+    val first = version.substringBefore(".").toIntOrNull() ?: return null
+    if (first != 1) return first
+    return version.substringAfter(".", "").substringBefore(".").toIntOrNull()
 }
 
 fun modelProviderFromEnv(env: (String) -> String? = System::getenv): ModelProvider =

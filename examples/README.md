@@ -6,6 +6,7 @@ These examples use the deterministic mock model provider, so no API key is requi
 
 ```bash
 ./gradlew installDist
+build/install/kaios-cli/bin/kaios doctor
 build/install/kaios-cli/bin/kaios run "analyze crypto market"
 ```
 

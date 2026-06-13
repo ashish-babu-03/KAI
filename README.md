@@ -37,11 +37,21 @@ Kotlin gives this model a strong foundation: JVM ecosystem reach, type safety, c
 
 ## Quick Start
 
-Install the v0.1.5 CLI:
+Install with Homebrew:
+
+```bash
+brew tap morning-verlu/tap
+brew install kaios
+kaios doctor
+kaios run "analyze crypto market"
+```
+
+Or install with the hosted script:
 
 ```bash
 curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
+kaios doctor
 kaios run "analyze crypto market"
 ```
 
@@ -138,6 +148,8 @@ For real model execution, see [docs/PROVIDERS.md](docs/PROVIDERS.md).
 
 For persisted memory, see [docs/MEMORY.md](docs/MEMORY.md).
 
+For all install options, see [docs/INSTALL.md](docs/INSTALL.md).
+
 ## Current Status
 
 KAI OS is early v0.1 infrastructure. Today it includes:
@@ -151,6 +163,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Session memory and JSON snapshots under `.kaios/runs/`.
 - SQLite memory adapter for persisted agent process memory.
 - CLI process table and run inspector.
+- `kaios doctor` environment diagnostics for Java, provider, memory, snapshots, and writable runtime directories.
 - Static Agent Process Manager HTML reports under `.kaios/reports/`.
 - README-ready terminal process preview for launch sharing.
 - CLI demo GIF for README, launch site, and social posts.

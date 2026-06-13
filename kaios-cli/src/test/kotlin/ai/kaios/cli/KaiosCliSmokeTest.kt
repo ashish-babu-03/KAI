@@ -19,7 +19,7 @@ class KaiosCliSmokeTest {
     fun `run ps and inspect work against a saved mock run`() {
         val root = Files.createTempDirectory("kaios-cli-runs")
         val reportRoot = Files.createTempDirectory("kaios-cli-reports")
-        val cli = KaiosCli(FileRunSnapshotStore(root), reportRoot)
+        val cli = KaiosCli(FileRunSnapshotStore(root), reportRoot, snapshotRoot = root)
 
         val runOut = ByteArrayOutputStream()
         val runCode = cli.run(
@@ -143,5 +143,50 @@ class KaiosCliSmokeTest {
         assertFailsWith<IllegalStateException> {
             memoryStoreFromEnv { key -> if (key == "KAIOS_MEMORY_STORE") "unknown" else null }
         }
+    }
+
+    @Test
+    fun `doctor reports ready for default local runtime`() {
+        val root = Files.createTempDirectory("kaios-cli-doctor-runs")
+        val reportRoot = Files.createTempDirectory("kaios-cli-doctor-reports")
+        val cli = KaiosCli(FileRunSnapshotStore(root), reportRoot, snapshotRoot = root)
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("doctor"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(text.contains("KAI OS doctor"))
+        assertTrue(text.contains("[OK] Java runtime"))
+        assertTrue(text.contains("[OK] runs directory"))
+        assertTrue(text.contains("[OK] reports directory"))
+        assertTrue(text.contains("[OK] model provider: mock"))
+        assertTrue(text.contains("summary: ready"))
+    }
+
+    @Test
+    fun `doctor fails on invalid provider configuration without printing secrets`() {
+        val root = Files.createTempDirectory("kaios-cli-doctor-bad-provider-runs")
+        val reportRoot = Files.createTempDirectory("kaios-cli-doctor-bad-provider-reports")
+        val cli = KaiosCli(
+            FileRunSnapshotStore(root),
+            reportRoot,
+            snapshotRoot = root,
+            env = { key ->
+                mapOf(
+                    "KAIOS_MODEL_PROVIDER" to "openai",
+                    "OPENAI_API_KEY" to "secret-key",
+                )[key]
+            },
+        )
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("doctor"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+
+        assertEquals(2, code)
+        assertTrue(text.contains("[FAIL] model provider"))
+        assertTrue(text.contains("OPENAI_MODEL is required"))
+        assertTrue(!text.contains("secret-key"))
     }
 }

@@ -10,6 +10,7 @@ Launch site: https://morning-verlu.github.io/KAI/
 Social preview image: https://morning-verlu.github.io/KAI/assets/kaios-social-card.png
 Demo GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
 Installer: https://morning-verlu.github.io/KAI/install.sh
+Homebrew: brew tap morning-verlu/tap && brew install kaios
 
 ## Short Post
 
@@ -27,6 +28,7 @@ No API key needed for the first demo.
 It can also generate a static Agent Process Manager report for screenshots.
 The README now includes a terminal process-table preview for quick sharing.
 There is a short CLI demo GIF for run -> ps -> inspect.
+New users can run `kaios doctor` before the first workflow.
 
 Repo: https://github.com/morning-verlu/KAI
 Site: https://morning-verlu.github.io/KAI/
@@ -57,18 +59,22 @@ The v0.1 release is a runnable Kotlin/JVM seed:
 - JSON run snapshots
 - CLI process table
 - static Agent Process Manager report
+- install-first onboarding through Homebrew or the checksum-verifying installer
+- kaios doctor for local environment diagnostics
 
 Try:
 
-./gradlew test installDist
-build/install/kaios-cli/bin/kaios run "analyze crypto market"
-build/install/kaios-cli/bin/kaios ps <run-id>
-build/install/kaios-cli/bin/kaios report <run-id>
+brew tap morning-verlu/tap
+brew install kaios
+kaios doctor
+kaios run "analyze crypto market"
+kaios ps <run-id>
+kaios report <run-id>
 
 Repo: https://github.com/morning-verlu/KAI
 Site: https://morning-verlu.github.io/KAI/
 GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
-Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.5/kaios-0.1.5.zip
+Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.6/kaios-0.1.6.zip
 Installer: curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 ```
 
@@ -118,8 +124,21 @@ https://morning-verlu.github.io/KAI/
 Install-first:
 
 ```bash
+brew tap morning-verlu/tap
+brew install kaios
+kaios doctor
+kaios run "analyze crypto market"
+kaios ps <run-id>
+kaios inspect <run-id>
+kaios report <run-id>
+```
+
+Hosted installer:
+
+```bash
 curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
+kaios doctor
 kaios run "analyze crypto market"
 kaios ps <run-id>
 kaios inspect <run-id>
@@ -129,9 +148,10 @@ kaios report <run-id>
 Download ZIP:
 
 ```bash
-curl -L -o kaios-0.1.5.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.5/kaios-0.1.5.zip
-unzip kaios-0.1.5.zip
-./kaios-0.1.5/bin/kaios run "analyze crypto market"
+curl -L -o kaios-0.1.6.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.6/kaios-0.1.6.zip
+unzip kaios-0.1.6.zip
+./kaios-0.1.6/bin/kaios doctor
+./kaios-0.1.6/bin/kaios run "analyze crypto market"
 ```
 
 Build from source:
@@ -140,6 +160,7 @@ Build from source:
 git clone https://github.com/morning-verlu/KAI.git
 cd KAI
 ./gradlew test installDist
+build/install/kaios-cli/bin/kaios doctor
 build/install/kaios-cli/bin/kaios run "analyze crypto market"
 build/install/kaios-cli/bin/kaios ps <run-id>
 build/install/kaios-cli/bin/kaios inspect <run-id>
