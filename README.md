@@ -130,7 +130,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - OpenAI-compatible and Ollama providers for real model execution.
 - Agent lifecycle: spawn, start, suspend, resume, cancel, succeed, fail.
 - Process metrics: PID, state, token usage, context size, syscall count, duration.
-- Simple DAG scheduler with parallel-ready nodes and fallback routing.
+- Coroutine-based DAG scheduler with parallel-ready nodes, fallback routing, timeout policy, and sibling cancellation.
 - Permissioned tools: `echo`, `clock`, `mock-http`, scoped `file`.
 - Session memory and JSON snapshots under `.kaios/runs/`.
 - SQLite memory adapter for persisted agent process memory.

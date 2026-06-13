@@ -30,13 +30,13 @@ Runtime events create an inspectable trace for every run.
 `runtime-core` owns lifecycle and scheduling:
 
 - `AgentRuntime` creates and transitions processes.
-- `WorkflowScheduler` executes a workflow DAG.
+- `WorkflowScheduler` executes a workflow DAG with coroutine-based structured concurrency.
 - `ModelProvider` abstracts model execution.
 - `MockModelProvider` provides deterministic local behavior for tests and demos.
 - `OpenAiCompatibleModelProvider` and `OllamaModelProvider` connect the same runtime boundary to real model APIs.
 - `ToolRegistry` enforces syscall registration and agent permissions.
 
-The first scheduler is deliberately small: it runs ready nodes in parallel-capable batches, records failure state, and can route a failed node to a declared fallback node.
+The scheduler runs ready nodes in coroutine batches, records failure and cancellation state, can route a failed node to a declared fallback node, and can enforce per-node timeouts.
 
 ## Tools as Syscalls
 

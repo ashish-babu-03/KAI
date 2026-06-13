@@ -1,8 +1,16 @@
 package ai.kaios
 
-import java.util.concurrent.Callable
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withTimeout
+import java.time.Duration
 
 data class Workflow(
     val name: String,
@@ -56,9 +64,16 @@ class WorkflowScheduler(
     private val modelProvider: ModelProvider,
     private val tools: ToolRegistry = ToolRegistry.Empty,
     private val memory: MemoryStore = NoopMemoryStore,
-    private val executorFactory: (Int) -> ExecutorService = { size -> Executors.newFixedThreadPool(size.coerceAtLeast(1)) },
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val nodeTimeout: Duration? = null,
+    private val onReadyBatch: (Int) -> Unit = {},
 ) {
-    fun run(workflow: Workflow, input: String, runId: RunId = RunId.new()): WorkflowResult {
+    fun run(workflow: Workflow, input: String, runId: RunId = RunId.new()): WorkflowResult =
+        runBlocking {
+            runSuspend(workflow, input, runId)
+        }
+
+    suspend fun runSuspend(workflow: Workflow, input: String, runId: RunId = RunId.new()): WorkflowResult {
         val nodesById = workflow.nodes.associateBy { it.id }
         val pending = workflow.nodes.filterNot { it.fallbackOnly }.mapTo(linkedSetOf()) { it.id }
         val completed = linkedMapOf<String, NodeResult>()
@@ -76,47 +91,18 @@ class WorkflowScheduler(
                 break
             }
 
-            val executor = executorFactory(ready.size)
-            try {
-                val futures = ready.associateWith { node ->
-                    executor.submit(Callable { executeNode(node, input, completed.toMap(), runId) })
+            onReadyBatch(ready.size)
+            val batchResults = executeReadyBatch(ready, nodesById, input, completed.toMap(), runId)
+
+            for ((node, result) in batchResults) {
+                if (!result.success) {
+                    success = false
+                    failureOutput = result.error ?: "Node '${node.id}' failed."
+                    break
                 }
 
-                for ((node, future) in futures) {
-                    val result = runCatching { future.get() }
-                        .getOrElse { error ->
-                            val root = error.cause ?: error
-                            val fallback = node.fallback
-                            if (fallback == null) {
-                                success = false
-                                failureOutput = root.message ?: "Node '${node.id}' failed."
-                                NodeResult(
-                                    nodeId = node.id,
-                                    agent = node.agent.id,
-                                    pid = ProcessId(1),
-                                    output = "",
-                                    success = false,
-                                    error = failureOutput,
-                                )
-                            } else {
-                                val fallbackNode = nodesById.getValue(fallback)
-                                val fallbackResult = executeNode(
-                                    node = fallbackNode,
-                                    input = "$input\nfallback from ${node.id}: ${root.message}",
-                                    completed = completed.toMap(),
-                                    runId = runId,
-                                )
-                                fallbackResult.copy(nodeId = node.id, fallbackNodeId = fallback)
-                            }
-                        }
-
-                    if (success || result.success) {
-                        completed[node.id] = result
-                    }
-                    pending.remove(node.id)
-                }
-            } finally {
-                executor.shutdownNow()
+                completed[node.id] = result
+                pending.remove(node.id)
             }
         }
 
@@ -137,6 +123,85 @@ class WorkflowScheduler(
         )
     }
 
+    private suspend fun executeReadyBatch(
+        ready: List<WorkflowNode>,
+        nodesById: Map<String, WorkflowNode>,
+        input: String,
+        completed: Map<String, NodeResult>,
+        runId: RunId,
+    ): Map<WorkflowNode, NodeResult> = supervisorScope {
+        val deferreds: Map<WorkflowNode, Deferred<NodeResult>> = ready.associateWith { node ->
+            async {
+                executeNodeWithPolicy(node, input, completed, runId)
+            }
+        }
+        val results = linkedMapOf<WorkflowNode, NodeResult>()
+
+        for ((node, deferred) in deferreds) {
+            val result = try {
+                deferred.await()
+            } catch (error: Throwable) {
+                val fallback = node.fallback
+                if (fallback == null) {
+                    val message = error.message ?: "Node '${node.id}' failed."
+                    cancelRemaining(deferreds, deferred)
+                    NodeResult(
+                        nodeId = node.id,
+                        agent = node.agent.id,
+                        pid = ProcessId(1),
+                        output = "",
+                        success = false,
+                        error = message,
+                    )
+                } else {
+                    val fallbackNode = nodesById.getValue(fallback)
+                    val fallbackResult = executeNodeWithPolicy(
+                        node = fallbackNode,
+                        input = "$input\nfallback from ${node.id}: ${error.message}",
+                        completed = completed,
+                        runId = runId,
+                    )
+                    fallbackResult.copy(nodeId = node.id, fallbackNodeId = fallback)
+                }
+            }
+
+            results[node] = result
+            if (!result.success) break
+        }
+
+        results
+    }
+
+    private suspend fun executeNodeWithPolicy(
+        node: WorkflowNode,
+        input: String,
+        completed: Map<String, NodeResult>,
+        runId: RunId,
+    ): NodeResult {
+        val block: suspend () -> NodeResult = {
+            runInterruptible(dispatcher) {
+                executeNode(node, input, completed, runId)
+            }
+        }
+
+        return if (nodeTimeout == null) {
+            block()
+        } else {
+            withTimeout(nodeTimeout.toMillis()) {
+                block()
+            }
+        }
+    }
+
+    private suspend fun cancelRemaining(
+        deferreds: Map<WorkflowNode, Deferred<NodeResult>>,
+        completedDeferred: Deferred<NodeResult>,
+    ) {
+        deferreds.values
+            .filter { deferred -> deferred !== completedDeferred && !deferred.isCompleted }
+            .forEach { deferred -> deferred.cancelAndJoin() }
+    }
+
     private fun executeNode(
         node: WorkflowNode,
         input: String,
@@ -146,7 +211,7 @@ class WorkflowScheduler(
         val process = runtime.spawn(node.agent, runId)
         runtime.start(process.pid)
 
-        return runCatching {
+        return try {
             appendMemory(process.pid, runId, node.agent, "user", input)
 
             val dependencyContext = node.dependencies.associateWith { dependency ->
@@ -198,7 +263,10 @@ class WorkflowScheduler(
                 output = output,
                 success = true,
             )
-        }.getOrElse { error ->
+        } catch (error: CancellationException) {
+            runtime.cancel(process.pid)
+            throw error
+        } catch (error: Throwable) {
             runtime.fail(process.pid, error.message ?: "Node '${node.id}' failed.")
             throw error
         }

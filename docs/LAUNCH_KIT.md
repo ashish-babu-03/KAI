@@ -39,7 +39,7 @@ KAI OS models AI work as runtime infrastructure:
 The v0.1 release is a runnable Kotlin/JVM seed:
 
 - agent lifecycle
-- DAG workflow scheduler
+- coroutine DAG workflow scheduler
 - permissioned syscall tools
 - deterministic mock model provider
 - OpenAI-compatible and Ollama providers
