@@ -9,6 +9,7 @@ import ai.kaios.SessionMemoryStore
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -93,6 +94,125 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `init writes a project config and refuses accidental overwrite`() {
+        val workspace = Files.createTempDirectory("kaios-cli-init")
+        val cli = cliFor(workspace)
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("init"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val configPath = workspace.resolve("kaios.json")
+        val configText = Files.readString(configPath)
+
+        assertEquals(0, code)
+        assertTrue(out.toString().contains("created:"))
+        assertTrue(configText.contains("\"planner\""))
+        assertTrue(configText.contains("\"executor\""))
+        assertTrue(configText.contains("\"validator\""))
+
+        val err = ByteArrayOutputStream()
+        val overwriteCode = cli.run(arrayOf("init"), PrintStream(ByteArrayOutputStream()), PrintStream(err))
+
+        assertEquals(1, overwriteCode)
+        assertTrue(err.toString().contains("already exists"))
+    }
+
+    @Test
+    fun `run with config executes configured workflow agents`() {
+        val workspace = Files.createTempDirectory("kaios-cli-config-run")
+        val cli = cliFor(workspace)
+        val config = workspace.resolve("research.json")
+        Files.writeString(
+            config,
+            """
+            {
+              "name": "custom-research",
+              "agents": [
+                {
+                  "id": "researcher",
+                  "instruction": "Gather useful context for the task.",
+                  "tools": ["echo", "clock"],
+                  "dependsOn": []
+                },
+                {
+                  "id": "writer",
+                  "instruction": "Turn the research into a concise answer.",
+                  "tools": ["echo"],
+                  "dependsOn": ["researcher"]
+                },
+                {
+                  "id": "validator",
+                  "instruction": "Check the answer and mark it accepted.",
+                  "tools": ["echo"],
+                  "dependsOn": ["writer"]
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+
+        val runOut = ByteArrayOutputStream()
+        val runCode = cli.run(
+            arrayOf("run", "--config", config.toString(), "map", "the", "JVM", "agent", "runtime"),
+            PrintStream(runOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val runText = runOut.toString()
+        val runId = Regex("run_id: (\\S+)").find(runText)?.groupValues?.get(1)
+
+        assertEquals(0, runCode)
+        assertTrue(runText.contains("config: $config"))
+        assertTrue(runText.contains("validate:"))
+        assertTrue(runId != null)
+
+        val psOut = ByteArrayOutputStream()
+        val psCode = cli.run(arrayOf("ps", runId), PrintStream(psOut), PrintStream(ByteArrayOutputStream()))
+        val psText = psOut.toString()
+
+        assertEquals(0, psCode)
+        assertTrue(psText.contains("workflow=custom-research"))
+        assertTrue(psText.contains("researcher"))
+        assertTrue(psText.contains("writer"))
+        assertTrue(psText.contains("validator"))
+
+        val inspectOut = ByteArrayOutputStream()
+        val inspectCode = cli.run(arrayOf("inspect", runId), PrintStream(inspectOut), PrintStream(ByteArrayOutputStream()))
+
+        assertEquals(0, inspectCode)
+        assertTrue(inspectOut.toString().contains("workflow: custom-research"))
+    }
+
+    @Test
+    fun `run with config rejects unknown tools before spawning agents`() {
+        val workspace = Files.createTempDirectory("kaios-cli-bad-config")
+        val cli = cliFor(workspace)
+        val config = workspace.resolve("bad.json")
+        Files.writeString(
+            config,
+            """
+            {
+              "name": "bad",
+              "agents": [
+                {
+                  "id": "planner",
+                  "tools": ["shell"]
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+        val err = ByteArrayOutputStream()
+
+        val code = cli.run(
+            arrayOf("run", "--config", config.toString(), "unsafe", "task"),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(err),
+        )
+
+        assertEquals(1, code)
+        assertTrue(err.toString().contains("unknown tool"))
+    }
+
+    @Test
     fun `model provider env selection supports mock openai and ollama`() {
         assertTrue(modelProviderFromEnv { null } is MockModelProvider)
 
@@ -161,6 +281,7 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("[OK] runs directory"))
         assertTrue(text.contains("[OK] reports directory"))
         assertTrue(text.contains("[OK] model provider: mock"))
+        assertTrue(text.contains("[OK] project config"))
         assertTrue(text.contains("summary: ready"))
     }
 
@@ -189,4 +310,14 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("OPENAI_MODEL is required"))
         assertTrue(!text.contains("secret-key"))
     }
+}
+
+private fun cliFor(workspace: Path): KaiosCli {
+    val runs = workspace.resolve("runs")
+    return KaiosCli(
+        FileRunSnapshotStore(runs),
+        workspace.resolve("reports"),
+        snapshotRoot = runs,
+        workingDir = workspace,
+    )
 }

@@ -74,7 +74,7 @@ kaios report <run-id>
 Repo: https://github.com/morning-verlu/KAI
 Site: https://morning-verlu.github.io/KAI/
 GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
-Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.6/kaios-0.1.6.zip
+Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.7/kaios-0.1.7.zip
 Installer: curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 ```
 
@@ -148,10 +148,10 @@ kaios report <run-id>
 Download ZIP:
 
 ```bash
-curl -L -o kaios-0.1.6.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.6/kaios-0.1.6.zip
-unzip kaios-0.1.6.zip
-./kaios-0.1.6/bin/kaios doctor
-./kaios-0.1.6/bin/kaios run "analyze crypto market"
+curl -L -o kaios-0.1.7.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.7/kaios-0.1.7.zip
+unzip kaios-0.1.7.zip
+./kaios-0.1.7/bin/kaios doctor
+./kaios-0.1.7/bin/kaios run "analyze crypto market"
 ```
 
 Build from source:

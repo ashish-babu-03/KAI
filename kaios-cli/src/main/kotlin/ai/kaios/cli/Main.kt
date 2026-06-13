@@ -28,7 +28,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.6"
+private const val KAIOS_VERSION = "0.1.7"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -40,6 +40,7 @@ class KaiosCli(
     private val reportRoot: Path = defaultReportRoot(),
     private val reportRenderer: ProcessReportRenderer = ProcessReportRenderer(),
     private val snapshotRoot: Path = defaultSnapshotRoot(),
+    private val workingDir: Path = Paths.get("").toAbsolutePath().normalize(),
     private val env: (String) -> String? = System::getenv,
 ) {
     fun run(args: Array<String>, out: PrintStream, err: PrintStream): Int {
@@ -49,6 +50,7 @@ class KaiosCli(
         }
 
         return when (args.first()) {
+            "init" -> initProject(args.drop(1), out, err)
             "run" -> runWorkflow(args.drop(1), out, err)
             "runs" -> listRuns(out)
             "ps" -> printProcessTable(args.drop(1), out, err)
@@ -68,9 +70,9 @@ class KaiosCli(
     }
 
     private fun runWorkflow(args: List<String>, out: PrintStream, err: PrintStream): Int {
-        val task = args.joinToString(" ").trim()
-        if (task.isBlank()) {
-            err.println("Usage: kaios run \"task\"")
+        val command = runCatching { parseRunCommand(args) }.getOrElse { error ->
+            err.println(error.message)
+            err.println("Usage: kaios run [--config kaios.json] \"task\"")
             return 1
         }
 
@@ -83,19 +85,27 @@ class KaiosCli(
             return 1
         }
         val runtime = AgentRuntime()
+        val tools = builtInToolRegistry(fileRoot = workingDir.resolve(".kaios").resolve("files"))
+        val workflow = runCatching {
+            command.configPath?.let { loadProjectWorkflow(it, memory, tools) } ?: defaultWorkflow(memory)
+        }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
         val scheduler = WorkflowScheduler(
             runtime = runtime,
             modelProvider = modelProvider,
-            tools = builtInToolRegistry(),
+            tools = tools,
             memory = memory,
         )
 
-        val result = scheduler.run(defaultWorkflow(memory), task)
-        val path = snapshotStore.save(task, result)
+        val result = scheduler.run(workflow, command.task)
+        val path = snapshotStore.save(command.task, result)
 
         out.println("run_id: ${result.runId.value}")
         out.println("success: ${result.success}")
         out.println("snapshot: $path")
+        command.configPath?.let { out.println("config: $it") }
         out.println()
         out.println(result.finalOutput)
         out.println()
@@ -104,6 +114,30 @@ class KaiosCli(
         out.println("  kaios inspect ${result.runId.value}")
         out.println("  kaios report ${result.runId.value}")
         return if (result.success) 0 else 2
+    }
+
+    private fun initProject(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val command = runCatching { parseInitCommand(args) }.getOrElse { error ->
+            err.println(error.message)
+            err.println("Usage: kaios init [--config kaios.json] [--force]")
+            return 1
+        }
+
+        val path = command.configPath
+        if (path.exists() && !command.force) {
+            err.println("Config '$path' already exists. Use --force to overwrite it.")
+            return 1
+        }
+
+        path.parent?.let { Files.createDirectories(it) }
+        path.writeText(defaultProjectConfigText())
+
+        out.println("created: $path")
+        out.println()
+        out.println("next:")
+        out.println("  kaios run --config ${displayPath(path)} \"analyze crypto market\"")
+        out.println("  kaios ps <run-id>")
+        return 0
     }
 
     private fun listRuns(out: PrintStream): Int {
@@ -182,12 +216,13 @@ class KaiosCli(
             directoryCheck("reports directory", reportRoot),
             modelProviderCheck(),
             memoryStoreCheck(),
+            configCheck(),
             snapshotsCheck(),
         )
 
         out.println("KAI OS doctor")
         out.println("version: $KAIOS_VERSION")
-        out.println("cwd: ${Paths.get("").toAbsolutePath().normalize()}")
+        out.println("cwd: $workingDir")
         out.println()
         checks.forEach { check ->
             out.println("[${check.status.name}] ${check.name}: ${check.detail}")
@@ -278,6 +313,28 @@ class KaiosCli(
                 },
             )
 
+    private fun configCheck(): DoctorCheck {
+        val path = defaultConfigPath()
+        if (!path.exists()) {
+            return DoctorCheck("project config", DoctorStatus.OK, "no $KAIOS_CONFIG_FILE found; using built-in default workflow")
+        }
+
+        val tools = builtInToolRegistry(fileRoot = workingDir.resolve(".kaios").resolve("files"))
+        return runCatching { loadProjectWorkflow(path, SessionMemoryStore(), tools) }
+            .fold(
+                onSuccess = { workflow ->
+                    DoctorCheck(
+                        "project config",
+                        DoctorStatus.OK,
+                        "$path (${workflow.nodes.size} agent process node(s))",
+                    )
+                },
+                onFailure = { error ->
+                    DoctorCheck("project config", DoctorStatus.FAIL, error.message ?: "invalid project config")
+                },
+            )
+    }
+
     private fun inspectRun(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val runId = args.firstOrNull()?.let(::RunId)
         if (runId == null) {
@@ -311,7 +368,9 @@ class KaiosCli(
             KAI OS - AI Agent Operating System in Kotlin
 
             Usage:
+              kaios init
               kaios run "task"
+              kaios run --config kaios.json "task"
               kaios runs
               kaios ps <run-id>
               kaios inspect <run-id>
@@ -359,7 +418,96 @@ class KaiosCli(
         5 -> 8
         else -> 10
     }
+
+    private fun defaultConfigPath(): Path = workingDir.resolve(KAIOS_CONFIG_FILE).normalize()
+
+    private fun resolvePath(value: String): Path {
+        val path = Paths.get(value)
+        return if (path.isAbsolute) path.normalize() else workingDir.resolve(path).normalize()
+    }
+
+    private fun displayPath(path: Path): String =
+        if (path.startsWith(workingDir)) {
+            workingDir.relativize(path).toString()
+        } else {
+            path.toString()
+        }
+
+    private fun parseRunCommand(args: List<String>): RunCommand {
+        var configPath: Path? = null
+        val taskParts = mutableListOf<String>()
+        var index = 0
+
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--config" || arg == "-c" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    configPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--config=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--config requires a path." }
+                    configPath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--" -> {
+                    taskParts += args.drop(index + 1)
+                    index = args.size
+                }
+                else -> {
+                    taskParts += arg
+                    index += 1
+                }
+            }
+        }
+
+        val task = taskParts.joinToString(" ").trim()
+        require(task.isNotBlank()) { "Task cannot be blank." }
+        return RunCommand(task, configPath)
+    }
+
+    private fun parseInitCommand(args: List<String>): InitCommand {
+        var configPath = defaultConfigPath()
+        var force = false
+        var index = 0
+
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--force" || arg == "-f" -> {
+                    force = true
+                    index += 1
+                }
+                arg == "--config" || arg == "-c" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    configPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--config=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--config requires a path." }
+                    configPath = resolvePath(value)
+                    index += 1
+                }
+                else -> error("Unknown init option '$arg'.")
+            }
+        }
+
+        return InitCommand(configPath, force)
+    }
 }
+
+private data class RunCommand(
+    val task: String,
+    val configPath: Path?,
+)
+
+private data class InitCommand(
+    val configPath: Path,
+    val force: Boolean,
+)
 
 private enum class DoctorStatus {
     OK,

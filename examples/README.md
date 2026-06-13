@@ -18,6 +18,50 @@ planner -> executor -> validator
 
 Each node becomes an agent process. The CLI writes a JSON snapshot under `.kaios/runs/`.
 
+## Create a Project Workflow Config
+
+Generate an editable `kaios.json`:
+
+```bash
+build/install/kaios-cli/bin/kaios init
+```
+
+Run the configured workflow:
+
+```bash
+build/install/kaios-cli/bin/kaios run --config kaios.json "map the JVM agent runtime"
+```
+
+The generated config starts with the default process graph:
+
+```json
+{
+  "name": "default",
+  "agents": [
+    {
+      "id": "planner",
+      "instruction": "Plan the task as an agent process.",
+      "tools": ["echo", "clock"],
+      "dependsOn": []
+    },
+    {
+      "id": "executor",
+      "instruction": "Execute the plan through permitted syscalls.",
+      "tools": ["echo", "mock-http"],
+      "dependsOn": ["planner"]
+    },
+    {
+      "id": "validator",
+      "instruction": "Validate the executor output.",
+      "tools": ["echo"],
+      "dependsOn": ["executor"]
+    }
+  ]
+}
+```
+
+Change the agent ids, instructions, tools, and `dependsOn` edges to shape your own DAG. The CLI validates unknown tools, unknown dependencies, duplicate agents, and dependency cycles before it spawns any agent process.
+
 ## Inspect Processes
 
 ```bash

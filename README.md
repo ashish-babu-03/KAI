@@ -46,6 +46,13 @@ kaios doctor
 kaios run "analyze crypto market"
 ```
 
+Create a local workflow config when you want your own agent process graph:
+
+```bash
+kaios init
+kaios run --config kaios.json "analyze crypto market"
+```
+
 Or install with the hosted script:
 
 ```bash
@@ -119,7 +126,7 @@ Modules:
 - `tool-runtime`: built-in syscall tools.
 - `memory-engine`: in-memory session memory and JSON run snapshots.
 - `model-providers`: OpenAI-compatible and Ollama model provider implementations.
-- `kaios-cli`: `kaios run`, `kaios runs`, `kaios ps`, `kaios inspect`, and `kaios report`.
+- `kaios-cli`: `kaios init`, `kaios run`, `kaios runs`, `kaios ps`, `kaios inspect`, `kaios report`, and `kaios doctor`.
 
 Read the deeper design notes in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -142,6 +149,43 @@ val defaultWorkflow = workflow("default") {
 
 See [examples/README.md](examples/README.md) for runnable CLI examples and the current v0.1 behavior.
 
+## Project Config
+
+Use `kaios init` to generate `kaios.json`, then edit the agent DAG without recompiling Kotlin:
+
+```json
+{
+  "name": "custom-research",
+  "agents": [
+    {
+      "id": "researcher",
+      "instruction": "Gather useful context for the task.",
+      "tools": ["echo", "clock"]
+    },
+    {
+      "id": "writer",
+      "instruction": "Write a concise answer.",
+      "tools": ["echo"],
+      "dependsOn": ["researcher"]
+    },
+    {
+      "id": "validator",
+      "instruction": "Check the answer and mark it accepted.",
+      "tools": ["echo"],
+      "dependsOn": ["writer"]
+    }
+  ]
+}
+```
+
+Run it with:
+
+```bash
+kaios run --config kaios.json "map the JVM agent runtime"
+```
+
+See [docs/CONFIG.md](docs/CONFIG.md) for the config fields, validation rules, built-in tools, and fallback routing.
+
 For launch posts, demos, and community announcements, see [docs/LAUNCH_KIT.md](docs/LAUNCH_KIT.md).
 
 For real model execution, see [docs/PROVIDERS.md](docs/PROVIDERS.md).
@@ -160,6 +204,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Process metrics: PID, state, token usage, context size, syscall count, duration.
 - Coroutine-based DAG scheduler with parallel-ready nodes, fallback routing, timeout policy, and sibling cancellation.
 - Permissioned tools: `echo`, `clock`, `mock-http`, scoped `file`.
+- Project workflow config with `kaios init` and `kaios run --config`.
 - Session memory and JSON snapshots under `.kaios/runs/`.
 - SQLite memory adapter for persisted agent process memory.
 - CLI process table and run inspector.

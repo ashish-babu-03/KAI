@@ -653,7 +653,7 @@
         <div class="section-inner">
           <div class="section-heading">
             <h2>Watch a run become processes.</h2>
-            <p>The default planner -> executor -> validator workflow emits process metrics and lifecycle events that can be inspected after the run.</p>
+            <p>The default workflow and editable project configs emit process metrics and lifecycle events that can be inspected after the run.</p>
           </div>
           <div class="terminal-frame demo-frame">
             <img src="assets/kaios-demo.gif" alt="Animated KAI OS CLI demo showing run, ps, and inspect commands">
@@ -694,6 +694,11 @@
               <span class="tag">kaios ps</span>
             </article>
             <article class="feature">
+              <h3>Project configs</h3>
+              <p>Generate kaios.json and run custom agent DAGs without recompiling Kotlin.</p>
+              <span class="tag">kaios init</span>
+            </article>
+            <article class="feature">
               <h3>Kotlin-native DSL</h3>
               <p>Describe agents and workflows with typed Kotlin APIs that can grow into plugin and UI layers.</p>
               <span class="tag">agent { workflow }</span>
@@ -706,7 +711,7 @@
         <div class="section-inner quickstart">
           <div class="section-heading">
             <h2>Install it, check it, inspect it.</h2>
-            <p>The v0.1.6 CLI installs locally with no API key. Run doctor first, then launch the planner -> executor -> validator demo workflow.</p>
+            <p>The v0.1.7 CLI installs locally with no API key. Run doctor first, then launch the planner -> executor -> validator demo workflow or generate your own kaios.json DAG.</p>
             <div class="link-grid">
               <a class="button primary" href="https://github.com/morning-verlu/KAI">Open repository</a>
               <a class="button secondary" href="https://github.com/morning-verlu/KAI/releases">View releases</a>
@@ -716,6 +721,8 @@
 brew install kaios
 kaios doctor
 kaios run "analyze crypto market"
+kaios init
+kaios run --config kaios.json "map the JVM agent runtime"
 kaios ps &lt;run-id&gt;
 
 # or:
