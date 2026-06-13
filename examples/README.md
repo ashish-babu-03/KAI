@@ -77,3 +77,28 @@ build/install/kaios-cli/bin/kaios run "draft a launch plan"
 ```
 
 See [../docs/PROVIDERS.md](../docs/PROVIDERS.md) for provider details.
+
+## Scoped File Syscall
+
+The built-in `file` tool supports `read`, `write`, `list`, and `exists` operations inside a configured root. The default root is `.kaios/files`, and traversal outside that root is rejected.
+
+Kotlin DSL example:
+
+```kotlin
+val writer = agent("writer") {
+    tool("file")
+}
+```
+
+Tool call shape:
+
+```kotlin
+ToolCall(
+    "file",
+    mapOf(
+        "op" to "write",
+        "path" to "notes/plan.txt",
+        "content" to "agent file syscall"
+    )
+)
+```

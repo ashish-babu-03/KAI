@@ -15,6 +15,7 @@ Please open a private security advisory on GitHub when available, or create a mi
 - Tools must declare permissions.
 - Agents should receive only the permissions they need.
 - Filesystem, shell, network, and database tools should default to scoped access.
+- The built-in file syscall rejects absolute paths and path traversal outside its configured root.
 - Run snapshots should not contain secrets.
 - Real model providers should avoid logging API keys or raw credentials.
 - Provider errors must never include authorization headers or environment variable dumps.

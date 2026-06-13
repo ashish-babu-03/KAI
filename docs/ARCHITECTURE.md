@@ -53,6 +53,9 @@ Built-in tools in v0.1:
 - `echo`
 - `clock`
 - `mock-http`
+- `file`
+
+The `file` syscall is rooted to a configured directory, defaults to `.kaios/files`, rejects absolute paths, and rejects normalized paths that escape the scoped root.
 
 ## Memory and Snapshots
 

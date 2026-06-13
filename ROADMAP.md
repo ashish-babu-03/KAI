@@ -18,8 +18,8 @@ KAI OS is starting with a small, inspectable runtime. The goal is to grow into a
 
 - OpenAI-compatible provider foundations, shipped in v0.1.1
 - Ollama provider foundations, shipped in v0.1.1
+- scoped file syscall, shipped in v0.1.3
 - structured tool argument schemas
-- file tool with scoped permissions
 - HTTP tool with allowlist policy
 - better error surfaces and retry policy
 

@@ -4,6 +4,7 @@ enum class ToolPermission {
     ECHO,
     READ_CLOCK,
     NETWORK,
+    FILE,
 }
 
 data class ToolCall(

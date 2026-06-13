@@ -129,7 +129,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Agent lifecycle: spawn, start, suspend, resume, cancel, succeed, fail.
 - Process metrics: PID, state, token usage, context size, syscall count, duration.
 - Simple DAG scheduler with parallel-ready nodes and fallback routing.
-- Permissioned tools: `echo`, `clock`, `mock-http`.
+- Permissioned tools: `echo`, `clock`, `mock-http`, scoped `file`.
 - Session memory and JSON snapshots under `.kaios/runs/`.
 - CLI process table and run inspector.
 - Static Agent Process Manager HTML reports under `.kaios/reports/`.
