@@ -705,19 +705,19 @@
       <section id="quickstart">
         <div class="section-inner quickstart">
           <div class="section-heading">
-            <h2>Download it, run it, inspect it.</h2>
-            <p>The v0.1.5 CLI distribution runs locally with no API key. The demo workflow is planner -> executor -> validator and writes snapshots under .kaios/runs.</p>
+            <h2>Install it, run it, inspect it.</h2>
+            <p>The v0.1.5 CLI installs locally with no API key. The demo workflow is planner -> executor -> validator and writes snapshots under .kaios/runs.</p>
             <div class="link-grid">
               <a class="button primary" href="https://github.com/morning-verlu/KAI">Open repository</a>
               <a class="button secondary" href="https://github.com/morning-verlu/KAI/releases">View releases</a>
             </div>
           </div>
-          <pre class="command"><code>curl -L -o kaios-0.1.5.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.5/kaios-0.1.5.zip
-unzip kaios-0.1.5.zip
-./kaios-0.1.5/bin/kaios run "analyze crypto market"
-./kaios-0.1.5/bin/kaios ps &lt;run-id&gt;
-./kaios-0.1.5/bin/kaios inspect &lt;run-id&gt;
-./kaios-0.1.5/bin/kaios report &lt;run-id&gt;</code></pre>
+          <pre class="command"><code>curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
+export PATH="$HOME/.kaios/bin:$PATH"
+kaios run "analyze crypto market"
+kaios ps &lt;run-id&gt;
+kaios inspect &lt;run-id&gt;
+kaios report &lt;run-id&gt;</code></pre>
         </div>
       </section>
     </main>

@@ -37,12 +37,12 @@ Kotlin gives this model a strong foundation: JVM ecosystem reach, type safety, c
 
 ## Quick Start
 
-Download the v0.1.5 CLI distribution:
+Install the v0.1.5 CLI:
 
 ```bash
-curl -L -o kaios-0.1.5.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.5/kaios-0.1.5.zip
-unzip kaios-0.1.5.zip
-./kaios-0.1.5/bin/kaios run "analyze crypto market"
+curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
+export PATH="$HOME/.kaios/bin:$PATH"
+kaios run "analyze crypto market"
 ```
 
 Or build from source:
@@ -66,7 +66,7 @@ syscall echo: validated:350c4677
 Inspect the agent process table:
 
 ```bash
-build/install/kaios-cli/bin/kaios ps run-97381ae9
+kaios ps run-97381ae9
 ```
 
 ```text
@@ -80,13 +80,13 @@ PID     AGENT         STATE       TOKENS    MEMORY    SYSCALLS  DURATION
 Inspect lifecycle events:
 
 ```bash
-build/install/kaios-cli/bin/kaios inspect run-97381ae9
+kaios inspect run-97381ae9
 ```
 
 Generate a standalone Agent Process Manager report:
 
 ```bash
-build/install/kaios-cli/bin/kaios report run-97381ae9
+kaios report run-97381ae9
 ```
 
 ## Architecture

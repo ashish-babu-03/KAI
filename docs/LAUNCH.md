@@ -47,6 +47,7 @@ The process table is the visual proof of the idea.
 - social preview image works for shared links
 - demo GIF shows run, ps, and inspect
 - release ZIP/TAR assets are attached for download-first trial
+- install script supports one-command local setup
 - architecture diagram is visible
 - example output is included
 - roadmap is public

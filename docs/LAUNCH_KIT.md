@@ -9,6 +9,7 @@ KAI OS is an AI Agent Operating System in Kotlin: agents run like processes, wor
 Launch site: https://morning-verlu.github.io/KAI/
 Social preview image: https://morning-verlu.github.io/KAI/assets/kaios-social-card.png
 Demo GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
+Installer: https://morning-verlu.github.io/KAI/install.sh
 
 ## Short Post
 
@@ -68,6 +69,7 @@ Repo: https://github.com/morning-verlu/KAI
 Site: https://morning-verlu.github.io/KAI/
 GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
 Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.5/kaios-0.1.5.zip
+Installer: curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 ```
 
 ## Show HN Draft
@@ -113,15 +115,23 @@ https://morning-verlu.github.io/KAI/
 
 ## First Demo Flow
 
-Download-first:
+Install-first:
+
+```bash
+curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
+export PATH="$HOME/.kaios/bin:$PATH"
+kaios run "analyze crypto market"
+kaios ps <run-id>
+kaios inspect <run-id>
+kaios report <run-id>
+```
+
+Download ZIP:
 
 ```bash
 curl -L -o kaios-0.1.5.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.5/kaios-0.1.5.zip
 unzip kaios-0.1.5.zip
 ./kaios-0.1.5/bin/kaios run "analyze crypto market"
-./kaios-0.1.5/bin/kaios ps <run-id>
-./kaios-0.1.5/bin/kaios inspect <run-id>
-./kaios-0.1.5/bin/kaios report <run-id>
 ```
 
 Build from source:
