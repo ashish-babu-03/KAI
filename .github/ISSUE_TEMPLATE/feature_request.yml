@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest a runtime, scheduler, tool, memory, provider, or UI feature.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Runtime
+        - Scheduler
+        - Tools
+        - Memory
+        - Model provider
+        - CLI
+        - UI
+        - Plugin system
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What should KAI OS make easier?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What would the feature look like?
+    validations:
+      required: true
