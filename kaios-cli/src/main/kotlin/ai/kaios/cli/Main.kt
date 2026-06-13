@@ -13,6 +13,7 @@ import ai.kaios.RunId
 import ai.kaios.SessionMemoryStore
 import ai.kaios.SQLiteMemoryStore
 import ai.kaios.StoredProcess
+import ai.kaios.StoredRunSnapshot
 import ai.kaios.agent
 import ai.kaios.builtInToolRegistry
 import ai.kaios.workflow
@@ -28,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.8"
+private const val KAIOS_VERSION = "0.1.9"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -39,6 +40,8 @@ class KaiosCli(
     private val snapshotStore: FileRunSnapshotStore = FileRunSnapshotStore(defaultSnapshotRoot()),
     private val reportRoot: Path = defaultReportRoot(),
     private val reportRenderer: ProcessReportRenderer = ProcessReportRenderer(),
+    private val artifactRoot: Path = defaultArtifactRoot(),
+    private val artifactExporter: ArtifactExporter = ArtifactExporter(),
     private val snapshotRoot: Path = defaultSnapshotRoot(),
     private val workingDir: Path = Paths.get("").toAbsolutePath().normalize(),
     private val env: (String) -> String? = System::getenv,
@@ -57,6 +60,7 @@ class KaiosCli(
             "ps" -> printProcessTable(args.drop(1), out, err)
             "inspect" -> inspectRun(args.drop(1), out, err)
             "report" -> generateReport(args.drop(1), out, err)
+            "export" -> exportRun(args.drop(1), out, err)
             "doctor" -> doctor(out)
             "help", "--help", "-h" -> {
                 printUsage(out)
@@ -103,11 +107,21 @@ class KaiosCli(
 
         val result = scheduler.run(workflow, command.task)
         val path = snapshotStore.save(command.task, result)
+        val artifactPath = runCatching {
+            command.outputPath?.let { outputPath ->
+                val snapshot = snapshotStore.load(result.runId)
+                writeArtifact(snapshot, outputPath, command.forceOutput)
+            }
+        }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
 
         out.println("run_id: ${result.runId.value}")
         out.println("success: ${result.success}")
         out.println("snapshot: $path")
         configPath?.let { out.println("config: $it") }
+        artifactPath?.let { out.println("artifact: $it") }
         out.println()
         out.println(result.finalOutput)
         out.println()
@@ -115,6 +129,7 @@ class KaiosCli(
         out.println("  kaios ps ${result.runId.value}")
         out.println("  kaios inspect ${result.runId.value}")
         out.println("  kaios report ${result.runId.value}")
+        out.println("  kaios export ${result.runId.value}")
         return if (result.success) 0 else 2
     }
 
@@ -299,11 +314,33 @@ class KaiosCli(
         return 0
     }
 
+    private fun exportRun(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val command = runCatching { parseExportCommand(args) }.getOrElse { error ->
+            err.println(error.message)
+            err.println("Usage: kaios export <run-id> [--out artifact.md] [--force]")
+            return 1
+        }
+
+        val snapshot = runCatching { snapshotStore.load(command.runId) }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+
+        val path = runCatching { writeArtifact(snapshot, command.outputPath, command.force) }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+
+        out.println("artifact: $path")
+        return 0
+    }
+
     private fun doctor(out: PrintStream): Int {
         val checks = listOf(
             javaCheck(),
             directoryCheck("runs directory", snapshotRoot),
             directoryCheck("reports directory", reportRoot),
+            directoryCheck("artifacts directory", artifactRoot),
             modelProviderCheck(),
             memoryStoreCheck(),
             configCheck(),
@@ -468,6 +505,7 @@ class KaiosCli(
               kaios ps <run-id>
               kaios inspect <run-id>
               kaios report <run-id>
+              kaios export <run-id> [--out artifact.md]
               kaios doctor
             """.trimIndent(),
         )
@@ -522,6 +560,18 @@ class KaiosCli(
         return if (path.isAbsolute) path.normalize() else workingDir.resolve(path).normalize()
     }
 
+    private fun defaultArtifactPath(runId: RunId): Path =
+        artifactRoot.resolve("${runId.value}.md").normalize()
+
+    private fun writeArtifact(snapshot: StoredRunSnapshot, path: Path, force: Boolean): Path {
+        if (path.exists() && !force) {
+            error("Artifact '$path' already exists. Use --force to overwrite it.")
+        }
+        path.parent?.let { Files.createDirectories(it) }
+        path.writeText(artifactExporter.render(snapshot))
+        return path
+    }
+
     private fun displayPath(path: Path): String =
         if (path.startsWith(workingDir)) {
             workingDir.relativize(path).toString()
@@ -532,6 +582,8 @@ class KaiosCli(
     private fun parseRunCommand(args: List<String>): RunCommand {
         var configPath: Path? = null
         var useBuiltInDefault = false
+        var outputPath: Path? = null
+        var forceOutput = false
         val taskParts = mutableListOf<String>()
         var index = 0
 
@@ -553,6 +605,21 @@ class KaiosCli(
                     useBuiltInDefault = true
                     index += 1
                 }
+                arg == "--out" || arg == "--output" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    outputPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--out=") || arg.startsWith("--output=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "$arg requires a path." }
+                    outputPath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--force-output" -> {
+                    forceOutput = true
+                    index += 1
+                }
                 arg == "--" -> {
                     taskParts += args.drop(index + 1)
                     index = args.size
@@ -567,7 +634,7 @@ class KaiosCli(
         val task = taskParts.joinToString(" ").trim()
         require(task.isNotBlank()) { "Task cannot be blank." }
         require(!(configPath != null && useBuiltInDefault)) { "Use either --config or --default, not both." }
-        return RunCommand(task, configPath, useBuiltInDefault)
+        return RunCommand(task, configPath, useBuiltInDefault, outputPath, forceOutput)
     }
 
     private fun parseInitCommand(args: List<String>): InitCommand {
@@ -644,6 +711,37 @@ class KaiosCli(
         return configPath
     }
 
+    private fun parseExportCommand(args: List<String>): ExportCommand {
+        val runId = args.firstOrNull()?.let(::RunId) ?: error("Run id is required.")
+        var outputPath: Path? = null
+        var force = false
+        var index = 1
+
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--out" || arg == "--output" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    outputPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--out=") || arg.startsWith("--output=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "$arg requires a path." }
+                    outputPath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--force" || arg == "-f" -> {
+                    force = true
+                    index += 1
+                }
+                else -> error("Unknown export option '$arg'.")
+            }
+        }
+
+        return ExportCommand(runId, outputPath ?: defaultArtifactPath(runId), force)
+    }
+
     private fun printTemplates(out: PrintStream) {
         out.println("TEMPLATES")
         projectConfigTemplates.forEach { template ->
@@ -656,6 +754,8 @@ private data class RunCommand(
     val task: String,
     val configPath: Path?,
     val useBuiltInDefault: Boolean,
+    val outputPath: Path?,
+    val forceOutput: Boolean,
 )
 
 private data class InitCommand(
@@ -663,6 +763,12 @@ private data class InitCommand(
     val force: Boolean,
     val templateId: String,
     val listTemplates: Boolean,
+)
+
+private data class ExportCommand(
+    val runId: RunId,
+    val outputPath: Path,
+    val force: Boolean,
 )
 
 private enum class DoctorStatus {
@@ -733,3 +839,7 @@ private fun defaultSnapshotRoot() =
 private fun defaultReportRoot() =
     System.getenv("KAIOS_REPORTS_DIR")?.takeIf { it.isNotBlank() }?.let { Paths.get(it) }
         ?: Paths.get(".kaios", "reports")
+
+private fun defaultArtifactRoot() =
+    System.getenv("KAIOS_ARTIFACTS_DIR")?.takeIf { it.isNotBlank() }?.let { Paths.get(it) }
+        ?: Paths.get(".kaios", "artifacts")

@@ -690,7 +690,7 @@
             </article>
             <article class="feature">
               <h3>CLI process manager</h3>
-              <p>Run workflows, list runs, print process tables, inspect lifecycle events, and render static reports.</p>
+              <p>Run workflows, list runs, print process tables, inspect lifecycle events, render reports, and export Markdown artifacts.</p>
               <span class="tag">kaios ps</span>
             </article>
             <article class="feature">
@@ -711,7 +711,7 @@
         <div class="section-inner quickstart">
           <div class="section-heading">
             <h2>Install it, check it, inspect it.</h2>
-            <p>The v0.1.8 CLI installs locally with no API key. Run doctor first, then launch the demo workflow or generate a template kaios.json DAG.</p>
+            <p>The v0.1.9 CLI installs locally with no API key. Run doctor first, then launch the demo workflow or generate a template kaios.json DAG and export a Markdown artifact.</p>
             <div class="link-grid">
               <a class="button primary" href="https://github.com/morning-verlu/KAI">Open repository</a>
               <a class="button secondary" href="https://github.com/morning-verlu/KAI/releases">View releases</a>
@@ -724,8 +724,9 @@ kaios run "analyze crypto market"
 kaios config templates
 kaios init --template research
 kaios config show
-kaios run "map the JVM agent runtime"
+kaios run --out artifacts/runtime.md "map the JVM agent runtime"
 kaios ps &lt;run-id&gt;
+kaios export &lt;run-id&gt;
 
 # or:
 curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh

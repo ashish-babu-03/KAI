@@ -154,6 +154,19 @@ Configured workflows use the same process observability as the built-in workflow
 kaios ps <run-id>
 kaios inspect <run-id>
 kaios report <run-id>
+kaios export <run-id>
 ```
 
 Snapshots are still written under `.kaios/runs/`, so custom workflows can be inspected later without re-running the task.
+
+## Artifacts
+
+Export the run as Markdown when you need a shareable handoff:
+
+```bash
+kaios run --out artifacts/runtime.md "map the JVM agent runtime"
+kaios export <run-id>
+kaios export <run-id> --out artifacts/run.md
+```
+
+Artifacts include the task, final output, process table, and lifecycle events. The default export path is `.kaios/artifacts/<run-id>.md`. Existing files are protected; use `kaios run --force-output --out ...` for run-time artifacts and `kaios export <run-id> --force` for exports.

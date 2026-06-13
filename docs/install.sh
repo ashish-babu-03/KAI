@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-VERSION="${KAIOS_VERSION:-0.1.8}"
+VERSION="${KAIOS_VERSION:-0.1.9}"
 REPO="morning-verlu/KAI"
 BASE_URL="https://github.com/${REPO}/releases/download/v${VERSION}"
 ARCHIVE="kaios-${VERSION}.zip"
@@ -71,11 +71,13 @@ echo "  ${BIN_DIR}/kaios"
 echo
 if command -v kaios >/dev/null 2>&1; then
   echo "Try:"
-  echo "  kaios run \"analyze crypto market\""
+  echo "  kaios doctor"
+  echo "  kaios run --out artifacts/market.md \"analyze crypto market\""
 else
   echo "Add this to your shell profile if kaios is not on PATH:"
   echo "  export PATH=\"${BIN_DIR}:\$PATH\""
   echo
   echo "Try now:"
-  echo "  ${BIN_DIR}/kaios run \"analyze crypto market\""
+  echo "  ${BIN_DIR}/kaios doctor"
+  echo "  ${BIN_DIR}/kaios run --out artifacts/market.md \"analyze crypto market\""
 fi

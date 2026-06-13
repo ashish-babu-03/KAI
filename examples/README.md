@@ -35,6 +35,12 @@ Run the configured workflow. When `kaios.json` exists in the current directory, 
 build/install/kaios-cli/bin/kaios run "map the JVM agent runtime"
 ```
 
+Write the final output and process table to a Markdown artifact during the run:
+
+```bash
+build/install/kaios-cli/bin/kaios run --out artifacts/runtime.md "map the JVM agent runtime"
+```
+
 The generated config starts with the default process graph:
 
 ```json
@@ -109,6 +115,15 @@ build/install/kaios-cli/bin/kaios report <run-id>
 ```
 
 The report is a standalone HTML file under `.kaios/reports/` with a run list, process table, workflow graph, lifecycle timeline, and final output. It is intended for screenshots and quick visual debugging.
+
+## Export a Markdown Artifact
+
+```bash
+build/install/kaios-cli/bin/kaios export <run-id>
+build/install/kaios-cli/bin/kaios export <run-id> --out artifacts/run.md
+```
+
+Artifacts are Markdown files with the task, final output, process table, and lifecycle events. The default location is `.kaios/artifacts/<run-id>.md`. Existing files are protected; use `--force-output` with `run --out` and `--force` with `export`.
 
 ## Try Other Tasks
 

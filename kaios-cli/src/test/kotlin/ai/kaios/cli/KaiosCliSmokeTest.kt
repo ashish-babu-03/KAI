@@ -20,7 +20,8 @@ class KaiosCliSmokeTest {
     fun `run ps and inspect work against a saved mock run`() {
         val root = Files.createTempDirectory("kaios-cli-runs")
         val reportRoot = Files.createTempDirectory("kaios-cli-reports")
-        val cli = KaiosCli(FileRunSnapshotStore(root), reportRoot, snapshotRoot = root)
+        val artifactRoot = Files.createTempDirectory("kaios-cli-artifacts")
+        val cli = KaiosCli(FileRunSnapshotStore(root), reportRoot, artifactRoot = artifactRoot, snapshotRoot = root)
 
         val runOut = ByteArrayOutputStream()
         val runCode = cli.run(
@@ -91,6 +92,78 @@ class KaiosCliSmokeTest {
         assertTrue(reportText.contains("Lifecycle Events"))
         assertTrue(reportText.contains("planner"))
         assertTrue(reportText.contains("validator"))
+    }
+
+    @Test
+    fun `run out writes a markdown artifact`() {
+        val workspace = Files.createTempDirectory("kaios-cli-run-out")
+        val cli = cliFor(workspace)
+        val artifact = workspace.resolve("artifacts/custom.md")
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(
+            arrayOf("run", "--out", artifact.toString(), "draft", "a", "runtime", "note"),
+            PrintStream(out),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val text = out.toString()
+        val artifactText = Files.readString(artifact)
+
+        assertEquals(0, code)
+        assertTrue(text.contains("artifact: $artifact"))
+        assertTrue(artifactText.contains("# KAI OS Run"))
+        assertTrue(artifactText.contains("## Final Output"))
+        assertTrue(artifactText.contains("## Process Table"))
+        assertTrue(artifactText.contains("| PID | Agent | State | Tokens | Memory | Syscalls | Duration |"))
+
+        val err = ByteArrayOutputStream()
+        val secondCode = cli.run(
+            arrayOf("run", "--out", artifact.toString(), "draft", "again"),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(err),
+        )
+
+        assertEquals(1, secondCode)
+        assertTrue(err.toString().contains("already exists"))
+    }
+
+    @Test
+    fun `export writes default artifact and protects existing files`() {
+        val workspace = Files.createTempDirectory("kaios-cli-export")
+        val cli = cliFor(workspace)
+        val runOut = ByteArrayOutputStream()
+        val runCode = cli.run(
+            arrayOf("run", "draft", "artifact", "summary"),
+            PrintStream(runOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val runText = runOut.toString()
+        val runId = Regex("run_id: (\\S+)").find(runText)?.groupValues?.get(1)
+        assertEquals(0, runCode)
+        assertTrue(runId != null)
+
+        val exportOut = ByteArrayOutputStream()
+        val exportCode = cli.run(arrayOf("export", runId), PrintStream(exportOut), PrintStream(ByteArrayOutputStream()))
+        val artifact = workspace.resolve("artifacts/$runId.md")
+        val artifactText = Files.readString(artifact)
+
+        assertEquals(0, exportCode)
+        assertTrue(exportOut.toString().contains("artifact: $artifact"))
+        assertTrue(artifactText.contains("draft artifact summary"))
+        assertTrue(artifactText.contains("Lifecycle Events"))
+
+        val err = ByteArrayOutputStream()
+        val secondCode = cli.run(arrayOf("export", runId), PrintStream(ByteArrayOutputStream()), PrintStream(err))
+
+        assertEquals(1, secondCode)
+        assertTrue(err.toString().contains("already exists"))
+
+        val forcedCode = cli.run(
+            arrayOf("export", runId, "--force"),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        assertEquals(0, forcedCode)
     }
 
     @Test
@@ -383,7 +456,8 @@ class KaiosCliSmokeTest {
     fun `doctor reports ready for default local runtime`() {
         val root = Files.createTempDirectory("kaios-cli-doctor-runs")
         val reportRoot = Files.createTempDirectory("kaios-cli-doctor-reports")
-        val cli = KaiosCli(FileRunSnapshotStore(root), reportRoot, snapshotRoot = root)
+        val artifactRoot = Files.createTempDirectory("kaios-cli-doctor-artifacts")
+        val cli = KaiosCli(FileRunSnapshotStore(root), reportRoot, artifactRoot = artifactRoot, snapshotRoot = root)
         val out = ByteArrayOutputStream()
 
         val code = cli.run(arrayOf("doctor"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
@@ -394,6 +468,7 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("[OK] Java runtime"))
         assertTrue(text.contains("[OK] runs directory"))
         assertTrue(text.contains("[OK] reports directory"))
+        assertTrue(text.contains("[OK] artifacts directory"))
         assertTrue(text.contains("[OK] model provider: mock"))
         assertTrue(text.contains("[OK] project config"))
         assertTrue(text.contains("summary: ready"))
@@ -406,6 +481,7 @@ class KaiosCliSmokeTest {
         val cli = KaiosCli(
             FileRunSnapshotStore(root),
             reportRoot,
+            artifactRoot = Files.createTempDirectory("kaios-cli-doctor-bad-provider-artifacts"),
             snapshotRoot = root,
             env = { key ->
                 mapOf(
@@ -431,6 +507,7 @@ private fun cliFor(workspace: Path): KaiosCli {
     return KaiosCli(
         FileRunSnapshotStore(runs),
         workspace.resolve("reports"),
+        artifactRoot = workspace.resolve("artifacts"),
         snapshotRoot = runs,
         workingDir = workspace,
     )

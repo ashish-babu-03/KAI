@@ -51,7 +51,7 @@ Create a local workflow config when you want your own agent process graph:
 ```bash
 kaios init --template research
 kaios config show
-kaios run "analyze crypto market"
+kaios run --out artifacts/market.md "analyze crypto market"
 ```
 
 Or install with the hosted script:
@@ -105,6 +105,12 @@ Generate a standalone Agent Process Manager report:
 
 ```bash
 kaios report run-97381ae9
+```
+
+Export a Markdown artifact:
+
+```bash
+kaios export run-97381ae9
 ```
 
 ## Architecture
@@ -213,6 +219,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Session memory and JSON snapshots under `.kaios/runs/`.
 - SQLite memory adapter for persisted agent process memory.
 - CLI process table and run inspector.
+- Markdown run artifacts with `kaios run --out` and `kaios export`.
 - `kaios doctor` environment diagnostics for Java, provider, memory, snapshots, and writable runtime directories.
 - Static Agent Process Manager HTML reports under `.kaios/reports/`.
 - README-ready terminal process preview for launch sharing.
