@@ -90,6 +90,7 @@ Create a local workflow config when you want your own agent process graph:
 ```bash
 kaios init --template research
 kaios config show
+kaios config validate --json
 kaios run --out artifacts/runtime.md "map the JVM agent runtime"
 ```
 
@@ -303,6 +304,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Coroutine-based DAG scheduler with parallel-ready nodes, observable retry policy, fallback routing, timeout policy, and sibling cancellation.
 - Permissioned tools: `echo`, `clock`, `mock-http`, allowlisted `http`, scoped `file`.
 - Project workflow templates, retry policy, config validation, config graph display, and auto-detected `kaios.json` runs.
+- `kaios config validate --json` emits `kaios.config-validation/v1` for CI and release gates.
 - Deterministic workspace analysis with `kaios analyze` for no-key Markdown and JSON project reports.
 - Workspace Index with `kaios index` and `kaios run --index <path>` for language stats, notable files, and project source maps.
 - Project-aware runs with `kaios context`, `.kaiosignore`, and bounded `kaios run --context <file-or-dir>` ingestion.

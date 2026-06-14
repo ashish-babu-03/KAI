@@ -31,7 +31,7 @@ class KaiosCliSmokeTest {
         val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
 
         assertEquals(0, code)
-        assertEquals("kaios 0.1.40\n", out.toString())
+        assertEquals("kaios 0.1.41\n", out.toString())
     }
 
     @Test
@@ -1420,6 +1420,22 @@ class KaiosCliSmokeTest {
 
         assertEquals(0, code)
         assertTrue(out.toString().contains("status: valid"))
+
+        val jsonOut = ByteArrayOutputStream()
+        val jsonCode = cli.run(
+            arrayOf("config", "validate", "--config", config.toString(), "--json"),
+            PrintStream(jsonOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val json = Json.parseToJsonElement(jsonOut.toString()).jsonObject
+
+        assertEquals(0, jsonCode)
+        assertEquals("kaios.config-validation/v1", json.getValue("schema").jsonPrimitive.content)
+        assertEquals(true, json.getValue("valid").jsonPrimitive.content.toBoolean())
+        assertEquals("http-research", json.getValue("workflowName").jsonPrimitive.content)
+        assertEquals(1, json.getValue("agentCount").jsonPrimitive.int)
+        assertEquals("researcher", json.getValue("agentIds").jsonArray.single().jsonPrimitive.content)
+        assertEquals(0, json.getValue("errors").jsonArray.size)
     }
 
     @Test
@@ -1491,6 +1507,21 @@ class KaiosCliSmokeTest {
 
         assertEquals(1, code)
         assertTrue(err.toString().contains("retries must be between 0 and 10"))
+
+        val jsonOut = ByteArrayOutputStream()
+        val jsonCode = cli.run(
+            arrayOf("config", "validate", "--config", config.toString(), "--format", "json"),
+            PrintStream(jsonOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val jsonText = jsonOut.toString()
+        val json = Json.parseToJsonElement(jsonText).jsonObject
+
+        assertEquals(1, jsonCode)
+        assertEquals("kaios.config-validation/v1", json.getValue("schema").jsonPrimitive.content)
+        assertEquals(false, json.getValue("valid").jsonPrimitive.content.toBoolean())
+        assertEquals(0, json.getValue("agentCount").jsonPrimitive.int)
+        assertTrue(jsonText.contains("retries must be between 0 and 10"))
     }
 
     @Test
@@ -1687,7 +1718,7 @@ class KaiosCliSmokeTest {
 
         assertEquals(0, code)
         assertEquals("kaios.doctor/v1", json.getValue("schema").jsonPrimitive.content)
-        assertEquals("0.1.40", json.getValue("version").jsonPrimitive.content)
+        assertEquals("0.1.41", json.getValue("version").jsonPrimitive.content)
         assertEquals("ready", summary.getValue("status").jsonPrimitive.content)
         assertEquals(0, summary.getValue("failed").jsonPrimitive.int)
         assertTrue(checks.any { check ->

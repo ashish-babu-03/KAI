@@ -74,6 +74,7 @@ The v0.1 release is a runnable Kotlin/JVM seed:
 - kaios init templates, config validation, and editable agent DAGs
 - kaios doctor --json for machine-readable environment diagnostics
 - kaios runs --json for a stable local run registry
+- kaios config validate --json for CI-safe workflow validation
 
 Try:
 
@@ -91,7 +92,7 @@ kaios export latest
 Repo: https://github.com/morning-verlu/KAI
 Site: https://morning-verlu.github.io/KAI/
 GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
-Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.40/kaios-0.1.40.zip
+Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.41/kaios-0.1.41.zip
 Installer: curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 ```
 
@@ -169,11 +170,11 @@ kaios report latest
 Download ZIP:
 
 ```bash
-curl -L -o kaios-0.1.40.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.40/kaios-0.1.40.zip
-unzip kaios-0.1.40.zip
-./kaios-0.1.40/bin/kaios demo
-./kaios-0.1.40/bin/kaios analyze . --out artifacts/analysis.md --force
-./kaios-0.1.40/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
+curl -L -o kaios-0.1.41.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.41/kaios-0.1.41.zip
+unzip kaios-0.1.41.zip
+./kaios-0.1.41/bin/kaios demo
+./kaios-0.1.41/bin/kaios analyze . --out artifacts/analysis.md --force
+./kaios-0.1.41/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
 Build from source:

@@ -191,6 +191,7 @@ The CLI validates project configs before spawning agents. Run validation directl
 ```bash
 kaios config validate
 kaios config validate --config workflows/research.json
+kaios config validate --json
 ```
 
 Validation checks:
@@ -203,6 +204,14 @@ Validation checks:
 - every fallback points to a known agent and does not point to itself.
 - every retry count is between `0` and `10`.
 - dependency edges do not contain cycles.
+
+For CI or release gates, use the machine-readable validation contract:
+
+```bash
+kaios config validate --json
+```
+
+It emits `kaios.config-validation/v1` with `valid`, workflow metadata, agent ids, and validation errors.
 
 ## Show the DAG
 

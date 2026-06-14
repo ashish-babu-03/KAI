@@ -34,10 +34,11 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.40"
+private const val KAIOS_VERSION = "0.1.41"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val DOCTOR_SCHEMA = "kaios.doctor/v1"
 private const val RUNS_SCHEMA = "kaios.runs/v1"
+private const val CONFIG_VALIDATION_SCHEMA = "kaios.config-validation/v1"
 
 private val TOP_LEVEL_COMMANDS = listOf(
     "init",
@@ -336,12 +337,14 @@ class KaiosCli(
                 ),
             )
             "config validate" -> CommandHelp(
-                usage = "kaios config validate [--config kaios.json]",
+                usage = "kaios config validate [--config kaios.json] [--json|--format json]",
                 summary = "Validate a kaios.json workflow without starting agents.",
                 examples = listOf(
                     "kaios config validate",
                     "kaios config validate --config kaios.json",
+                    "kaios config validate --json",
                 ),
+                notes = listOf("JSON output uses schema $CONFIG_VALIDATION_SCHEMA for CI and release gates."),
             )
             "config show" -> CommandHelp(
                 usage = "kaios config show [--config kaios.json]",
@@ -703,24 +706,45 @@ class KaiosCli(
     }
 
     private fun validateConfig(args: List<String>, out: PrintStream, err: PrintStream): Int {
-        val path = runCatching { parseConfigPath(args) }.getOrElse { error ->
+        val command = runCatching { parseConfigValidateCommand(args) }.getOrElse { error ->
             return printUsageError(err, commandUsage("config validate"), "config validate", error.message)
         }
+        val path = command.configPath
 
         return runCatching { loadProjectWorkflow(path, SessionMemoryStore(), toolRegistry()) }
             .fold(
                 onSuccess = { workflow ->
-                    out.println("config: $path")
-                    out.println("status: valid")
-                    out.println("workflow: ${workflow.name}")
-                    out.println("agents: ${workflow.nodes.size}")
+                    if (command.format == ConfigValidationFormat.Json) {
+                        out.println(TRACE_JSON.encodeToString(configValidationReport(path, workflow, emptyList())))
+                    } else {
+                        out.println("config: $path")
+                        out.println("status: valid")
+                        out.println("workflow: ${workflow.name}")
+                        out.println("agents: ${workflow.nodes.size}")
+                    }
                     0
                 },
                 onFailure = { error ->
-                    printConfigLoadError(err, path, error)
+                    if (command.format == ConfigValidationFormat.Json) {
+                        out.println(TRACE_JSON.encodeToString(configValidationReport(path, null, listOf(error.message ?: "invalid project config"))))
+                        1
+                    } else {
+                        printConfigLoadError(err, path, error)
+                    }
                 },
             )
     }
+
+    private fun configValidationReport(path: Path, workflow: Workflow?, errors: List<String>): ConfigValidationReport =
+        ConfigValidationReport(
+            schema = CONFIG_VALIDATION_SCHEMA,
+            config = path.toString(),
+            valid = errors.isEmpty(),
+            workflowName = workflow?.name,
+            agentCount = workflow?.nodes?.size ?: 0,
+            agentIds = workflow?.nodes?.map { it.id }.orEmpty(),
+            errors = errors,
+        )
 
     private fun showConfig(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val path = runCatching { parseConfigPath(args) }.getOrElse { error ->
@@ -1938,6 +1962,54 @@ class KaiosCli(
         return configPath
     }
 
+    private fun parseConfigValidateCommand(args: List<String>): ConfigValidationCommand {
+        var configPath = defaultConfigPath()
+        var format = ConfigValidationFormat.Text
+        var index = 0
+
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--config" || arg == "-c" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    configPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--config=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--config requires a path." }
+                    configPath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--json" -> {
+                    format = ConfigValidationFormat.Json
+                    index += 1
+                }
+                arg == "--format" -> {
+                    val value = args.getOrNull(index + 1) ?: error("--format requires text or json.")
+                    format = parseConfigValidationFormat(value)
+                    index += 2
+                }
+                arg.startsWith("--format=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--format requires text or json." }
+                    format = parseConfigValidationFormat(value)
+                    index += 1
+                }
+                else -> error("Unknown config option '$arg'.")
+            }
+        }
+
+        return ConfigValidationCommand(configPath, format)
+    }
+
+    private fun parseConfigValidationFormat(value: String): ConfigValidationFormat =
+        when (value.lowercase().trim()) {
+            "text", "plain" -> ConfigValidationFormat.Text
+            "json" -> ConfigValidationFormat.Json
+            else -> error("Unknown config validation format '$value'. Use text or json.")
+        }
+
     private fun parseExportCommand(args: List<String>): ExportCommand {
         val runIdText = args.firstOrNull() ?: error("Run id is required.")
         var outputPath: Path? = null
@@ -2227,6 +2299,27 @@ private enum class AnalyzeFormat(val id: String) {
     Markdown("markdown"),
     Json("json"),
 }
+
+private data class ConfigValidationCommand(
+    val configPath: Path,
+    val format: ConfigValidationFormat,
+)
+
+private enum class ConfigValidationFormat(val id: String) {
+    Text("text"),
+    Json("json"),
+}
+
+@Serializable
+private data class ConfigValidationReport(
+    val schema: String,
+    val config: String,
+    val valid: Boolean,
+    val workflowName: String?,
+    val agentCount: Int,
+    val agentIds: List<String>,
+    val errors: List<String>,
+)
 
 private data class DoctorCommand(
     val format: DoctorFormat,
