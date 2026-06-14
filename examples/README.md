@@ -44,11 +44,28 @@ build/install/kaios-cli/bin/kaios run --out artifacts/runtime.md "map the JVM ag
 Attach local context files or directories when the workflow should reason over project material:
 
 ```bash
+build/install/kaios-cli/bin/kaios index .
 build/install/kaios-cli/bin/kaios context README.md docs
-build/install/kaios-cli/bin/kaios run --context README.md --context docs --out artifacts/project.md "summarize this project"
+build/install/kaios-cli/bin/kaios run --index . --context README.md --context docs --out artifacts/project.md "summarize this project"
 ```
 
 The run snapshot and Markdown artifact include a source summary such as `README.md` and `docs/CONFIG.md`, while the saved context metadata avoids copying the full payload.
+
+## Build a Workspace Index
+
+Use `kaios index` when you want a project map without loading full file contents:
+
+```bash
+build/install/kaios-cli/bin/kaios index .
+```
+
+The index reports language distribution, top directories, notable files, line counts, byte counts, and largest readable text files. Add it to a run when the workflow needs repository orientation:
+
+```bash
+build/install/kaios-cli/bin/kaios run --index . --out artifacts/indexed.md "summarize the project shape"
+```
+
+Use `--index` and `--context` together when the agent needs both a source map and specific file evidence.
 
 Use `.kaiosignore` to keep noisy or private files out of context previews and runs:
 

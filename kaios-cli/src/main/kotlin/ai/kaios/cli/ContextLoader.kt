@@ -131,7 +131,7 @@ internal class ContextLoader(
     private fun collectFiles(path: Path, files: MutableList<Path>) {
         if (shouldSkip(path)) return
         when {
-            path.isRegularFile() && hasTextExtension(path) -> files.add(path)
+            path.isRegularFile() && WorkspaceFileRules.hasTextExtension(path) -> files.add(path)
             path.isDirectory() -> runCatching {
                 Files.list(path).use { stream ->
                     stream.toList().forEach { candidate -> collectFiles(candidate, files) }
@@ -141,7 +141,7 @@ internal class ContextLoader(
     }
 
     private fun readTextFile(path: Path): String? {
-        if (!hasTextExtension(path)) return null
+        if (!WorkspaceFileRules.hasTextExtension(path)) return null
         if (Files.size(path) > 1_000_000L) return null
 
         val text = runCatching { path.readText() }.getOrNull() ?: return null
@@ -149,7 +149,43 @@ internal class ContextLoader(
         return text
     }
 
-    private fun hasTextExtension(path: Path): Boolean {
+    private fun shouldSkip(path: Path): Boolean {
+        val relative = if (path.startsWith(workingDir)) workingDir.relativize(path) else path
+        return WorkspaceFileRules.shouldSkip(relative, path.isDirectory(), ignore)
+    }
+
+    private fun displayPath(path: Path): String =
+        if (path.startsWith(workingDir)) workingDir.relativize(path).toString() else path.toString()
+
+}
+
+internal object WorkspaceFileRules {
+    private val skippedSegments = setOf(".git", ".gradle", ".idea", ".kaios", "build", "node_modules", "out", "target")
+    private val textFileNames = setOf(".gitignore", "Dockerfile", "LICENSE", "README", "Makefile")
+    private val textExtensions = setOf(
+        "cfg",
+        "css",
+        "gradle",
+        "html",
+        "java",
+        "js",
+        "json",
+        "kt",
+        "kts",
+        "md",
+        "properties",
+        "py",
+        "rb",
+        "sh",
+        "toml",
+        "ts",
+        "txt",
+        "xml",
+        "yaml",
+        "yml",
+    )
+
+    fun hasTextExtension(path: Path): Boolean {
         val name = path.name
         if (name in textFileNames) return true
 
@@ -158,41 +194,9 @@ internal class ContextLoader(
         return extension.lowercase() in textExtensions
     }
 
-    private fun shouldSkip(path: Path): Boolean {
-        val relative = if (path.startsWith(workingDir)) workingDir.relativize(path) else path
-        return relative.iterator().asSequence().any { segment -> segment.toString() in skippedSegments } ||
-            ignore.isIgnored(relative, path.isDirectory())
-    }
-
-    private fun displayPath(path: Path): String =
-        if (path.startsWith(workingDir)) workingDir.relativize(path).toString() else path.toString()
-
-    private companion object {
-        val skippedSegments = setOf(".git", ".gradle", ".idea", ".kaios", "build", "node_modules", "out", "target")
-        val textFileNames = setOf(".gitignore", "Dockerfile", "LICENSE", "README", "Makefile")
-        val textExtensions = setOf(
-            "cfg",
-            "css",
-            "gradle",
-            "html",
-            "java",
-            "js",
-            "json",
-            "kt",
-            "kts",
-            "md",
-            "properties",
-            "py",
-            "rb",
-            "sh",
-            "toml",
-            "ts",
-            "txt",
-            "xml",
-            "yaml",
-            "yml",
-        )
-    }
+    fun shouldSkip(relativePath: Path, directory: Boolean, ignore: ContextIgnore): Boolean =
+        relativePath.iterator().asSequence().any { segment -> segment.toString() in skippedSegments } ||
+            ignore.isIgnored(relativePath, directory)
 }
 
 internal data class ContextIgnore(

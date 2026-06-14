@@ -29,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.13"
+private const val KAIOS_VERSION = "0.1.14"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -56,6 +56,7 @@ class KaiosCli(
             "init" -> initProject(args.drop(1), out, err)
             "run" -> runWorkflow(args.drop(1), out, err)
             "context" -> previewContext(args.drop(1), out, err)
+            "index" -> previewIndex(args.drop(1), out, err)
             "config" -> configCommand(args.drop(1), out, err)
             "runs" -> listRuns(out)
             "ps" -> printProcessTable(args.drop(1), out, err)
@@ -78,7 +79,7 @@ class KaiosCli(
     private fun runWorkflow(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val command = runCatching { parseRunCommand(args) }.getOrElse { error ->
             err.println(error.message)
-            err.println("Usage: kaios run [--context path] [--config kaios.json] [--out artifact.md] \"task\"")
+            err.println("Usage: kaios run [--context path] [--index path] [--config kaios.json] [--out artifact.md] \"task\"")
             return 1
         }
 
@@ -96,6 +97,12 @@ class KaiosCli(
             err.println(error.message)
             return 1
         }
+        val workspaceIndex = runCatching {
+            if (command.indexPaths.isEmpty()) WorkspaceIndex.Empty else workspaceIndexer().index(command.indexPaths)
+        }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
         val configPath = command.configPath ?: defaultConfigPath().takeIf { !command.useBuiltInDefault && it.exists() }
         val workflow = runCatching {
             configPath?.let { loadProjectWorkflow(it, memory, tools) } ?: defaultWorkflow(memory)
@@ -110,8 +117,8 @@ class KaiosCli(
             memory = memory,
         )
 
-        val result = scheduler.run(workflow, context.inputFor(command.task))
-        val path = snapshotStore.save(context.taskSummary(command.task), result)
+        val result = scheduler.run(workflow, composeRunInput(command.task, context, workspaceIndex))
+        val path = snapshotStore.save(composeTaskSummary(command.task, context, workspaceIndex), result)
         val artifactPath = runCatching {
             command.outputPath?.let { outputPath ->
                 val snapshot = snapshotStore.load(result.runId)
@@ -128,6 +135,9 @@ class KaiosCli(
         configPath?.let { out.println("config: $it") }
         if (context.sources.isNotEmpty()) {
             out.println("context: ${context.sources.size} file(s), ${context.totalChars} chars")
+        }
+        if (workspaceIndex.files.isNotEmpty()) {
+            out.println("index: ${workspaceIndex.summary()}")
         }
         artifactPath?.let { out.println("artifact: $it") }
         out.println()
@@ -164,6 +174,22 @@ class KaiosCli(
         out.println()
         out.println(formatContextHeader(context.sources))
         context.sources.forEach { source -> out.println(formatContextSource(source, context.sources)) }
+        return 0
+    }
+
+    private fun previewIndex(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val paths = runCatching { parseIndexCommand(args) }.getOrElse { error ->
+            err.println(error.message)
+            err.println("Usage: kaios index [path ...]")
+            return 1
+        }
+
+        val index = runCatching { workspaceIndexer().index(paths) }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+
+        out.println(index.render())
         return 0
     }
 
@@ -547,6 +573,8 @@ class KaiosCli(
               kaios run "task"
               kaios run --context README.md "task"
               kaios context [path ...]
+              kaios index [path ...]
+              kaios run --index . "task"
               kaios run --config kaios.json "task"
               kaios run --default "task"
               kaios runs
@@ -644,6 +672,12 @@ class KaiosCli(
             maxChars = env("KAIOS_CONTEXT_MAX_CHARS")?.toIntOrNull()?.coerceAtLeast(1) ?: 80_000,
         )
 
+    private fun workspaceIndexer() =
+        WorkspaceIndexer(
+            workingDir = workingDir,
+            maxFiles = env("KAIOS_INDEX_MAX_FILES")?.toIntOrNull()?.coerceAtLeast(1) ?: 500,
+        )
+
     private fun resolvePath(value: String): Path {
         val path = Paths.get(value)
         return if (path.isAbsolute) path.normalize() else workingDir.resolve(path).normalize()
@@ -661,6 +695,63 @@ class KaiosCli(
         return path
     }
 
+    private fun composeRunInput(task: String, context: ContextBundle, workspaceIndex: WorkspaceIndex): String {
+        if (context.sources.isEmpty() && workspaceIndex.files.isEmpty()) return task
+
+        return buildString {
+            append(task.trim())
+            if (workspaceIndex.files.isNotEmpty()) {
+                appendLine()
+                appendLine()
+                appendLine("[KAIOS_WORKSPACE_INDEX]")
+                appendLine(workspaceIndex.promptBlock())
+                appendLine("[/KAIOS_WORKSPACE_INDEX]")
+            }
+            if (context.sources.isNotEmpty()) {
+                appendLine()
+                appendLine()
+                appendLine("[KAIOS_CONTEXT]")
+                context.sources.forEach { source ->
+                    appendLine("### ${source.path}")
+                    appendLine("```")
+                    appendLine(source.content.trimEnd())
+                    appendLine("```")
+                }
+                if (context.truncated) {
+                    appendLine("Context was truncated at ${context.maxChars} characters.")
+                }
+                appendLine("[/KAIOS_CONTEXT]")
+            }
+        }
+    }
+
+    private fun composeTaskSummary(task: String, context: ContextBundle, workspaceIndex: WorkspaceIndex): String {
+        if (context.sources.isEmpty() && workspaceIndex.files.isEmpty()) return task
+
+        return buildString {
+            appendLine(task)
+            if (workspaceIndex.files.isNotEmpty()) {
+                appendLine()
+                appendLine("Workspace Index:")
+                appendLine("- ${workspaceIndex.summary()}")
+                workspaceIndex.notableFiles.take(10).forEach { file ->
+                    appendLine("- ${file.path} (${file.language}, ${file.lines} lines)")
+                }
+            }
+            if (context.sources.isNotEmpty()) {
+                appendLine()
+                appendLine("Context:")
+                context.sources.forEach { source ->
+                    val suffix = if (source.truncated) ", truncated from ${source.originalChars}" else ""
+                    appendLine("- ${source.path} (${source.content.length} chars$suffix)")
+                }
+                if (context.truncated) {
+                    appendLine("- total context truncated at ${context.maxChars} chars")
+                }
+            }
+        }.trimEnd()
+    }
+
     private fun displayPath(path: Path): String =
         if (path.startsWith(workingDir)) {
             workingDir.relativize(path).toString()
@@ -674,6 +765,7 @@ class KaiosCli(
         var outputPath: Path? = null
         var forceOutput = false
         val contextPaths = mutableListOf<Path>()
+        val indexPaths = mutableListOf<Path>()
         val taskParts = mutableListOf<String>()
         var index = 0
 
@@ -721,6 +813,17 @@ class KaiosCli(
                     contextPaths.add(resolvePath(value))
                     index += 1
                 }
+                arg == "--index" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    indexPaths.add(resolvePath(value))
+                    index += 2
+                }
+                arg.startsWith("--index=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--index requires a path." }
+                    indexPaths.add(resolvePath(value))
+                    index += 1
+                }
                 arg == "--" -> {
                     taskParts += args.drop(index + 1)
                     index = args.size
@@ -735,7 +838,7 @@ class KaiosCli(
         val task = taskParts.joinToString(" ").trim()
         require(task.isNotBlank()) { "Task cannot be blank." }
         require(!(configPath != null && useBuiltInDefault)) { "Use either --config or --default, not both." }
-        return RunCommand(task, configPath, useBuiltInDefault, outputPath, forceOutput, contextPaths)
+        return RunCommand(task, configPath, useBuiltInDefault, outputPath, forceOutput, contextPaths, indexPaths)
     }
 
     private fun parseContextCommand(args: List<String>): List<Path> {
@@ -751,6 +854,29 @@ class KaiosCli(
                     index = args.size
                 }
                 arg.startsWith("-") -> error("Unknown context option '$arg'.")
+                else -> {
+                    paths.add(resolvePath(arg))
+                    index += 1
+                }
+            }
+        }
+
+        return paths.ifEmpty { listOf(workingDir) }
+    }
+
+    private fun parseIndexCommand(args: List<String>): List<Path> {
+        if (args.isEmpty()) return listOf(workingDir)
+
+        val paths = mutableListOf<Path>()
+        var index = 0
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--" -> {
+                    paths.addAll(args.drop(index + 1).map(::resolvePath))
+                    index = args.size
+                }
+                arg.startsWith("-") -> error("Unknown index option '$arg'.")
                 else -> {
                     paths.add(resolvePath(arg))
                     index += 1
@@ -881,6 +1007,7 @@ private data class RunCommand(
     val outputPath: Path?,
     val forceOutput: Boolean,
     val contextPaths: List<Path>,
+    val indexPaths: List<Path>,
 )
 
 private data class InitCommand(

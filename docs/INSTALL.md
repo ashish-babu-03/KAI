@@ -12,8 +12,9 @@ kaios run "analyze crypto market"
 kaios init --template research
 kaios config show
 kaios run --out artifacts/runtime.md "map the JVM agent runtime"
+kaios index .
 kaios context .
-kaios run --context README.md --out artifacts/project.md "summarize this project"
+kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
 ```
 
 ## Hosted Installer
@@ -28,8 +29,9 @@ kaios run "analyze crypto market"
 kaios init --template research
 kaios config validate
 kaios run --out artifacts/runtime.md "map the JVM agent runtime"
+kaios index .
 kaios context .
-kaios run --context README.md --out artifacts/project.md "summarize this project"
+kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
 ```
 
 Set `KAIOS_INSTALL_DIR` to install somewhere else:
@@ -41,14 +43,15 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.13.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.13/kaios-0.1.13.zip
-unzip kaios-0.1.13.zip
-./kaios-0.1.13/bin/kaios doctor
-./kaios-0.1.13/bin/kaios run "analyze crypto market"
-./kaios-0.1.13/bin/kaios init --template research
-./kaios-0.1.13/bin/kaios run --out artifacts/runtime.md "map the JVM agent runtime"
-./kaios-0.1.13/bin/kaios context .
-./kaios-0.1.13/bin/kaios run --context README.md --out artifacts/project.md "summarize this project"
+curl -L -o kaios-0.1.14.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.14/kaios-0.1.14.zip
+unzip kaios-0.1.14.zip
+./kaios-0.1.14/bin/kaios doctor
+./kaios-0.1.14/bin/kaios run "analyze crypto market"
+./kaios-0.1.14/bin/kaios init --template research
+./kaios-0.1.14/bin/kaios run --out artifacts/runtime.md "map the JVM agent runtime"
+./kaios-0.1.14/bin/kaios index .
+./kaios-0.1.14/bin/kaios context .
+./kaios-0.1.14/bin/kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
 ```
 
 ## Build From Source
@@ -62,6 +65,7 @@ build/install/kaios-cli/bin/kaios run "analyze crypto market"
 build/install/kaios-cli/bin/kaios init --template research
 build/install/kaios-cli/bin/kaios config show
 build/install/kaios-cli/bin/kaios run --out artifacts/runtime.md "map the JVM agent runtime"
+build/install/kaios-cli/bin/kaios index .
 build/install/kaios-cli/bin/kaios context .
-build/install/kaios-cli/bin/kaios run --context README.md --out artifacts/project.md "summarize this project"
+build/install/kaios-cli/bin/kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
 ```

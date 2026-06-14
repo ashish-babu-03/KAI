@@ -1,0 +1,69 @@
+# Workspace Index
+
+Workspace Index gives KAI OS a cheap project map before an agent run.
+
+Use it when you want the runtime to understand repository shape without loading every file into context.
+
+```bash
+kaios index .
+kaios run --index . "explain this project"
+kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
+```
+
+## Index vs Context
+
+`kaios index` is a source map:
+
+- language distribution
+- file, line, and byte counts
+- top directories
+- notable files such as README, Gradle files, docs, source, and tests
+- largest readable text files
+
+`kaios context` is bounded file content:
+
+- selected files or directories
+- readable text only
+- character limits
+- source summaries in snapshots and artifacts
+
+Use both when a task needs orientation and evidence:
+
+```bash
+kaios index .
+kaios context README.md docs
+kaios run --index . --context README.md --context docs "explain the architecture"
+```
+
+## Ignore Rules
+
+Workspace Index uses the same safety rules as context loading.
+
+Generated and runtime directories such as `.git`, `.kaios`, `build`, `node_modules`, `out`, and `target` are skipped by default. Add `.kaiosignore` for project-specific exclusions:
+
+```gitignore
+secrets/
+*.local.md
+tmp/
+```
+
+## Limits
+
+The default index scans up to 500 readable text files. Override this for larger repositories:
+
+```bash
+KAIOS_INDEX_MAX_FILES=1000 kaios index .
+```
+
+Workspace Index records metadata, not full file contents. Use `--context` for the exact files an agent should read.
+
+## Artifact Behavior
+
+When `--index` is used during a run, snapshots and Markdown artifacts include a compact `Workspace Index` summary:
+
+```bash
+kaios run --index . --out artifacts/project.md "summarize this project"
+kaios export <run-id>
+```
+
+This keeps handoff artifacts useful without copying the repository into every report.

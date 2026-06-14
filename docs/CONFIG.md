@@ -29,15 +29,34 @@ kaios init --template research --config workflows/research.json
 kaios run --config workflows/research.json "analyze a release plan"
 ```
 
+## Workspace Index
+
+Build a project source map before a run:
+
+```bash
+kaios index .
+kaios run --index . "summarize the project shape"
+kaios run --index . --config workflows/research.json "map the runtime architecture"
+```
+
+`kaios index` reports language distribution, top directories, notable files, line counts, and largest readable text files. It uses the same workspace boundary and `.kaiosignore` rules as context loading.
+
+Use Workspace Index for orientation and `--context` for specific file evidence:
+
+```bash
+kaios run --index . --context README.md --context docs "explain the architecture"
+```
+
 ## Context Files
 
 Attach files or directories from the current workspace when a run needs project context:
 
 ```bash
+kaios index .
 kaios context .
 kaios context README.md docs
 kaios run --context README.md "summarize this project"
-kaios run --context README.md --context docs --out artifacts/project.md "explain the architecture"
+kaios run --index . --context README.md --context docs --out artifacts/project.md "explain the architecture"
 ```
 
 `kaios context` previews the exact bounded source set before a run:

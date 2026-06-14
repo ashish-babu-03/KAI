@@ -274,6 +274,60 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `index command summarizes workspace shape and honors ignore rules`() {
+        val workspace = Files.createTempDirectory("kaios-cli-index")
+        Files.writeString(workspace.resolve(".kaiosignore"), "secrets/\n")
+        Files.writeString(workspace.resolve("README.md"), "# Demo\nA small indexed project.\n")
+        Files.writeString(workspace.resolve("build.gradle.kts"), "plugins { kotlin(\"jvm\") }\n")
+        Files.createDirectories(workspace.resolve("src/main/kotlin"))
+        Files.writeString(workspace.resolve("src/main/kotlin/App.kt"), "fun main() = println(\"kai\")\n")
+        Files.createDirectories(workspace.resolve("secrets"))
+        Files.writeString(workspace.resolve("secrets/private.md"), "do not index\n")
+        val cli = cliFor(workspace)
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("index", "."), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(text.contains("WORKSPACE INDEX"))
+        assertTrue(text.contains("LANGUAGES"))
+        assertTrue(text.contains("Kotlin"))
+        assertTrue(text.contains("Markdown"))
+        assertTrue(text.contains("README.md"))
+        assertTrue(text.contains("src/main/kotlin/App.kt"))
+        assertTrue(text.contains("ignore: .kaiosignore"))
+        assertTrue(!text.contains("secrets/private.md"))
+    }
+
+    @Test
+    fun `run with workspace index includes source map summary in artifact`() {
+        val workspace = Files.createTempDirectory("kaios-cli-run-index")
+        Files.writeString(workspace.resolve("README.md"), "# Indexed Project\nUseful public overview.\n")
+        Files.createDirectories(workspace.resolve("src/main/kotlin"))
+        Files.writeString(workspace.resolve("src/main/kotlin/App.kt"), "fun main() = println(\"kai\")\n")
+        val cli = cliFor(workspace)
+        val artifact = workspace.resolve("artifacts/indexed.md")
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(
+            arrayOf("run", "--index", ".", "--out", artifact.toString(), "summarize", "the", "project", "shape"),
+            PrintStream(out),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val text = out.toString()
+        val artifactText = Files.readString(artifact)
+
+        assertEquals(0, code)
+        assertTrue(text.contains("index:"))
+        assertTrue(text.contains("Kotlin:1"))
+        assertTrue(artifactText.contains("Workspace Index:"))
+        assertTrue(artifactText.contains("README.md"))
+        assertTrue(artifactText.contains("src/main/kotlin/App.kt"))
+        assertTrue(!artifactText.contains("Useful public overview."))
+    }
+
+    @Test
     fun `init writes a project config and refuses accidental overwrite`() {
         val workspace = Files.createTempDirectory("kaios-cli-init")
         val cli = cliFor(workspace)

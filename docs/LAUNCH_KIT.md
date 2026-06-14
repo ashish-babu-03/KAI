@@ -63,6 +63,7 @@ The v0.1 release is a runnable Kotlin/JVM seed:
 - CLI process table
 - static Agent Process Manager report
 - Markdown run artifacts for shareable handoff
+- Workspace Index with language stats, notable files, and source maps
 - project-aware runs with `kaios context`, `.kaiosignore`, and bounded `--context` files and directories
 - install-first onboarding through Homebrew or the checksum-verifying installer
 - kaios doctor for local environment diagnostics
@@ -77,8 +78,9 @@ kaios run "analyze crypto market"
 kaios init --template research
 kaios config show
 kaios run --out artifacts/runtime.md "map the JVM agent runtime"
+kaios index .
 kaios context .
-kaios run --context README.md --out artifacts/project.md "summarize this project"
+kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
 kaios ps <run-id>
 kaios report <run-id>
 kaios export <run-id>
@@ -86,7 +88,7 @@ kaios export <run-id>
 Repo: https://github.com/morning-verlu/KAI
 Site: https://morning-verlu.github.io/KAI/
 GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
-Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.13/kaios-0.1.13.zip
+Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.14/kaios-0.1.14.zip
 Installer: curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 ```
 
@@ -104,7 +106,7 @@ The core metaphor:
 - Tool = Syscall
 - Memory = Process state
 
-The current v0.1 demo runs a planner -> executor -> validator workflow and lets you inspect each agent process with PID, token usage, context size, syscall count, duration, lifecycle events, optional project context sources, and retry attempts. You can preview context with `kaios context`, exclude local noise with `.kaiosignore`, opt into real HTTP syscalls with `KAIOS_HTTP_ALLOWLIST`, and let real providers request tools through `KAIOS_SYSCALL` directives.
+The current v0.1 demo runs a planner -> executor -> validator workflow and lets you inspect each agent process with PID, token usage, context size, syscall count, duration, lifecycle events, optional Workspace Index source maps, project context sources, and retry attempts. You can preview project shape with `kaios index`, preview context with `kaios context`, exclude local noise with `.kaiosignore`, opt into real HTTP syscalls with `KAIOS_HTTP_ALLOWLIST`, and let real providers request tools through `KAIOS_SYSCALL` directives.
 
 It uses a deterministic mock model provider, so no API key is needed.
 
@@ -123,7 +125,7 @@ Agent = Process
 Workflow = Scheduler
 Tool = Syscall
 
-The first version is intentionally small but runnable: a default planner -> executor -> validator workflow, process metrics, lifecycle events, observable retries, permissioned tools, previewable bounded project context, allowlisted HTTP, and JSON run snapshots.
+The first version is intentionally small but runnable: a default planner -> executor -> validator workflow, process metrics, lifecycle events, observable retries, permissioned tools, Workspace Index source maps, previewable bounded project context, allowlisted HTTP, and JSON run snapshots.
 
 I would love feedback on the Kotlin API/DSL and runtime model.
 
@@ -140,8 +142,9 @@ brew tap morning-verlu/tap
 brew install kaios
 kaios doctor
 kaios run "analyze crypto market"
+kaios index .
 kaios context .
-kaios run --context README.md --out artifacts/project.md "summarize this project"
+kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
 kaios ps <run-id>
 kaios inspect <run-id>
 kaios report <run-id>
@@ -154,8 +157,9 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
 kaios doctor
 kaios run "analyze crypto market"
+kaios index .
 kaios context .
-kaios run --context README.md --out artifacts/project.md "summarize this project"
+kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
 kaios ps <run-id>
 kaios inspect <run-id>
 kaios report <run-id>
@@ -164,15 +168,16 @@ kaios report <run-id>
 Download ZIP:
 
 ```bash
-curl -L -o kaios-0.1.13.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.13/kaios-0.1.13.zip
-unzip kaios-0.1.13.zip
-./kaios-0.1.13/bin/kaios doctor
-./kaios-0.1.13/bin/kaios run "analyze crypto market"
-./kaios-0.1.13/bin/kaios init --template research
-./kaios-0.1.13/bin/kaios config show
-./kaios-0.1.13/bin/kaios run --out artifacts/runtime.md "map the JVM agent runtime"
-./kaios-0.1.13/bin/kaios context .
-./kaios-0.1.13/bin/kaios run --context README.md --out artifacts/project.md "summarize this project"
+curl -L -o kaios-0.1.14.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.14/kaios-0.1.14.zip
+unzip kaios-0.1.14.zip
+./kaios-0.1.14/bin/kaios doctor
+./kaios-0.1.14/bin/kaios run "analyze crypto market"
+./kaios-0.1.14/bin/kaios init --template research
+./kaios-0.1.14/bin/kaios config show
+./kaios-0.1.14/bin/kaios run --out artifacts/runtime.md "map the JVM agent runtime"
+./kaios-0.1.14/bin/kaios index .
+./kaios-0.1.14/bin/kaios context .
+./kaios-0.1.14/bin/kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
 ```
 
 Build from source:
@@ -183,8 +188,9 @@ cd KAI
 ./gradlew test installDist
 build/install/kaios-cli/bin/kaios doctor
 build/install/kaios-cli/bin/kaios run "analyze crypto market"
+build/install/kaios-cli/bin/kaios index .
 build/install/kaios-cli/bin/kaios context .
-build/install/kaios-cli/bin/kaios run --context README.md --out artifacts/project.md "summarize this project"
+build/install/kaios-cli/bin/kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
 build/install/kaios-cli/bin/kaios ps <run-id>
 build/install/kaios-cli/bin/kaios inspect <run-id>
 build/install/kaios-cli/bin/kaios report <run-id>

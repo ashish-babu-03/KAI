@@ -58,8 +58,9 @@ kaios run --out artifacts/market.md "analyze crypto market"
 Run against local project files when you want the agents to see real context:
 
 ```bash
+kaios index .
 kaios context .
-kaios run --context README.md --out artifacts/project.md "summarize this project"
+kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
 ```
 
 Or install with the hosted script:
@@ -124,11 +125,12 @@ kaios export run-97381ae9
 Attach local context files or directories:
 
 ```bash
+kaios index .
 kaios context README.md docs
-kaios run --context README.md --context docs "explain the architecture"
+kaios run --index . --context README.md --context docs "explain the architecture"
 ```
 
-KAI OS reads text files inside the current workspace, skips generated/runtime directories such as `.git`, `.kaios`, `build`, and `node_modules`, enforces size limits, and records a source summary in snapshots and artifacts. Add a `.kaiosignore` file to exclude extra paths before they reach an agent process:
+KAI OS can build a Workspace Index before a run, summarizing language distribution, top directories, notable files, and source/test shape without dumping full file contents into artifacts. It also reads bounded context files inside the current workspace, skips generated/runtime directories such as `.git`, `.kaios`, `build`, and `node_modules`, enforces size limits, and records source summaries in snapshots and artifacts. Add a `.kaiosignore` file to exclude extra paths before they reach an agent process:
 
 ```gitignore
 secrets/
@@ -155,7 +157,7 @@ Modules:
 - `tool-runtime`: built-in syscall tools including allowlisted HTTP and scoped files.
 - `memory-engine`: in-memory session memory and JSON run snapshots.
 - `model-providers`: OpenAI-compatible and Ollama model provider implementations.
-- `kaios-cli`: `kaios init`, `kaios run`, `kaios runs`, `kaios ps`, `kaios inspect`, `kaios report`, context-file loading, and `kaios doctor`.
+- `kaios-cli`: `kaios init`, `kaios run`, `kaios runs`, `kaios ps`, `kaios inspect`, `kaios report`, Workspace Index, context-file loading, and `kaios doctor`.
 
 Read the deeper design notes in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -227,6 +229,8 @@ For built-in syscall tools, see [docs/TOOLS.md](docs/TOOLS.md).
 
 For persisted memory, see [docs/MEMORY.md](docs/MEMORY.md).
 
+For Workspace Index and project context, see [docs/INDEX.md](docs/INDEX.md).
+
 For all install options, see [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Current Status
@@ -241,6 +245,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Coroutine-based DAG scheduler with parallel-ready nodes, observable retry policy, fallback routing, timeout policy, and sibling cancellation.
 - Permissioned tools: `echo`, `clock`, `mock-http`, allowlisted `http`, scoped `file`.
 - Project workflow templates, retry policy, config validation, config graph display, and auto-detected `kaios.json` runs.
+- Workspace Index with `kaios index` and `kaios run --index <path>` for language stats, notable files, and project source maps.
 - Project-aware runs with `kaios context`, `.kaiosignore`, and bounded `kaios run --context <file-or-dir>` ingestion.
 - Session memory and JSON snapshots under `.kaios/runs/`.
 - SQLite memory adapter for persisted agent process memory.
