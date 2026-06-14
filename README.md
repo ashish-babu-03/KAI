@@ -88,7 +88,7 @@ kaios bug-report
 ```
 
 `kaios bug-report` creates a safe-to-paste Markdown report with doctor checks, config validation, latest run metrics, and trace contract status.
-`kaios doctor` also prints the next onboarding command: `kaios setup --ci` when no project workflow exists, or `kaios verify --config kaios.json --evidence --force` when one does.
+`kaios doctor`, `kaios verify`, and `kaios bug-report` print the same recovery path: `kaios setup --ci` when no project workflow exists, `kaios verify --config kaios.json --evidence --force` when one is valid, or `kaios config validate --config kaios.json --json` plus `kaios setup --ci --force` when an existing config is invalid.
 
 Need a machine-readable workspace report for CI or dashboards?
 

@@ -35,7 +35,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.62"
+private const val KAIOS_VERSION = "0.1.63"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val RUN_CAPSULE_SCHEMA = "kaios.run-capsule/v1"
 private const val RUN_REPLAY_SCHEMA = "kaios.run-replay/v1"
@@ -1071,8 +1071,7 @@ class KaiosCli(
         buildList {
             val configPath = Paths.get(config.config)
             if (!config.valid) {
-                add(setupCommand(configPath))
-                add(verifyEvidenceCommand(configPath))
+                addAll(configRecoveryCommands(configPath))
             }
             if (run != null) {
                 add("kaios ps latest")
