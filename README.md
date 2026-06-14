@@ -36,6 +36,7 @@ Most agent frameworks model AI work as chains, prompts, or chat sessions. KAI OS
 - Emit KAI Process Trace JSON for CI, UI, replay, and audit tooling.
 - Package runs as portable KAI Run Capsules with snapshots, traces, provenance hashes, and replay commands.
 - Replay shared capsules offline by rebuilding traces from embedded snapshots.
+- Diff two capsules offline for stable agent-run regression checks.
 
 Kotlin gives this model a strong foundation: JVM ecosystem reach, type safety, coroutines-ready concurrency, DSL ergonomics, and a path toward Kotlin Multiplatform.
 
@@ -110,6 +111,12 @@ kaios capsule latest --json
 kaios capsule latest --out artifacts/run.capsule.json --force
 kaios capsule --file .kaios/capsules/<run-id>.capsule.json --check
 kaios replay --file artifacts/run.capsule.json
+```
+
+Compare a baseline and current capsule when you need an offline regression gate:
+
+```bash
+kaios diff artifacts/baseline.capsule.json artifacts/run.capsule.json --check
 ```
 
 Create a local workflow config when you want your own agent process graph:
@@ -207,6 +214,7 @@ kaios capsule latest
 kaios capsule latest --check
 kaios capsule latest --out artifacts/run.capsule.json --force
 kaios replay --file artifacts/run.capsule.json
+kaios diff artifacts/baseline.capsule.json artifacts/run.capsule.json --check
 ```
 
 Export a Markdown artifact:
@@ -254,7 +262,7 @@ Modules:
 - `tool-runtime`: built-in syscall tools including allowlisted HTTP and scoped files.
 - `memory-engine`: in-memory session memory and JSON run snapshots.
 - `model-providers`: OpenAI-compatible and Ollama model provider implementations.
-- `kaios-cli`: `kaios demo`, `kaios init`, `kaios run`, `kaios runs`, `kaios ps`, `kaios inspect`, `kaios trace`, `kaios capsule`, `kaios report`, workspace analysis, Workspace Index, context-file loading, and `kaios doctor`.
+- `kaios-cli`: `kaios demo`, `kaios init`, `kaios run`, `kaios runs`, `kaios ps`, `kaios inspect`, `kaios trace`, `kaios capsule`, `kaios replay`, `kaios diff`, `kaios report`, workspace analysis, Workspace Index, context-file loading, and `kaios doctor`.
 
 Read the deeper design notes in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Read the trace schema contract in [docs/TRACE.md](docs/TRACE.md).
@@ -371,6 +379,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - KAI Process Trace schema with text and JSON output through `kaios trace`.
 - KAI Run Capsule schema with snapshot, trace, provenance hashes, replay commands, and validation status through `kaios capsule`.
 - Offline Capsule Replay schema with deterministic trace rebuild checks through `kaios replay`.
+- Offline Capsule Diff schema with stable runtime signature comparison through `kaios diff`.
 - `kaios runs --json` emits `kaios.runs/v1` for Agent Desktop, CI, and local tooling.
 - Markdown run artifacts with `kaios run --out` and `kaios export`.
 - `kaios doctor` and `kaios doctor --json` environment diagnostics for Java, provider, memory, snapshots, and writable runtime directories.

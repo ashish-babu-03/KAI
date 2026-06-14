@@ -43,10 +43,12 @@ kaios demo
 kaios bug-report --out artifacts/kaios-bug-report.md --force
 ```
 
-For project-specific issues, include the workflow, trace, and capsule check:
+For project-specific issues, include the workflow, trace, and capsule evidence:
 
 ```bash
 kaios verify
-kaios capsule latest --check
+kaios capsule latest --out artifacts/kaios-run.capsule.json --force
+kaios capsule --file artifacts/kaios-run.capsule.json --check
+kaios replay --file artifacts/kaios-run.capsule.json --json
 kaios bug-report --out artifacts/kaios-bug-report.md --force
 ```

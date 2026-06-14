@@ -31,6 +31,12 @@ kaios capsule --file artifacts/kaios-run.capsule.json --check
 kaios replay --file artifacts/kaios-run.capsule.json --json
 ```
 
+If the repository keeps a known-good baseline capsule, add a regression diff gate:
+
+```bash
+kaios diff artifacts/baseline.capsule.json artifacts/kaios-run.capsule.json --check
+```
+
 ## Repository CI
 
 This source repository is ready for GitHub Actions. If workflow-file pushes are blocked, refresh the GitHub CLI session with the `workflow` scope:

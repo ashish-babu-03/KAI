@@ -60,9 +60,11 @@ kaios verify
 kaios ps latest
 kaios trace latest --check
 kaios capsule latest --check
+kaios capsule latest --out artifacts/run.capsule.json --force
+kaios replay --file artifacts/run.capsule.json
 ```
 
-`kaios verify` checks the local runtime, validates the project workflow, runs a deterministic mock smoke workflow, validates the process trace contract, and saves a normal run snapshot. `kaios capsule latest --check` confirms the saved run can become a portable audit package.
+`kaios verify` checks the local runtime, validates the project workflow, runs a deterministic mock smoke workflow, validates the process trace contract, and saves a normal run snapshot. `kaios capsule latest --check` confirms the saved run can become a portable audit package. `kaios diff <baseline.capsule.json> <current.capsule.json> --check` can compare two saved audit packages later when you keep a baseline.
 
 Create a project artifact when the gate is ready:
 

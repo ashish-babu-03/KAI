@@ -59,6 +59,16 @@ kaios replay --file artifacts/run.capsule.json --json
 
 Replay validates the capsule contract, rebuilds `kaios.process-trace/v1` from the embedded snapshot, and checks that the rebuilt trace matches the embedded trace. It does not call a model provider and does not need the original `.kaios/runs/` directory.
 
+Compare two shared capsules offline:
+
+```bash
+kaios diff artifacts/baseline.capsule.json artifacts/current.capsule.json
+kaios diff artifacts/baseline.capsule.json artifacts/current.capsule.json --check
+kaios diff --left artifacts/baseline.capsule.json --right artifacts/current.capsule.json --json
+```
+
+Diff validates and replays both capsules first, then compares a stable runtime signature. It ignores run ids, timestamps, and duration noise, while comparing workflow, task, success, final output hash, process path, process states, tokens, context, syscalls, and event counts. `--check` exits `1` when valid capsules differ, which makes it useful as a regression gate.
+
 ## Schema
 
 Current schema id:
@@ -90,6 +100,14 @@ kaios.run-replay/v1
 
 It includes the capsule source path, run summary, deterministic replay status, contract issues, replay checks, provenance hashes, rebuilt trace hash, metrics, and path.
 
+Diff output uses schema:
+
+```text
+kaios.run-diff/v1
+```
+
+It includes both capsule sources, stable evidence hashes, replay checks, metric deltas, a `same` boolean, and field-level differences.
+
 ## Why It Matters
 
 Run capsules make KAI OS harder to reduce to a chatbot or wrapper:
@@ -100,6 +118,7 @@ Run capsules make KAI OS harder to reduce to a chatbot or wrapper:
 - Replays do not need API keys because capsules are generated from saved snapshots.
 - Shared capsules can be validated with `--file` even when the original run directory is not present.
 - `kaios replay` proves the embedded snapshot can deterministically rebuild the embedded trace.
+- `kaios diff` proves whether two valid runs changed in stable agent behavior, not timestamp noise.
 
 ## CI Pattern
 
@@ -111,6 +130,7 @@ kaios capsule latest --check
 kaios capsule latest --out artifacts/kaios-run.capsule.json --force
 kaios capsule --file artifacts/kaios-run.capsule.json --check
 kaios replay --file artifacts/kaios-run.capsule.json --json
+kaios diff artifacts/baseline.capsule.json artifacts/kaios-run.capsule.json --check
 ```
 
-The first command proves the runtime can execute a deterministic workflow. The capsule commands prove the saved run can produce and re-validate a stable audit package. The replay command proves the shared JSON file is enough to rebuild the trace evidence offline.
+The first command proves the runtime can execute a deterministic workflow. The capsule commands prove the saved run can produce and re-validate a stable audit package. The replay command proves the shared JSON file is enough to rebuild the trace evidence offline. The diff command compares current evidence against a baseline when your CI has one.

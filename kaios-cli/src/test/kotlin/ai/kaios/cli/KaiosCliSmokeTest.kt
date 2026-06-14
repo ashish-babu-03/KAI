@@ -31,7 +31,7 @@ class KaiosCliSmokeTest {
         val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
 
         assertEquals(0, code)
-        assertEquals("kaios 0.1.53\n", out.toString())
+        assertEquals("kaios 0.1.54\n", out.toString())
     }
 
     @Test
@@ -88,6 +88,7 @@ class KaiosCliSmokeTest {
             "trace" to "Usage: kaios trace",
             "capsule" to "Usage: kaios capsule",
             "replay" to "Usage: kaios replay",
+            "diff" to "Usage: kaios diff",
             "report" to "Usage: kaios report",
             "export" to "Usage: kaios export",
             "doctor" to "Usage: kaios doctor",
@@ -220,6 +221,21 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("kaios.run-replay/v1"))
         assertTrue(text.contains("never calls a model provider"))
         assertTrue(text.contains("rebuilt trace matches the embedded trace"))
+    }
+
+    @Test
+    fun `diff help documents offline capsule comparison`() {
+        val cli = cliFor(Files.createTempDirectory("kaios-cli-help-diff"))
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("help", "diff"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(text.contains("Usage: kaios diff"))
+        assertTrue(text.contains("kaios.run-diff/v1"))
+        assertTrue(text.contains("ignores run ids, timestamps, and duration noise"))
+        assertTrue(text.contains("--check exits 1"))
     }
 
     @Test
@@ -887,7 +903,7 @@ class KaiosCliSmokeTest {
         assertTrue(capsuleText.contains("valid: true"))
         assertTrue(capsuleText.contains("kaios replay --file $capsulePath"))
         assertEquals("kaios.run-capsule/v1", capsuleJson.getValue("schema").jsonPrimitive.content)
-        assertEquals("0.1.53", capsuleJson.getValue("version").jsonPrimitive.content)
+        assertEquals("0.1.54", capsuleJson.getValue("version").jsonPrimitive.content)
         assertEquals(runId, run.getValue("runId").jsonPrimitive.content)
         assertEquals(3, run.getValue("processCount").jsonPrimitive.int)
         assertEquals(runId, snapshot.getValue("runId").jsonPrimitive.content)
@@ -1037,6 +1053,91 @@ class KaiosCliSmokeTest {
         )
         assertEquals(2, tamperedCode)
         assertTrue(tamperedErr.toString().contains("provenance.traceSha256 must match the embedded trace."))
+    }
+
+    @Test
+    fun `diff compares portable capsules by stable runtime signature`() {
+        val workspace = Files.createTempDirectory("kaios-cli-diff")
+        val cli = cliFor(workspace)
+
+        fun writeCapsule(name: String, vararg task: String): Path {
+            val runOut = ByteArrayOutputStream()
+            val runCode = cli.run(
+                arrayOf("run", *task),
+                PrintStream(runOut),
+                PrintStream(ByteArrayOutputStream()),
+            )
+            val runId = Regex("run_id: (\\S+)").find(runOut.toString())?.groupValues?.get(1)
+            assertEquals(0, runCode)
+            assertTrue(runId != null)
+
+            val capsulePath = workspace.resolve("artifacts/$name.capsule.json")
+            val capsuleCode = cli.run(
+                arrayOf("capsule", runId, "--out", capsulePath.toString()),
+                PrintStream(ByteArrayOutputStream()),
+                PrintStream(ByteArrayOutputStream()),
+            )
+            assertEquals(0, capsuleCode)
+            assertTrue(Files.exists(capsulePath))
+            return capsulePath
+        }
+
+        val baseline = writeCapsule("baseline", "compare", "stable", "task")
+        val same = writeCapsule("same", "compare", "stable", "task")
+        val changed = writeCapsule("changed", "compare", "changed", "task")
+        workspace.resolve("runs").toFile().deleteRecursively()
+
+        val sameOut = ByteArrayOutputStream()
+        val sameCode = cli.run(
+            arrayOf("diff", baseline.toString(), same.toString()),
+            PrintStream(sameOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val sameText = sameOut.toString()
+        assertEquals(0, sameCode)
+        assertTrue(sameText.contains("KAI CAPSULE DIFF"))
+        assertTrue(sameText.contains("schema: kaios.run-diff/v1"))
+        assertTrue(sameText.contains("status: same"))
+        assertTrue(sameText.contains("same: true"))
+        assertTrue(sameText.contains("differences: none"))
+
+        val sameJsonOut = ByteArrayOutputStream()
+        val sameJsonCode = cli.run(
+            arrayOf("diff", "--left", baseline.toString(), "--right", same.toString(), "--json"),
+            PrintStream(sameJsonOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val sameJson = Json.parseToJsonElement(sameJsonOut.toString()).jsonObject
+        assertEquals(0, sameJsonCode)
+        assertEquals("kaios.run-diff/v1", sameJson.getValue("schema").jsonPrimitive.content)
+        assertEquals("same", sameJson.getValue("result").jsonPrimitive.content)
+        assertTrue(sameJson.getValue("same").jsonPrimitive.content == "true")
+        assertEquals(
+            sameJson.getValue("left").jsonObject.getValue("stableSha256").jsonPrimitive.content,
+            sameJson.getValue("right").jsonObject.getValue("stableSha256").jsonPrimitive.content,
+        )
+
+        val changedOut = ByteArrayOutputStream()
+        val changedCode = cli.run(
+            arrayOf("diff", baseline.toString(), changed.toString()),
+            PrintStream(changedOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val changedText = changedOut.toString()
+        assertEquals(0, changedCode)
+        assertTrue(changedText.contains("status: different"))
+        assertTrue(changedText.contains("same: false"))
+        assertTrue(changedText.contains("task:"))
+        assertTrue(changedText.contains("finalOutputSha256:"))
+
+        val checkErr = ByteArrayOutputStream()
+        val checkCode = cli.run(
+            arrayOf("diff", baseline.toString(), changed.toString(), "--check"),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(checkErr),
+        )
+        assertEquals(1, checkCode)
+        assertTrue(checkErr.toString().contains("status: different"))
     }
 
     @Test
@@ -1570,7 +1671,7 @@ class KaiosCliSmokeTest {
 
         assertEquals(0, code)
         assertEquals("kaios.setup/v1", json.getValue("schema").jsonPrimitive.content)
-        assertEquals("0.1.53", json.getValue("version").jsonPrimitive.content)
+        assertEquals("0.1.54", json.getValue("version").jsonPrimitive.content)
         assertEquals("code-review", json.getValue("requestedTemplate").jsonPrimitive.content)
         assertEquals("created", config.getValue("action").jsonPrimitive.content)
         assertEquals("created", ci.getValue("action").jsonPrimitive.content)
@@ -1578,7 +1679,7 @@ class KaiosCliSmokeTest {
         assertEquals("code-review", validation.getValue("workflowName").jsonPrimitive.content)
         assertTrue(validation.getValue("valid").jsonPrimitive.content == "true")
         assertEquals("ready", doctor.getValue("summary").jsonObject.getValue("status").jsonPrimitive.content)
-        assertTrue(workflowText.contains("KAIOS_VERSION: \"0.1.53\""))
+        assertTrue(workflowText.contains("KAIOS_VERSION: \"0.1.54\""))
         assertTrue(workflowText.contains("kaios verify --config 'kaios.json'"))
         assertTrue(!workflowText.contains("kaios config validate --config 'kaios.json' --json"))
     }
@@ -1662,7 +1763,7 @@ class KaiosCliSmokeTest {
         assertEquals(0, setupCode)
         assertEquals(0, code)
         assertEquals("kaios.verify/v1", json.getValue("schema").jsonPrimitive.content)
-        assertEquals("0.1.53", json.getValue("version").jsonPrimitive.content)
+        assertEquals("0.1.54", json.getValue("version").jsonPrimitive.content)
         assertEquals("ready", json.getValue("status").jsonPrimitive.content)
         assertEquals("code-review", config.getValue("workflowName").jsonPrimitive.content)
         assertTrue(config.getValue("valid").jsonPrimitive.content == "true")
@@ -1822,7 +1923,7 @@ class KaiosCliSmokeTest {
         assertTrue(outputText.contains("kaios config validate --config kaios.json --json"))
         assertTrue(outputText.contains("kaios verify --config kaios.json"))
         assertTrue(workflowText.contains("name: KAI OS Agent Gate"))
-        assertTrue(workflowText.contains("KAIOS_VERSION: \"0.1.53\""))
+        assertTrue(workflowText.contains("KAIOS_VERSION: \"0.1.54\""))
         assertTrue(workflowText.contains("KAIOS_MODEL_PROVIDER: mock"))
         assertTrue(workflowText.contains("kaios verify --config 'kaios.json'"))
         assertTrue(!workflowText.contains("kaios doctor --json"))
@@ -2340,7 +2441,7 @@ class KaiosCliSmokeTest {
 
         assertEquals(0, code)
         assertEquals("kaios.doctor/v1", json.getValue("schema").jsonPrimitive.content)
-        assertEquals("0.1.53", json.getValue("version").jsonPrimitive.content)
+        assertEquals("0.1.54", json.getValue("version").jsonPrimitive.content)
         assertEquals("ready", summary.getValue("status").jsonPrimitive.content)
         assertEquals(0, summary.getValue("failed").jsonPrimitive.int)
         assertTrue(checks.any { check ->
@@ -2385,7 +2486,7 @@ class KaiosCliSmokeTest {
         assertEquals(0, code)
         assertTrue(text.contains("# KAI OS Bug Report"))
         assertTrue(text.contains("schema: `kaios.bug-report/v1`"))
-        assertTrue(text.contains("version: `0.1.53`"))
+        assertTrue(text.contains("version: `0.1.54`"))
         assertTrue(text.contains("## What Happened"))
         assertTrue(text.contains("## Doctor"))
         assertTrue(text.contains("No saved run snapshot was found."))
@@ -2415,7 +2516,7 @@ class KaiosCliSmokeTest {
         assertEquals(0, demoCode)
         assertEquals(0, code)
         assertEquals("kaios.bug-report/v1", json.getValue("schema").jsonPrimitive.content)
-        assertEquals("0.1.53", json.getValue("version").jsonPrimitive.content)
+        assertEquals("0.1.54", json.getValue("version").jsonPrimitive.content)
         assertEquals(runId, latestRun.getValue("runId").jsonPrimitive.content)
         assertEquals("default", latestRun.getValue("workflowName").jsonPrimitive.content)
         assertEquals(3, latestRun.getValue("processCount").jsonPrimitive.int)

@@ -35,10 +35,11 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.53"
+private const val KAIOS_VERSION = "0.1.54"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val RUN_CAPSULE_SCHEMA = "kaios.run-capsule/v1"
 private const val RUN_REPLAY_SCHEMA = "kaios.run-replay/v1"
+private const val RUN_DIFF_SCHEMA = "kaios.run-diff/v1"
 private const val DOCTOR_SCHEMA = "kaios.doctor/v1"
 private const val RUNS_SCHEMA = "kaios.runs/v1"
 private const val CONFIG_VALIDATION_SCHEMA = "kaios.config-validation/v1"
@@ -62,6 +63,7 @@ private val TOP_LEVEL_COMMANDS = listOf(
     "trace",
     "capsule",
     "replay",
+    "diff",
     "report",
     "export",
     "doctor",
@@ -130,6 +132,7 @@ class KaiosCli(
             "trace" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("trace")) else traceRun(commandArgs, out, err)
             "capsule" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("capsule")) else capsuleRun(commandArgs, out, err)
             "replay" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("replay")) else replayCapsule(commandArgs, out, err)
+            "diff" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("diff")) else diffCapsules(commandArgs, out, err)
             "report" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("report")) else generateReport(commandArgs, out, err)
             "export" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("export")) else exportRun(commandArgs, out, err)
             "doctor" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("doctor")) else doctor(commandArgs, out, err)
@@ -485,6 +488,20 @@ class KaiosCli(
                     "Replay never calls a model provider and does not require the original .kaios/runs snapshot.",
                     "JSON output uses schema $RUN_REPLAY_SCHEMA for CI, issue triage, and future Agent Desktop imports.",
                     "The replay is valid only when the capsule contract passes and the rebuilt trace matches the embedded trace.",
+                ),
+            )
+            "diff" -> CommandHelp(
+                usage = "kaios diff <left.capsule.json> <right.capsule.json> [--json|--format json] [--check]",
+                summary = "Compare two run capsules offline using their stable runtime signatures.",
+                examples = listOf(
+                    "kaios diff artifacts/baseline.capsule.json artifacts/current.capsule.json",
+                    "kaios diff --left artifacts/baseline.capsule.json --right artifacts/current.capsule.json --json",
+                    "kaios diff artifacts/baseline.capsule.json artifacts/current.capsule.json --check",
+                ),
+                notes = listOf(
+                    "Diff never calls a model provider and ignores run ids, timestamps, and duration noise.",
+                    "JSON output uses schema $RUN_DIFF_SCHEMA for CI regression checks and release gates.",
+                    "--check exits 1 when valid capsules differ, and 2 when either capsule is invalid.",
                 ),
             )
             "report" -> CommandHelp(
@@ -1973,6 +1990,201 @@ class KaiosCli(
         }
     }
 
+    private fun diffCapsules(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val command = runCatching { parseDiffCommand(args) }.getOrElse { error ->
+            return printCommandUsageError(err, "diff", error.message)
+        }
+
+        val left = runCatching { loadRunCapsule(command.leftPath) }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+        val right = runCatching { loadRunCapsule(command.rightPath) }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+        val report = buildRunDiffReport(left, command.leftPath, right, command.rightPath)
+        val exitCode = when {
+            !report.valid -> 2
+            command.check && !report.same -> 1
+            else -> 0
+        }
+
+        if (command.format == DiffFormat.Json) {
+            out.println(CAPSULE_JSON.encodeToString(report))
+            return exitCode
+        }
+
+        val stream = if (exitCode == 0) out else err
+        printRunDiffSummary(report, stream)
+        return exitCode
+    }
+
+    private fun buildRunDiffReport(
+        left: RunCapsule,
+        leftSource: Path,
+        right: RunCapsule,
+        rightSource: Path,
+    ): RunDiffReport {
+        val leftReplay = buildRunReplayReport(left, leftSource)
+        val rightReplay = buildRunReplayReport(right, rightSource)
+        val issues = (
+            leftReplay.issues.map { issue -> "left: $issue" } +
+                rightReplay.issues.map { issue -> "right: $issue" }
+            ).distinct()
+
+        val leftTrace = buildProcessTrace(left.snapshot)
+        val rightTrace = buildProcessTrace(right.snapshot)
+        val leftSignature = stableRunSignature(left, leftTrace)
+        val rightSignature = stableRunSignature(right, rightTrace)
+        val differences = if (issues.isEmpty()) compareStableSignatures(leftSignature, rightSignature) else emptyList()
+        val same = issues.isEmpty() && differences.isEmpty()
+
+        return RunDiffReport(
+            schema = RUN_DIFF_SCHEMA,
+            version = KAIOS_VERSION,
+            comparedAt = Instant.now().toString(),
+            result = when {
+                issues.isNotEmpty() -> "invalid"
+                same -> "same"
+                else -> "different"
+            },
+            valid = issues.isEmpty(),
+            same = same,
+            left = RunDiffSide(
+                source = leftSource.toAbsolutePath().normalize().toString(),
+                run = left.run,
+                deterministic = leftReplay.deterministic,
+                stableSha256 = sha256Hex(CAPSULE_JSON.encodeToString(leftSignature)),
+                issues = leftReplay.issues,
+            ),
+            right = RunDiffSide(
+                source = rightSource.toAbsolutePath().normalize().toString(),
+                run = right.run,
+                deterministic = rightReplay.deterministic,
+                stableSha256 = sha256Hex(CAPSULE_JSON.encodeToString(rightSignature)),
+                issues = rightReplay.issues,
+            ),
+            checks = RunDiffChecks(
+                leftCapsule = leftReplay.checks.capsuleContract,
+                rightCapsule = rightReplay.checks.capsuleContract,
+                leftReplay = leftReplay.valid,
+                rightReplay = rightReplay.valid,
+            ),
+            metricsDelta = RunDiffMetricsDelta(
+                processCount = rightSignature.metrics.processCount - leftSignature.metrics.processCount,
+                tokenTotal = rightSignature.metrics.tokenTotal - leftSignature.metrics.tokenTotal,
+                inputTokens = rightSignature.metrics.inputTokens - leftSignature.metrics.inputTokens,
+                outputTokens = rightSignature.metrics.outputTokens - leftSignature.metrics.outputTokens,
+                contextBytes = rightSignature.metrics.contextBytes - leftSignature.metrics.contextBytes,
+                syscallCount = rightSignature.metrics.syscallCount - leftSignature.metrics.syscallCount,
+                eventCount = rightSignature.metrics.eventCount - leftSignature.metrics.eventCount,
+            ),
+            differences = differences,
+            issues = issues,
+        )
+    }
+
+    private fun stableRunSignature(capsule: RunCapsule, trace: ProcessTrace): StableRunSignature =
+        StableRunSignature(
+            workflowName = capsule.snapshot.workflowName,
+            task = capsule.snapshot.task,
+            success = capsule.snapshot.success,
+            finalOutputSha256 = sha256Hex(capsule.snapshot.finalOutput),
+            metrics = StableRunMetrics(
+                processCount = trace.metrics.processCount,
+                tokenTotal = trace.metrics.tokenTotal,
+                inputTokens = trace.metrics.inputTokens,
+                outputTokens = trace.metrics.outputTokens,
+                contextBytes = trace.metrics.contextBytes,
+                syscallCount = trace.metrics.syscallCount,
+                eventCount = trace.metrics.eventCount,
+            ),
+            path = trace.path,
+            processes = trace.processes.map { process ->
+                StableRunProcess(
+                    agent = process.agent,
+                    state = process.state,
+                    tokens = process.tokens,
+                    inputTokens = process.inputTokens,
+                    outputTokens = process.outputTokens,
+                    contextBytes = process.contextBytes,
+                    syscallCount = process.syscallCount,
+                    failure = process.failure,
+                )
+            },
+            eventCounts = trace.eventCounts.toSortedMap(),
+        )
+
+    private fun compareStableSignatures(left: StableRunSignature, right: StableRunSignature): List<RunDiffDifference> =
+        buildList {
+            addDifference("workflowName", left.workflowName, right.workflowName)
+            addDifference("task", left.task, right.task)
+            addDifference("success", left.success.toString(), right.success.toString())
+            addDifference("finalOutputSha256", left.finalOutputSha256, right.finalOutputSha256)
+            addDifference("metrics.processCount", left.metrics.processCount.toString(), right.metrics.processCount.toString())
+            addDifference("metrics.tokenTotal", left.metrics.tokenTotal.toString(), right.metrics.tokenTotal.toString())
+            addDifference("metrics.inputTokens", left.metrics.inputTokens.toString(), right.metrics.inputTokens.toString())
+            addDifference("metrics.outputTokens", left.metrics.outputTokens.toString(), right.metrics.outputTokens.toString())
+            addDifference("metrics.contextBytes", left.metrics.contextBytes.toString(), right.metrics.contextBytes.toString())
+            addDifference("metrics.syscallCount", left.metrics.syscallCount.toString(), right.metrics.syscallCount.toString())
+            addDifference("metrics.eventCount", left.metrics.eventCount.toString(), right.metrics.eventCount.toString())
+            addDifference("path", left.path.displayStringList(), right.path.displayStringList())
+            addDifference("processes", left.processes.displayProcessList(), right.processes.displayProcessList())
+            addDifference("eventCounts", left.eventCounts.displayMap(), right.eventCounts.displayMap())
+        }
+
+    private fun MutableList<RunDiffDifference>.addDifference(field: String, left: String, right: String) {
+        if (left != right) add(RunDiffDifference(field = field, left = left, right = right))
+    }
+
+    private fun List<StableRunProcess>.displayProcessList(): String =
+        joinToString(prefix = "[", postfix = "]") { process ->
+            "${process.agent}:${process.state}:tokens=${process.tokens}:input=${process.inputTokens}:output=${process.outputTokens}:context=${process.contextBytes}:syscalls=${process.syscallCount}:failure=${process.failure ?: "-"}"
+        }
+
+    private fun List<String>.displayStringList(): String =
+        joinToString(prefix = "[", postfix = "]")
+
+    private fun Map<String, Int>.displayMap(): String =
+        entries.joinToString(prefix = "{", postfix = "}") { (key, value) -> "$key=$value" }
+
+    private fun printRunDiffSummary(report: RunDiffReport, out: PrintStream) {
+        out.println("KAI CAPSULE DIFF")
+        out.println("schema: ${report.schema}")
+        out.println("status: ${report.result}")
+        out.println("left: ${report.left.source}")
+        out.println("left_run: ${report.left.run.runId}")
+        out.println("right: ${report.right.source}")
+        out.println("right_run: ${report.right.run.runId}")
+        out.println("same: ${report.same}")
+        out.println("left_stable_sha256: ${report.left.stableSha256}")
+        out.println("right_stable_sha256: ${report.right.stableSha256}")
+        out.println("metrics_delta:")
+        out.println("  processes: ${formatDelta(report.metricsDelta.processCount)}")
+        out.println("  tokens: ${formatDelta(report.metricsDelta.tokenTotal)}")
+        out.println("  input_tokens: ${formatDelta(report.metricsDelta.inputTokens)}")
+        out.println("  output_tokens: ${formatDelta(report.metricsDelta.outputTokens)}")
+        out.println("  context_bytes: ${formatDelta(report.metricsDelta.contextBytes)}")
+        out.println("  syscalls: ${formatDelta(report.metricsDelta.syscallCount)}")
+        out.println("  events: ${formatDelta(report.metricsDelta.eventCount)}")
+        if (report.issues.isNotEmpty()) {
+            out.println("issues:")
+            report.issues.forEach { issue -> out.println("  - $issue") }
+        }
+        if (report.differences.isEmpty()) {
+            out.println("differences: none")
+        } else {
+            out.println("differences:")
+            report.differences.forEach { difference ->
+                out.println("  - ${difference.field}: ${difference.left} -> ${difference.right}")
+            }
+        }
+    }
+
+    private fun formatDelta(value: Int): String =
+        if (value > 0) "+$value" else value.toString()
+
     private fun loadRunCapsule(path: Path): RunCapsule {
         require(path.exists()) { "Capsule file '$path' was not found." }
         return CAPSULE_JSON.decodeFromString(Files.readString(path))
@@ -2342,6 +2554,7 @@ class KaiosCli(
                 kaios trace latest [--format text|json] [--out trace.json] [--check]
                 kaios capsule latest [--json] [--out capsule.json] [--check]
                 kaios replay --file capsule.json [--json]
+                kaios diff baseline.capsule.json current.capsule.json [--check]
                 kaios report latest
                 kaios export latest [--out artifact.md]
                 kaios doctor
@@ -3356,6 +3569,88 @@ class KaiosCli(
             else -> error("Unknown replay format '$value'. Use text or json.")
         }
 
+    private fun parseDiffCommand(args: List<String>): DiffCommand {
+        var leftPath: Path? = null
+        var rightPath: Path? = null
+        var format = DiffFormat.Text
+        var check = false
+        var index = 0
+
+        fun setPositionalPath(value: String) {
+            when {
+                leftPath == null -> leftPath = resolvePath(value)
+                rightPath == null -> rightPath = resolvePath(value)
+                else -> error("Unexpected diff argument '$value'.")
+            }
+        }
+
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--json" -> {
+                    format = DiffFormat.Json
+                    index += 1
+                }
+                arg == "--format" -> {
+                    val value = args.getOrNull(index + 1) ?: error("--format requires text or json.")
+                    format = parseDiffFormat(value)
+                    index += 2
+                }
+                arg.startsWith("--format=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--format requires text or json." }
+                    format = parseDiffFormat(value)
+                    index += 1
+                }
+                arg == "--left" || arg == "--baseline" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    leftPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--left=") || arg.startsWith("--baseline=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "$arg requires a path." }
+                    leftPath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--right" || arg == "--current" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    rightPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--right=") || arg.startsWith("--current=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "$arg requires a path." }
+                    rightPath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--check" -> {
+                    check = true
+                    index += 1
+                }
+                arg.startsWith("-") -> error("Unknown diff option '$arg'.")
+                else -> {
+                    setPositionalPath(arg)
+                    index += 1
+                }
+            }
+        }
+
+        return DiffCommand(
+            leftPath = leftPath ?: error("Left capsule file is required."),
+            rightPath = rightPath ?: error("Right capsule file is required."),
+            format = format,
+            check = check,
+        )
+    }
+
+    private fun parseDiffFormat(value: String): DiffFormat =
+        when (value.lowercase().trim()) {
+            "text", "plain" -> DiffFormat.Text
+            "json" -> DiffFormat.Json
+            else -> error("Unknown diff format '$value'. Use text or json.")
+        }
+
     private fun parseDoctorCommand(args: List<String>): DoctorCommand {
         var format = DoctorFormat.Text
         var index = 0
@@ -3633,12 +3928,24 @@ private data class ReplayCommand(
     val format: ReplayFormat,
 )
 
+private data class DiffCommand(
+    val leftPath: Path,
+    val rightPath: Path,
+    val format: DiffFormat,
+    val check: Boolean,
+)
+
 private enum class TraceFormat(val id: String) {
     Text("text"),
     Json("json"),
 }
 
 private enum class ReplayFormat(val id: String) {
+    Text("text"),
+    Json("json"),
+}
+
+private enum class DiffFormat(val id: String) {
     Text("text"),
     Json("json"),
 }
@@ -3728,6 +4035,92 @@ private data class RunReplayProvenance(
     val embeddedSnapshotSha256: String?,
     val traceSha256: String,
     val rebuiltTraceSha256: String,
+)
+
+@Serializable
+private data class RunDiffReport(
+    val schema: String,
+    val version: String,
+    val comparedAt: String,
+    val result: String,
+    val valid: Boolean,
+    val same: Boolean,
+    val left: RunDiffSide,
+    val right: RunDiffSide,
+    val checks: RunDiffChecks,
+    val metricsDelta: RunDiffMetricsDelta,
+    val differences: List<RunDiffDifference>,
+    val issues: List<String>,
+)
+
+@Serializable
+private data class RunDiffSide(
+    val source: String,
+    val run: RunCapsuleRun,
+    val deterministic: Boolean,
+    val stableSha256: String,
+    val issues: List<String>,
+)
+
+@Serializable
+private data class RunDiffChecks(
+    val leftCapsule: Boolean,
+    val rightCapsule: Boolean,
+    val leftReplay: Boolean,
+    val rightReplay: Boolean,
+)
+
+@Serializable
+private data class RunDiffMetricsDelta(
+    val processCount: Int,
+    val tokenTotal: Int,
+    val inputTokens: Int,
+    val outputTokens: Int,
+    val contextBytes: Int,
+    val syscallCount: Int,
+    val eventCount: Int,
+)
+
+@Serializable
+private data class RunDiffDifference(
+    val field: String,
+    val left: String,
+    val right: String,
+)
+
+@Serializable
+private data class StableRunSignature(
+    val workflowName: String,
+    val task: String,
+    val success: Boolean,
+    val finalOutputSha256: String,
+    val metrics: StableRunMetrics,
+    val path: List<String>,
+    val processes: List<StableRunProcess>,
+    val eventCounts: Map<String, Int>,
+)
+
+@Serializable
+private data class StableRunMetrics(
+    val processCount: Int,
+    val tokenTotal: Int,
+    val inputTokens: Int,
+    val outputTokens: Int,
+    val contextBytes: Int,
+    val syscallCount: Int,
+    val eventCount: Int,
+)
+
+@Serializable
+private data class StableRunProcess(
+    val agent: String,
+    val state: String,
+    val tokens: Int,
+    val inputTokens: Int,
+    val outputTokens: Int,
+    val contextBytes: Int,
+    val syscallCount: Int,
+    val failure: String?,
 )
 
 @Serializable
