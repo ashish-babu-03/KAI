@@ -423,6 +423,7 @@ Commands:
 
 ```bash
 ./gradlew clean test installDist
+scripts/quickstart-smoke.sh
 build/install/kaios-cli/bin/kaios run "draft a launch plan"
 scripts/demo.sh "analyze crypto market"
 ```
