@@ -96,16 +96,14 @@ kaios run --index . --context README.md --out artifacts/project.md --trace-out a
 kaios runs --json
 kaios ps latest
 kaios trace latest
-kaios capsule latest --out artifacts/run.capsule.json --force
-kaios capsule --file artifacts/run.capsule.json --check
-kaios replay --file artifacts/run.capsule.json
-kaios diff artifacts/baseline.capsule.json artifacts/run.capsule.json --check
+kaios evidence latest --out artifacts/run.capsule.json --force
+kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 kaios export latest
 
 Repo: https://github.com/morning-verlu/KAI
 Site: https://morning-verlu.github.io/KAI/
 GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
-Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.54/kaios-0.1.54.zip
+Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.55/kaios-0.1.55.zip
 Installer: curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 ```
 
@@ -164,10 +162,8 @@ kaios run --index . --context README.md --out artifacts/project.md --trace-out a
 kaios ps latest
 kaios inspect latest
 kaios trace latest
-kaios capsule latest --out artifacts/run.capsule.json --force
-kaios capsule --file artifacts/run.capsule.json --check
-kaios replay --file artifacts/run.capsule.json
-kaios diff artifacts/baseline.capsule.json artifacts/run.capsule.json --check
+kaios evidence latest --out artifacts/run.capsule.json --force
+kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 kaios report latest
 ```
 
@@ -183,26 +179,22 @@ kaios run --index . --context README.md --out artifacts/project.md --trace-out a
 kaios ps latest
 kaios inspect latest
 kaios trace latest
-kaios capsule latest --out artifacts/run.capsule.json --force
-kaios capsule --file artifacts/run.capsule.json --check
-kaios replay --file artifacts/run.capsule.json
-kaios diff artifacts/baseline.capsule.json artifacts/run.capsule.json --check
+kaios evidence latest --out artifacts/run.capsule.json --force
+kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 kaios report latest
 ```
 
 Download ZIP:
 
 ```bash
-curl -L -o kaios-0.1.54.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.54/kaios-0.1.54.zip
-unzip kaios-0.1.54.zip
-./kaios-0.1.54/bin/kaios demo
-./kaios-0.1.54/bin/kaios setup --ci
-./kaios-0.1.54/bin/kaios verify
-./kaios-0.1.54/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
-./kaios-0.1.54/bin/kaios capsule latest --out artifacts/run.capsule.json --force
-./kaios-0.1.54/bin/kaios capsule --file artifacts/run.capsule.json --check
-./kaios-0.1.54/bin/kaios replay --file artifacts/run.capsule.json
-./kaios-0.1.54/bin/kaios diff artifacts/baseline.capsule.json artifacts/run.capsule.json --check
+curl -L -o kaios-0.1.55.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.55/kaios-0.1.55.zip
+unzip kaios-0.1.55.zip
+./kaios-0.1.55/bin/kaios demo
+./kaios-0.1.55/bin/kaios setup --ci
+./kaios-0.1.55/bin/kaios verify
+./kaios-0.1.55/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
+./kaios-0.1.55/bin/kaios evidence latest --out artifacts/run.capsule.json --force
+./kaios-0.1.55/bin/kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 ```
 
 Build from source:
@@ -218,10 +210,8 @@ build/install/kaios-cli/bin/kaios run --index . --context README.md --out artifa
 build/install/kaios-cli/bin/kaios ps latest
 build/install/kaios-cli/bin/kaios inspect latest
 build/install/kaios-cli/bin/kaios trace latest
-build/install/kaios-cli/bin/kaios capsule latest --out artifacts/run.capsule.json --force
-build/install/kaios-cli/bin/kaios capsule --file artifacts/run.capsule.json --check
-build/install/kaios-cli/bin/kaios replay --file artifacts/run.capsule.json
-build/install/kaios-cli/bin/kaios diff artifacts/baseline.capsule.json artifacts/run.capsule.json --check
+build/install/kaios-cli/bin/kaios evidence latest --out artifacts/run.capsule.json --force
+build/install/kaios-cli/bin/kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 build/install/kaios-cli/bin/kaios report latest
 ```
 

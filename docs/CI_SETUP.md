@@ -25,16 +25,13 @@ This gives teams a stable gate for environment readiness, editable workflow vali
 If the CI job should retain a portable run evidence package, add:
 
 ```bash
-kaios capsule latest --check
-kaios capsule latest --out artifacts/kaios-run.capsule.json --force
-kaios capsule --file artifacts/kaios-run.capsule.json --check
-kaios replay --file artifacts/kaios-run.capsule.json --json
+kaios evidence latest --out artifacts/kaios-run.capsule.json --force
 ```
 
 If the repository keeps a known-good baseline capsule, add a regression diff gate:
 
 ```bash
-kaios diff artifacts/baseline.capsule.json artifacts/kaios-run.capsule.json --check
+kaios evidence latest --out artifacts/kaios-run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 ```
 
 ## Repository CI

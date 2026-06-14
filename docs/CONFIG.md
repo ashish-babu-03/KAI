@@ -265,13 +265,12 @@ kaios inspect latest
 kaios trace latest
 kaios trace latest --json
 kaios trace latest --json --out artifacts/trace.json --force
-kaios capsule latest
-kaios capsule latest --check
+kaios evidence latest --out artifacts/run.capsule.json --force
 kaios report latest
 kaios export latest
 ```
 
-Snapshots are still written under `.kaios/runs/`, so custom workflows can be inspected later without re-running the task. `kaios trace` renders the saved run as `kaios.process-trace/v1`, a stable text/JSON view for CI checks, visualizers, replay tooling, and audit trails. `kaios capsule` packages the snapshot and trace into `kaios.run-capsule/v1` with provenance hashes and replay commands. `kaios replay --file <capsule.json>` rebuilds the trace from the embedded snapshot and emits `kaios.run-replay/v1` for offline evidence checks. `kaios diff <baseline.capsule.json> <current.capsule.json>` emits `kaios.run-diff/v1` for stable regression checks.
+Snapshots are still written under `.kaios/runs/`, so custom workflows can be inspected later without re-running the task. `kaios trace` renders the saved run as `kaios.process-trace/v1`, a stable text/JSON view for CI checks, visualizers, replay tooling, and audit trails. `kaios evidence` packages the snapshot and trace into `kaios.run-capsule/v1`, validates the capsule, replays it offline as `kaios.run-replay/v1`, and can emit a baseline regression gate through `kaios.run-diff/v1`.
 
 ## Artifacts
 

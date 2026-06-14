@@ -37,6 +37,7 @@ Most agent frameworks model AI work as chains, prompts, or chat sessions. KAI OS
 - Package runs as portable KAI Run Capsules with snapshots, traces, provenance hashes, and replay commands.
 - Replay shared capsules offline by rebuilding traces from embedded snapshots.
 - Diff two capsules offline for stable agent-run regression checks.
+- Create one-command evidence bundles for CI by packaging, validating, replaying, and optionally diffing a run.
 
 Kotlin gives this model a strong foundation: JVM ecosystem reach, type safety, coroutines-ready concurrency, DSL ergonomics, and a path toward Kotlin Multiplatform.
 
@@ -54,7 +55,7 @@ kaios verify
 ```
 
 `kaios setup --ci` creates a validated `kaios.json` and a no-key GitHub Actions Agent Gate without overwriting existing files.
-`kaios verify` checks the local runtime, validates the workflow, runs a deterministic mock smoke workflow, validates the process trace contract, and leaves a normal run snapshot for `ps`, `inspect`, `trace`, and `capsule`.
+`kaios verify` checks the local runtime, validates the workflow, runs a deterministic mock smoke workflow, validates the process trace contract, and leaves a normal run snapshot for `ps`, `inspect`, `trace`, `capsule`, and `evidence`.
 
 When the gate is ready, create a project artifact:
 
@@ -105,17 +106,17 @@ kaios run --index . --trace-out artifacts/trace.json --force "summarize this pro
 Need a portable audit package for CI, review, or future Agent Desktop imports?
 
 ```bash
-kaios capsule latest
-kaios capsule latest --check
-kaios capsule latest --json
-kaios capsule latest --out artifacts/run.capsule.json --force
-kaios capsule --file .kaios/capsules/<run-id>.capsule.json --check
-kaios replay --file artifacts/run.capsule.json
+kaios evidence latest --out artifacts/run.capsule.json --force
+kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 ```
 
-Compare a baseline and current capsule when you need an offline regression gate:
+The first command writes a portable capsule, validates its contract, and replays it offline. The second command adds a stable baseline diff gate and exits non-zero when behavior changes.
+
+The lower-level capsule tools remain available when you need each step separately:
 
 ```bash
+kaios capsule latest --check
+kaios replay --file artifacts/run.capsule.json
 kaios diff artifacts/baseline.capsule.json artifacts/run.capsule.json --check
 ```
 
@@ -210,11 +211,8 @@ kaios report latest
 Package the run as a portable KAI Run Capsule:
 
 ```bash
-kaios capsule latest
-kaios capsule latest --check
-kaios capsule latest --out artifacts/run.capsule.json --force
-kaios replay --file artifacts/run.capsule.json
-kaios diff artifacts/baseline.capsule.json artifacts/run.capsule.json --check
+kaios evidence latest --out artifacts/run.capsule.json --force
+kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 ```
 
 Export a Markdown artifact:
@@ -380,6 +378,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - KAI Run Capsule schema with snapshot, trace, provenance hashes, replay commands, and validation status through `kaios capsule`.
 - Offline Capsule Replay schema with deterministic trace rebuild checks through `kaios replay`.
 - Offline Capsule Diff schema with stable runtime signature comparison through `kaios diff`.
+- KAI Evidence schema with one-command package, validation, replay, and optional baseline diff through `kaios evidence`.
 - `kaios runs --json` emits `kaios.runs/v1` for Agent Desktop, CI, and local tooling.
 - Markdown run artifacts with `kaios run --out` and `kaios export`.
 - `kaios doctor` and `kaios doctor --json` environment diagnostics for Java, provider, memory, snapshots, and writable runtime directories.

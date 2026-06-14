@@ -66,13 +66,11 @@ That makes failures reproducible locally before pushing.
 For a stronger audit artifact after the gate, package the saved smoke run:
 
 ```bash
-kaios capsule latest --check
-kaios capsule latest --out artifacts/kaios-run.capsule.json --force
-kaios replay --file artifacts/kaios-run.capsule.json --json
+kaios evidence latest --out artifacts/kaios-run.capsule.json --force
 ```
 
 If you keep a known-good baseline capsule in CI, compare it with:
 
 ```bash
-kaios diff artifacts/baseline.capsule.json artifacts/kaios-run.capsule.json --check
+kaios evidence latest --out artifacts/kaios-run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 ```

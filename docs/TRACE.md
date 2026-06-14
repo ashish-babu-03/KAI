@@ -93,17 +93,14 @@ kaios trace latest --json --out artifacts/trace.json --force
 
 Downstream checks can inspect `metrics.processCount`, `metrics.syscallCount`, `success`, `eventCounts`, or specific process states without scraping terminal output.
 
-When you need a full portable evidence package, use a run capsule. It embeds the saved snapshot, generated trace, provenance hashes, validation status, and replay commands:
+When you need a full portable evidence package, use the one-command evidence gate. It writes a run capsule, validates it, replays it offline, and can compare it with a baseline:
 
 ```bash
-kaios capsule latest
-kaios capsule latest --check
-kaios capsule --file artifacts/run.capsule.json --check
-kaios replay --file artifacts/run.capsule.json
-kaios diff artifacts/baseline.capsule.json artifacts/run.capsule.json --check
+kaios evidence latest --out artifacts/run.capsule.json --force
+kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 ```
 
-Capsule JSON uses schema `kaios.run-capsule/v1`. Offline replay output uses schema `kaios.run-replay/v1`, and offline capsule diff output uses schema `kaios.run-diff/v1`; see [CAPSULE.md](CAPSULE.md).
+Evidence JSON uses schema `kaios.evidence/v1`. The embedded capsule still uses schema `kaios.run-capsule/v1`; offline replay uses `kaios.run-replay/v1`, and offline capsule diff uses `kaios.run-diff/v1`; see [CAPSULE.md](CAPSULE.md).
 
 For a simple gate, validate the contract directly:
 

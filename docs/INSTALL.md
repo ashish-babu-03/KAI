@@ -62,11 +62,11 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.54.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.54/kaios-0.1.54.zip
-unzip kaios-0.1.54.zip
-./kaios-0.1.54/bin/kaios demo
-./kaios-0.1.54/bin/kaios setup --ci
-./kaios-0.1.54/bin/kaios verify
+curl -L -o kaios-0.1.55.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.55/kaios-0.1.55.zip
+unzip kaios-0.1.55.zip
+./kaios-0.1.55/bin/kaios demo
+./kaios-0.1.55/bin/kaios setup --ci
+./kaios-0.1.55/bin/kaios verify
 ```
 
 ## Build From Source
@@ -96,11 +96,7 @@ kaios inspect latest
 kaios trace latest
 kaios trace latest --json
 kaios trace latest --json --out artifacts/trace.json --force
-kaios capsule latest
-kaios capsule latest --check
-kaios capsule latest --out artifacts/run.capsule.json --force
-kaios capsule --file artifacts/run.capsule.json --check
-kaios replay --file artifacts/run.capsule.json
-kaios diff artifacts/baseline.capsule.json artifacts/run.capsule.json --check
+kaios evidence latest --out artifacts/run.capsule.json --force
+kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 kaios bug-report --out artifacts/kaios-bug-report.md --force
 ```

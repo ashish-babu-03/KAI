@@ -35,11 +35,12 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.54"
+private const val KAIOS_VERSION = "0.1.55"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val RUN_CAPSULE_SCHEMA = "kaios.run-capsule/v1"
 private const val RUN_REPLAY_SCHEMA = "kaios.run-replay/v1"
 private const val RUN_DIFF_SCHEMA = "kaios.run-diff/v1"
+private const val RUN_EVIDENCE_SCHEMA = "kaios.evidence/v1"
 private const val DOCTOR_SCHEMA = "kaios.doctor/v1"
 private const val RUNS_SCHEMA = "kaios.runs/v1"
 private const val CONFIG_VALIDATION_SCHEMA = "kaios.config-validation/v1"
@@ -64,6 +65,7 @@ private val TOP_LEVEL_COMMANDS = listOf(
     "capsule",
     "replay",
     "diff",
+    "evidence",
     "report",
     "export",
     "doctor",
@@ -78,6 +80,8 @@ private val TOP_LEVEL_COMMAND_ALIASES = mapOf(
     "proc" to "ps",
     "process" to "ps",
     "status" to "doctor",
+    "audit" to "evidence",
+    "proof" to "evidence",
 )
 
 private val CONFIG_COMMANDS = listOf("templates", "validate", "show")
@@ -133,6 +137,7 @@ class KaiosCli(
             "capsule" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("capsule")) else capsuleRun(commandArgs, out, err)
             "replay" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("replay")) else replayCapsule(commandArgs, out, err)
             "diff" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("diff")) else diffCapsules(commandArgs, out, err)
+            "evidence" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("evidence")) else evidenceRun(commandArgs, out, err)
             "report" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("report")) else generateReport(commandArgs, out, err)
             "export" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("export")) else exportRun(commandArgs, out, err)
             "doctor" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("doctor")) else doctor(commandArgs, out, err)
@@ -354,7 +359,7 @@ class KaiosCli(
                     "No API key is required by default; the mock provider is deterministic.",
                     "Use --trace-out to write kaios.process-trace/v1 JSON during the run.",
                     "Use -- before a task that starts with '-'.",
-                    "After a run, use 'kaios ps latest', 'kaios inspect latest', 'kaios trace latest', and 'kaios capsule latest'.",
+                    "After a run, use 'kaios ps latest', 'kaios inspect latest', 'kaios trace latest', and 'kaios evidence latest'.",
                 ),
             )
             "context" -> CommandHelp(
@@ -504,6 +509,22 @@ class KaiosCli(
                     "--check exits 1 when valid capsules differ, and 2 when either capsule is invalid.",
                 ),
             )
+            "evidence" -> CommandHelp(
+                usage = "kaios evidence <run-id|latest> [--out capsule.json] [--baseline capsule.json] [--json|--format json] [--check] [--force]",
+                summary = "Create a CI-ready evidence bundle by packaging, validating, replaying, and optionally diffing a run capsule.",
+                examples = listOf(
+                    "kaios evidence latest",
+                    "kaios evidence latest --out artifacts/run.capsule.json --force",
+                    "kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force",
+                    "kaios evidence run-97381ae9 --json --out artifacts/run.capsule.json --force",
+                ),
+                notes = listOf(
+                    "Evidence never calls a model provider; it works from an existing .kaios/runs snapshot.",
+                    "JSON output uses schema $RUN_EVIDENCE_SCHEMA for CI gates, release audits, and future Agent Desktop imports.",
+                    "--check exits 1 when the baseline diff is different, and 2 when capsule or replay validation fails.",
+                    "Existing capsule files are protected unless --force is passed.",
+                ),
+            )
             "report" -> CommandHelp(
                 usage = "kaios report <run-id|latest>",
                 summary = "Generate a standalone HTML Agent Process Manager report.",
@@ -602,7 +623,7 @@ class KaiosCli(
         out.println("  kaios ps latest")
         out.println("  kaios inspect latest")
         out.println("  kaios trace latest --json")
-        out.println("  kaios capsule latest")
+        out.println("  kaios evidence latest")
         out.println("  kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\"")
         return if (result.success) 0 else 2
     }
@@ -689,7 +710,7 @@ class KaiosCli(
         out.println("  kaios ps latest")
         out.println("  kaios inspect latest")
         out.println("  kaios trace latest")
-        out.println("  kaios capsule latest")
+        out.println("  kaios evidence latest")
         out.println("  kaios report latest")
         out.println("  kaios export latest")
         return if (result.success) 0 else 2
@@ -989,7 +1010,7 @@ class KaiosCli(
                 add(if (trace.valid) "kaios trace latest --check" else "kaios trace latest")
             }
             if (run != null) {
-                add("kaios capsule latest --check")
+                add("kaios evidence latest")
             }
             add("kaios bug-report")
         }.distinct()
@@ -1482,7 +1503,7 @@ class KaiosCli(
             } else {
                 add("kaios ps latest")
                 add("kaios trace latest --check")
-                add("kaios capsule latest --check")
+                add("kaios evidence latest")
                 add("kaios inspect latest")
             }
             add("kaios doctor --json")
@@ -2020,6 +2041,162 @@ class KaiosCli(
         return exitCode
     }
 
+    private fun evidenceRun(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val command = runCatching { parseEvidenceCommand(args) }.getOrElse { error ->
+            return printCommandUsageError(err, "evidence", error.message)
+        }
+        val runId = runCatching { resolveRunId(command.runIdText) }.getOrElse {
+            return printSnapshotLoadError(err, it)
+        }
+        val snapshot = runCatching { snapshotStore.load(runId) }.getOrElse {
+            return printSnapshotLoadError(err, it)
+        }
+        val capsule = buildRunCapsule(snapshot)
+        val capsulePath = command.outputPath ?: defaultCapsulePath(runId)
+        if (command.baselinePath?.toAbsolutePath()?.normalize() == capsulePath.toAbsolutePath().normalize()) {
+            err.println("Baseline capsule and output capsule must be different files.")
+            return 1
+        }
+        val renderedCapsule = CAPSULE_JSON.encodeToString(capsule)
+        val writtenCapsulePath = runCatching {
+            writeTextOutput("$renderedCapsule\n", capsulePath, command.forceOutput)
+        }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+        val replay = buildRunReplayReport(capsule, writtenCapsulePath)
+        val diff = if (command.baselinePath == null) {
+            null
+        } else {
+            val baseline = runCatching { loadRunCapsule(command.baselinePath) }.getOrElse { error ->
+                err.println(error.message)
+                return 1
+            }
+            buildRunDiffReport(baseline, command.baselinePath, capsule, writtenCapsulePath)
+        }
+        val report = buildRunEvidenceReport(
+            capsule = capsule,
+            capsulePath = writtenCapsulePath,
+            replay = replay,
+            diff = diff,
+            baselinePath = command.baselinePath,
+        )
+        val exitCode = when {
+            !report.valid -> 2
+            command.check && diff != null && !diff.same -> 1
+            else -> 0
+        }
+
+        if (command.format == EvidenceFormat.Json) {
+            out.println(CAPSULE_JSON.encodeToString(report))
+            return exitCode
+        }
+
+        val stream = if (exitCode == 0) out else err
+        printRunEvidenceSummary(report, stream)
+        return exitCode
+    }
+
+    private fun buildRunEvidenceReport(
+        capsule: RunCapsule,
+        capsulePath: Path,
+        replay: RunReplayReport,
+        diff: RunDiffReport?,
+        baselinePath: Path?,
+    ): RunEvidenceReport {
+        val capsuleIssues = validateRunCapsule(capsule)
+        val diffStatus = when {
+            diff == null -> "skipped"
+            !diff.valid -> "invalid"
+            diff.same -> "same"
+            else -> "different"
+        }
+        val valid = capsuleIssues.isEmpty() && replay.valid && (diff?.valid ?: true)
+        val status = when {
+            !valid -> "invalid"
+            diffStatus == "different" -> "different"
+            else -> "valid"
+        }
+        val absoluteCapsulePath = capsulePath.toAbsolutePath().normalize()
+        val absoluteBaselinePath = baselinePath?.toAbsolutePath()?.normalize()
+        return RunEvidenceReport(
+            schema = RUN_EVIDENCE_SCHEMA,
+            version = KAIOS_VERSION,
+            generatedAt = Instant.now().toString(),
+            runId = capsule.run.runId,
+            capsulePath = absoluteCapsulePath.toString(),
+            valid = valid,
+            status = status,
+            capsule = EvidenceCapsuleStatus(
+                status = if (capsuleIssues.isEmpty()) "valid" else "invalid",
+                valid = capsuleIssues.isEmpty(),
+                schema = capsule.schema,
+                snapshotSha256 = capsule.provenance.snapshotSha256,
+                traceSha256 = capsule.provenance.traceSha256,
+                issues = capsuleIssues,
+            ),
+            replay = EvidenceReplayStatus(
+                status = if (replay.valid) "valid" else "invalid",
+                valid = replay.valid,
+                deterministic = replay.deterministic,
+                rebuiltTraceSha256 = replay.provenance.rebuiltTraceSha256,
+                issues = replay.issues,
+            ),
+            diff = EvidenceDiffStatus(
+                status = diffStatus,
+                valid = diff?.valid ?: true,
+                same = diff?.same,
+                baselinePath = absoluteBaselinePath?.toString(),
+                baselineRunId = diff?.left?.run?.runId,
+                currentRunId = diff?.right?.run?.runId,
+                leftStableSha256 = diff?.left?.stableSha256,
+                rightStableSha256 = diff?.right?.stableSha256,
+                differences = diff?.differences?.size ?: 0,
+                issues = diff?.issues ?: emptyList(),
+            ),
+            next = evidenceNextCommands(absoluteCapsulePath, absoluteBaselinePath, capsule.run.runId),
+        )
+    }
+
+    private fun evidenceNextCommands(capsulePath: Path, baselinePath: Path?, runId: String): List<String> =
+        buildList {
+            add("kaios capsule --file ${displayPath(capsulePath)} --check")
+            add("kaios replay --file ${displayPath(capsulePath)}")
+            if (baselinePath == null) {
+                add("kaios evidence $runId --baseline artifacts/baseline.capsule.json --check --force")
+            } else {
+                add("kaios diff ${displayPath(baselinePath)} ${displayPath(capsulePath)} --check")
+            }
+            add("kaios ps $runId")
+        }.distinct()
+
+    private fun printRunEvidenceSummary(report: RunEvidenceReport, out: PrintStream) {
+        out.println("KAI EVIDENCE")
+        out.println("schema: ${report.schema}")
+        out.println("run: ${report.runId}")
+        out.println("status: ${report.status}")
+        out.println("capsule: ${report.capsulePath}")
+        out.println("capsule_status: ${report.capsule.status}")
+        out.println("replay_status: ${report.replay.status}")
+        out.println("replay_deterministic: ${report.replay.deterministic}")
+        out.println("diff_status: ${report.diff.status}")
+        report.diff.baselinePath?.let { out.println("baseline: $it") }
+        report.diff.leftStableSha256?.let { out.println("baseline_stable_sha256: $it") }
+        report.diff.rightStableSha256?.let { out.println("current_stable_sha256: $it") }
+        if (report.diff.status != "skipped") {
+            out.println("differences: ${report.diff.differences}")
+        }
+        val issues = (report.capsule.issues.map { "capsule: $it" } +
+            report.replay.issues.map { "replay: $it" } +
+            report.diff.issues.map { "diff: $it" }).distinct()
+        if (issues.isNotEmpty()) {
+            out.println("issues:")
+            issues.forEach { issue -> out.println("  - $issue") }
+        }
+        out.println("next:")
+        report.next.forEach { command -> out.println("  $command") }
+    }
+
     private fun buildRunDiffReport(
         left: RunCapsule,
         leftSource: Path,
@@ -2555,6 +2732,7 @@ class KaiosCli(
                 kaios capsule latest [--json] [--out capsule.json] [--check]
                 kaios replay --file capsule.json [--json]
                 kaios diff baseline.capsule.json current.capsule.json [--check]
+                kaios evidence latest [--out capsule.json] [--baseline baseline.capsule.json] [--check]
                 kaios report latest
                 kaios export latest [--out artifact.md]
                 kaios doctor
@@ -3651,6 +3829,89 @@ class KaiosCli(
             else -> error("Unknown diff format '$value'. Use text or json.")
         }
 
+    private fun parseEvidenceCommand(args: List<String>): EvidenceCommand {
+        var runIdText: String? = null
+        var outputPath: Path? = null
+        var baselinePath: Path? = null
+        var format = EvidenceFormat.Text
+        var check = false
+        var forceOutput = false
+        var index = 0
+
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--json" -> {
+                    format = EvidenceFormat.Json
+                    index += 1
+                }
+                arg == "--format" -> {
+                    val value = args.getOrNull(index + 1) ?: error("--format requires text or json.")
+                    format = parseEvidenceFormat(value)
+                    index += 2
+                }
+                arg.startsWith("--format=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--format requires text or json." }
+                    format = parseEvidenceFormat(value)
+                    index += 1
+                }
+                arg == "--out" || arg == "--output" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    outputPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--out=") || arg.startsWith("--output=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "$arg requires a path." }
+                    outputPath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--baseline" || arg == "--left" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    baselinePath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--baseline=") || arg.startsWith("--left=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "$arg requires a path." }
+                    baselinePath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--check" -> {
+                    check = true
+                    index += 1
+                }
+                arg == "--force" || arg == "-f" -> {
+                    forceOutput = true
+                    index += 1
+                }
+                arg.startsWith("-") -> error("Unknown evidence option '$arg'.")
+                runIdText == null -> {
+                    runIdText = arg
+                    index += 1
+                }
+                else -> error("Unexpected evidence argument '$arg'.")
+            }
+        }
+
+        return EvidenceCommand(
+            runIdText = runIdText ?: error("Run id is required."),
+            outputPath = outputPath,
+            baselinePath = baselinePath,
+            format = format,
+            check = check,
+            forceOutput = forceOutput,
+        )
+    }
+
+    private fun parseEvidenceFormat(value: String): EvidenceFormat =
+        when (value.lowercase().trim()) {
+            "text", "plain" -> EvidenceFormat.Text
+            "json" -> EvidenceFormat.Json
+            else -> error("Unknown evidence format '$value'. Use text or json.")
+        }
+
     private fun parseDoctorCommand(args: List<String>): DoctorCommand {
         var format = DoctorFormat.Text
         var index = 0
@@ -3935,6 +4196,15 @@ private data class DiffCommand(
     val check: Boolean,
 )
 
+private data class EvidenceCommand(
+    val runIdText: String,
+    val outputPath: Path?,
+    val baselinePath: Path?,
+    val format: EvidenceFormat,
+    val check: Boolean,
+    val forceOutput: Boolean,
+)
+
 private enum class TraceFormat(val id: String) {
     Text("text"),
     Json("json"),
@@ -3946,6 +4216,11 @@ private enum class ReplayFormat(val id: String) {
 }
 
 private enum class DiffFormat(val id: String) {
+    Text("text"),
+    Json("json"),
+}
+
+private enum class EvidenceFormat(val id: String) {
     Text("text"),
     Json("json"),
 }
@@ -4086,6 +4361,54 @@ private data class RunDiffDifference(
     val field: String,
     val left: String,
     val right: String,
+)
+
+@Serializable
+private data class RunEvidenceReport(
+    val schema: String,
+    val version: String,
+    val generatedAt: String,
+    val runId: String,
+    val capsulePath: String,
+    val valid: Boolean,
+    val status: String,
+    val capsule: EvidenceCapsuleStatus,
+    val replay: EvidenceReplayStatus,
+    val diff: EvidenceDiffStatus,
+    val next: List<String>,
+)
+
+@Serializable
+private data class EvidenceCapsuleStatus(
+    val status: String,
+    val valid: Boolean,
+    val schema: String,
+    val snapshotSha256: String,
+    val traceSha256: String,
+    val issues: List<String>,
+)
+
+@Serializable
+private data class EvidenceReplayStatus(
+    val status: String,
+    val valid: Boolean,
+    val deterministic: Boolean,
+    val rebuiltTraceSha256: String,
+    val issues: List<String>,
+)
+
+@Serializable
+private data class EvidenceDiffStatus(
+    val status: String,
+    val valid: Boolean,
+    val same: Boolean?,
+    val baselinePath: String?,
+    val baselineRunId: String?,
+    val currentRunId: String?,
+    val leftStableSha256: String?,
+    val rightStableSha256: String?,
+    val differences: Int,
+    val issues: List<String>,
 )
 
 @Serializable
