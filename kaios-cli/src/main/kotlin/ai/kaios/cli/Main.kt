@@ -35,7 +35,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.61"
+private const val KAIOS_VERSION = "0.1.62"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val RUN_CAPSULE_SCHEMA = "kaios.run-capsule/v1"
 private const val RUN_REPLAY_SCHEMA = "kaios.run-replay/v1"
@@ -900,6 +900,25 @@ class KaiosCli(
             append(" --force")
         }
 
+    private fun setupForceCommand(configPath: Path): String =
+        buildString {
+            append("kaios setup")
+            if (configPath.toAbsolutePath().normalize() != defaultConfigPath().toAbsolutePath().normalize()) {
+                append(" --config ${displayPath(configPath)}")
+            }
+            append(" --ci --force")
+        }
+
+    private fun configRecoveryCommands(configPath: Path): List<String> =
+        buildList {
+            if (configPath.exists()) {
+                add("kaios config validate --config ${displayPath(configPath)} --json")
+                add("fix ${displayPath(configPath)} or rerun ${setupForceCommand(configPath)}")
+            } else {
+                add(setupCommand(configPath))
+            }
+        }
+
     private fun renderSetupText(report: SetupReport, out: PrintStream) {
         out.println("KAI OS setup")
         out.println("schema: ${report.schema}")
@@ -1556,7 +1575,7 @@ class KaiosCli(
     private fun bugReportNextCommands(config: ConfigValidationReport, latestRun: BugReportRun?): List<String> =
         buildList {
             if (!config.valid) {
-                add(setupCommand(Paths.get(config.config)))
+                addAll(configRecoveryCommands(Paths.get(config.config)))
             } else {
                 add(verifyEvidenceCommand(Paths.get(config.config)))
             }
@@ -1674,7 +1693,8 @@ class KaiosCli(
 
         val failed = checks.count { it.status == DoctorStatus.FAIL }
         val warnings = checks.count { it.status == DoctorStatus.WARN }
-        val next = doctorNextCommands(failed, configPath)
+        val projectConfigStatus = checks.first { it.name == "project config" }.status
+        val next = doctorNextCommands(failed, configPath, projectConfigStatus)
 
         return DoctorReport(
             schema = DOCTOR_SCHEMA,
@@ -1696,14 +1716,13 @@ class KaiosCli(
         )
     }
 
-    private fun doctorNextCommands(failed: Int, configPath: Path): List<String> =
+    private fun doctorNextCommands(failed: Int, configPath: Path, projectConfigStatus: DoctorStatus): List<String> =
         buildList {
             if (failed > 0) add("fix failed checks above")
             add("kaios demo")
-            if (configPath.exists()) {
-                add(verifyEvidenceCommand(configPath))
-            } else {
-                add(setupCommand(configPath))
+            when {
+                configPath.exists() && projectConfigStatus == DoctorStatus.OK -> add(verifyEvidenceCommand(configPath))
+                else -> addAll(configRecoveryCommands(configPath))
             }
             add("kaios analyze . --out artifacts/analysis.md --force")
         }.distinct()

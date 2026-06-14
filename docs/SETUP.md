@@ -12,7 +12,7 @@ This command:
 - keeps existing config files unless `--force` is passed.
 - validates the workflow with `kaios.config-validation/v1`.
 - runs readiness checks and warns about optional real-provider or persisted-memory env problems.
-- writes `.github/workflows/kaios.yml` when `--ci` is passed.
+- writes `.github/workflows/kaios.yml` when `--ci` is passed and the project config is valid.
 - points the generated Agent Gate at `kaios verify --config kaios.json --evidence --force`.
 - prints the next useful commands.
 
@@ -40,8 +40,10 @@ kaios setup --template code-review --ci
 Repair an invalid or outdated generated config:
 
 ```bash
-kaios setup --force
+kaios setup --ci --force
 ```
+
+If an existing config is invalid, `kaios setup --ci` reports `ci: skipped` and prints a `config validate` command plus the exact force command to repair the generated config. It will not write a CI gate for a workflow that cannot pass validation.
 
 Use JSON for automation:
 
