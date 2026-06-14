@@ -1,0 +1,44 @@
+{
+    "name": "research",
+    "agents": [
+        {
+            "id": "researcher",
+            "instruction": "Gather facts, constraints, and useful context for the task.",
+            "tools": [
+                "echo",
+                "clock",
+                "mock-http"
+            ],
+            "dependsOn": [],
+            "fallbackOnly": false,
+            "retries": 0,
+            "memory": true
+        },
+        {
+            "id": "synthesizer",
+            "instruction": "Turn the research context into a concise, useful answer.",
+            "tools": [
+                "echo"
+            ],
+            "dependsOn": [
+                "researcher"
+            ],
+            "fallbackOnly": false,
+            "retries": 0,
+            "memory": true
+        },
+        {
+            "id": "validator",
+            "instruction": "Check the answer for gaps, contradictions, and missing next steps.",
+            "tools": [
+                "echo"
+            ],
+            "dependsOn": [
+                "synthesizer"
+            ],
+            "fallbackOnly": false,
+            "retries": 0,
+            "memory": true
+        }
+    ]
+}
