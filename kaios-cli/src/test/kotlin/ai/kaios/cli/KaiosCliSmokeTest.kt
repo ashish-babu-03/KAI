@@ -22,6 +22,22 @@ import kotlin.test.assertTrue
 
 class KaiosCliSmokeTest {
     @Test
+    fun `help leads with three step quick start`() {
+        val cli = cliFor(Files.createTempDirectory("kaios-cli-help"))
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("help"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(text.contains("Quick start (3 steps):"))
+        assertTrue(text.contains("kaios doctor"))
+        assertTrue(text.contains("kaios analyze . --out artifacts/analysis.md"))
+        assertTrue(text.contains("kaios run --index . --out artifacts/project.md \"summarize this project\""))
+        assertTrue(text.contains("Command groups:"))
+    }
+
+    @Test
     fun `run ps and inspect work against a saved mock run`() {
         val root = Files.createTempDirectory("kaios-cli-runs")
         val reportRoot = Files.createTempDirectory("kaios-cli-reports")
@@ -879,6 +895,10 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("[OK] http syscall: disabled"))
         assertTrue(text.contains("[OK] project config"))
         assertTrue(text.contains("summary: ready"))
+        assertTrue(text.contains("next:"))
+        assertTrue(text.contains("kaios analyze . --out artifacts/analysis.md"))
+        assertTrue(text.contains("kaios run --index ."))
+        assertTrue(text.contains("\"summarize this project\""))
     }
 
     @Test

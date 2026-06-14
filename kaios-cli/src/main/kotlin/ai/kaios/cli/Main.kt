@@ -29,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.16"
+private const val KAIOS_VERSION = "0.1.17"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -458,6 +458,13 @@ class KaiosCli(
             warnings > 0 -> out.println("summary: ready with $warnings warning(s)")
             else -> out.println("summary: ready")
         }
+        out.println()
+        out.println("next:")
+        if (failed > 0) {
+            out.println("  fix failed checks above")
+        }
+        out.println("  kaios analyze . --out artifacts/analysis.md")
+        out.println("  ${firstProjectRunCommand()}")
 
         return if (failed > 0) 2 else 0
     }
@@ -598,28 +605,48 @@ class KaiosCli(
             """
             KAI OS - AI Agent Operating System in Kotlin
 
-            Usage:
-              kaios init [--template default|research|code-review|release]
-              kaios config validate [--config kaios.json]
-              kaios config show [--config kaios.json]
-              kaios config templates
-              kaios run "task"
-              kaios run --context README.md "task"
-              kaios context [path ...]
-              kaios index [path ...]
-              kaios analyze [path ...] [--format markdown|json] [--out analysis.md]
-              kaios run --index . "task"
-              kaios run --config kaios.json "task"
-              kaios run --default "task"
-              kaios runs
-              kaios ps <run-id>
-              kaios inspect <run-id>
-              kaios report <run-id>
-              kaios export <run-id> [--out artifact.md]
+            Quick start (3 steps):
               kaios doctor
+              kaios analyze . --out artifacts/analysis.md
+              kaios run --index . --out artifacts/project.md "summarize this project"
+
+            Command groups:
+              Runtime:
+                kaios run "task"
+                kaios run --index . --context README.md --out artifact.md "task"
+
+              Workspace:
+                kaios analyze [path ...] [--format markdown|json] [--out analysis.md]
+                kaios index [path ...]
+                kaios context [path ...]
+
+              Project config:
+                kaios init [--template default|research|code-review|release]
+                kaios config validate [--config kaios.json]
+                kaios config show [--config kaios.json]
+                kaios config templates
+
+              Observability:
+                kaios runs
+                kaios ps <run-id>
+                kaios inspect <run-id>
+                kaios report <run-id>
+                kaios export <run-id> [--out artifact.md]
+                kaios doctor
             """.trimIndent(),
         )
     }
+
+    private fun firstProjectRunCommand(): String {
+        val readme = preferredReadmePath()
+        val context = readme?.let { " --context ${displayPath(it)}" }.orEmpty()
+        return "kaios run --index .$context --out artifacts/project.md \"summarize this project\""
+    }
+
+    private fun preferredReadmePath(): Path? =
+        listOf("README.md", "README.markdown", "README")
+            .map { workingDir.resolve(it).normalize() }
+            .firstOrNull { it.exists() }
 
     private fun formatProcessHeader(): String =
         listOf("PID", "AGENT", "STATE", "TOKENS", "MEMORY", "SYSCALLS", "DURATION").joinToString("  ") {

@@ -6,9 +6,6 @@ Use it when you want the runtime to understand repository shape without loading 
 
 ```bash
 kaios analyze . --out artifacts/analysis.md
-kaios analyze . --format json --out artifacts/analysis.json
-kaios index .
-kaios run --index . "explain this project"
 kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
 ```
 

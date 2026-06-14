@@ -38,15 +38,23 @@ Kotlin gives this model a strong foundation: JVM ecosystem reach, type safety, c
 
 ## Quick Start
 
-Install with Homebrew:
+Three steps get you from install to a useful project artifact:
 
 ```bash
 brew tap morning-verlu/tap
 brew install kaios
+
 kaios doctor
 kaios analyze . --out artifacts/analysis.md
+kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
+```
+
+If the project does not have `README.md`, omit `--context README.md`. KAI OS still uses the Workspace Index to orient the run.
+
+Need a machine-readable workspace report for CI or dashboards?
+
+```bash
 kaios analyze . --format json --out artifacts/analysis.json
-kaios run "analyze crypto market"
 ```
 
 Create a local workflow config when you want your own agent process graph:
@@ -54,17 +62,7 @@ Create a local workflow config when you want your own agent process graph:
 ```bash
 kaios init --template research
 kaios config show
-kaios run --out artifacts/market.md "analyze crypto market"
-```
-
-Run against local project files when you want the agents to see real context:
-
-```bash
-kaios analyze . --out artifacts/analysis.md
-kaios analyze . --format json --out artifacts/analysis.json
-kaios index .
-kaios context .
-kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
+kaios run --out artifacts/runtime.md "map the JVM agent runtime"
 ```
 
 Or install with the hosted script:
@@ -73,16 +71,17 @@ Or install with the hosted script:
 curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
 kaios doctor
-kaios run "analyze crypto market"
+kaios analyze . --out artifacts/analysis.md
+kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
 ```
 
 Or build from source:
 
 ```bash
 ./gradlew test installDist
-build/install/kaios-cli/bin/kaios run "analyze crypto market"
+build/install/kaios-cli/bin/kaios doctor
 build/install/kaios-cli/bin/kaios analyze . --out artifacts/analysis.md
-build/install/kaios-cli/bin/kaios analyze . --format json --out artifacts/analysis.json
+build/install/kaios-cli/bin/kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
 ```
 
 Example output:
