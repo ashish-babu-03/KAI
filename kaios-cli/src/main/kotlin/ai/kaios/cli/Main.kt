@@ -34,7 +34,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.35"
+private const val KAIOS_VERSION = "0.1.36"
 
 private val TOP_LEVEL_COMMANDS = listOf(
     "init",
@@ -100,14 +100,20 @@ class KaiosCli(
             "index" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("index")) else previewIndex(commandArgs, out, err)
             "analyze" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("analyze")) else analyzeWorkspace(commandArgs, out, err)
             "config" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("config")) else configCommand(commandArgs, out, err)
-            "runs" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("runs")) else listRuns(out)
+            "runs" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("runs")) else {
+                if (rejectUnexpectedArguments(commandArgs, "runs", err)) 1 else listRuns(out)
+            }
             "ps" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("ps")) else printProcessTable(commandArgs, out, err)
             "inspect" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("inspect")) else inspectRun(commandArgs, out, err)
             "trace" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("trace")) else traceRun(commandArgs, out, err)
             "report" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("report")) else generateReport(commandArgs, out, err)
             "export" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("export")) else exportRun(commandArgs, out, err)
-            "doctor" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("doctor")) else doctor(out)
-            "version", "--version", "-V" -> version(out)
+            "doctor" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("doctor")) else {
+                if (rejectUnexpectedArguments(commandArgs, "doctor", err)) 1 else doctor(out)
+            }
+            "version", "--version", "-V" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("version")) else {
+                if (rejectUnexpectedArguments(commandArgs, "version", err)) 1 else version(out)
+            }
             "help", "--help", "-h" -> {
                 if (commandArgs.isNotEmpty() && !isHelp(commandArgs)) return printNamedCommandHelp(commandArgs, out, err)
                 printUsage(out)
@@ -187,6 +193,12 @@ class KaiosCli(
         err.println("Usage: $usage")
         err.println("Run 'kaios help $helpCommand' for examples.")
         return 1
+    }
+
+    private fun rejectUnexpectedArguments(args: List<String>, command: String, err: PrintStream): Boolean {
+        if (args.isEmpty()) return false
+        printCommandUsageError(err, command, "Unexpected $command argument '${args.first()}'.")
+        return true
     }
 
     private fun printSuggestion(
@@ -811,6 +823,9 @@ class KaiosCli(
         if (runIdText == null) {
             return printCommandUsageError(err, "ps", "Run id is required.")
         }
+        if (args.size > 1) {
+            return printCommandUsageError(err, "ps", "Unexpected ps argument '${args[1]}'.")
+        }
         val runId = runCatching { resolveRunId(runIdText) }.getOrElse {
             return printSnapshotLoadError(err, it)
         }
@@ -829,6 +844,9 @@ class KaiosCli(
         val runIdText = args.firstOrNull()
         if (runIdText == null) {
             return printCommandUsageError(err, "report", "Run id is required.")
+        }
+        if (args.size > 1) {
+            return printCommandUsageError(err, "report", "Unexpected report argument '${args[1]}'.")
         }
 
         val snapshots = snapshotStore.list()
@@ -1027,6 +1045,9 @@ class KaiosCli(
         val runIdText = args.firstOrNull()
         if (runIdText == null) {
             return printCommandUsageError(err, "inspect", "Run id is required.")
+        }
+        if (args.size > 1) {
+            return printCommandUsageError(err, "inspect", "Unexpected inspect argument '${args[1]}'.")
         }
         val runId = runCatching { resolveRunId(runIdText) }.getOrElse {
             return printSnapshotLoadError(err, it)

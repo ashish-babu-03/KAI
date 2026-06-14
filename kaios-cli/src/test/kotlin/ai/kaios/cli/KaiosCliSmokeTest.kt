@@ -31,7 +31,7 @@ class KaiosCliSmokeTest {
         val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
 
         assertEquals(0, code)
-        assertEquals("kaios 0.1.35\n", out.toString())
+        assertEquals("kaios 0.1.36\n", out.toString())
     }
 
     @Test
@@ -264,6 +264,30 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("Run id is required."))
         assertTrue(text.contains("Usage: kaios ps <run-id|latest>"))
         assertTrue(text.contains("Run 'kaios help ps' for examples."))
+    }
+
+    @Test
+    fun `fixed arity commands reject unexpected arguments`() {
+        val cli = cliFor(Files.createTempDirectory("kaios-cli-extra-args"))
+        val cases = listOf(
+            arrayOf("runs", "extra") to "Unexpected runs argument 'extra'.",
+            arrayOf("doctor", "extra") to "Unexpected doctor argument 'extra'.",
+            arrayOf("version", "extra") to "Unexpected version argument 'extra'.",
+            arrayOf("ps", "latest", "extra") to "Unexpected ps argument 'extra'.",
+            arrayOf("inspect", "latest", "extra") to "Unexpected inspect argument 'extra'.",
+            arrayOf("report", "latest", "extra") to "Unexpected report argument 'extra'.",
+        )
+
+        cases.forEach { (args, message) ->
+            val err = ByteArrayOutputStream()
+            val code = cli.run(args, PrintStream(ByteArrayOutputStream()), PrintStream(err))
+            val text = err.toString()
+
+            assertEquals(1, code, args.joinToString(" "))
+            assertTrue(text.contains(message), args.joinToString(" "))
+            assertTrue(text.contains("Usage: kaios"), args.joinToString(" "))
+            assertTrue(text.contains("Run 'kaios help"), args.joinToString(" "))
+        }
     }
 
     @Test
