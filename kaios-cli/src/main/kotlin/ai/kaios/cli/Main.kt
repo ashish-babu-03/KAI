@@ -34,7 +34,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.47"
+private const val KAIOS_VERSION = "0.1.48"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val DOCTOR_SCHEMA = "kaios.doctor/v1"
 private const val RUNS_SCHEMA = "kaios.runs/v1"
@@ -1519,12 +1519,7 @@ class KaiosCli(
 
         val failed = checks.count { it.status == DoctorStatus.FAIL }
         val warnings = checks.count { it.status == DoctorStatus.WARN }
-        val next = buildList {
-            if (failed > 0) add("fix failed checks above")
-            add("kaios demo")
-            add("kaios analyze . --out artifacts/analysis.md --force")
-            add(firstProjectRunCommand())
-        }
+        val next = doctorNextCommands(failed, configPath)
 
         return DoctorReport(
             schema = DOCTOR_SCHEMA,
@@ -1545,6 +1540,20 @@ class KaiosCli(
             next = next,
         )
     }
+
+    private fun doctorNextCommands(failed: Int, configPath: Path): List<String> =
+        buildList {
+            if (failed > 0) add("fix failed checks above")
+            add("kaios demo")
+            if (configPath.exists()) {
+                add("kaios verify --config ${displayPath(configPath)}")
+            } else if (configPath == defaultConfigPath()) {
+                add("kaios setup --ci")
+            } else {
+                add("kaios setup --config ${displayPath(configPath)} --ci")
+            }
+            add("kaios analyze . --out artifacts/analysis.md --force")
+        }.distinct()
 
     private fun doctorSummaryText(summary: DoctorSummary): String =
         when {
