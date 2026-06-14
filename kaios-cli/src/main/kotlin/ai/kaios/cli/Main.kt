@@ -29,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.23"
+private const val KAIOS_VERSION = "0.1.24"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -48,8 +48,8 @@ class KaiosCli(
 ) {
     fun run(args: Array<String>, out: PrintStream, err: PrintStream): Int {
         if (args.isEmpty()) {
-            printUsage(err)
-            return 1
+            printUsage(out)
+            return 0
         }
 
         val commandArgs = args.drop(1)
@@ -74,6 +74,7 @@ class KaiosCli(
             }
             else -> {
                 err.println("Unknown command '${args.first()}'.")
+                err.println("Run 'kaios help' for available commands.")
                 printUsage(err)
                 1
             }
@@ -104,16 +105,30 @@ class KaiosCli(
     private fun printNamedCommandHelp(args: List<String>, out: PrintStream, err: PrintStream): Int {
         if (args.size != 1) {
             err.println("Usage: kaios help <command>")
+            err.println("Run 'kaios help' for available commands.")
             return 1
         }
 
         val help = commandHelpOrNull(args.first())
         if (help == null) {
             err.println("Unknown command '${args.first()}'.")
+            err.println("Run 'kaios help' for available commands.")
             err.println("Usage: kaios help <command>")
             return 1
         }
         return printCommandHelp(out, help)
+    }
+
+    private fun printCommandUsageError(err: PrintStream, command: String, message: String? = null): Int =
+        printUsageError(err, commandUsage(command), command, message)
+
+    private fun printUsageError(err: PrintStream, usage: String, helpCommand: String, message: String? = null): Int {
+        if (!message.isNullOrBlank()) {
+            err.println(message)
+        }
+        err.println("Usage: $usage")
+        err.println("Run 'kaios help $helpCommand' for examples.")
+        return 1
     }
 
     private fun commandUsage(command: String): String =
@@ -229,9 +244,7 @@ class KaiosCli(
 
     private fun runWorkflow(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val command = runCatching { parseRunCommand(args) }.getOrElse { error ->
-            err.println(error.message)
-            err.println("Usage: kaios run [--context path] [--index path] [--config kaios.json] [--out artifact.md] [--force] \"task\"")
-            return 1
+            return printCommandUsageError(err, "run", error.message)
         }
 
         val memory = runCatching { memoryStoreFromEnv(env) }.getOrElse { error ->
@@ -304,9 +317,7 @@ class KaiosCli(
 
     private fun previewContext(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val paths = runCatching { parseContextCommand(args) }.getOrElse { error ->
-            err.println(error.message)
-            err.println("Usage: kaios context [path ...]")
-            return 1
+            return printCommandUsageError(err, "context", error.message)
         }
 
         val context = runCatching { contextLoader().load(paths) }.getOrElse { error ->
@@ -330,9 +341,7 @@ class KaiosCli(
 
     private fun previewIndex(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val paths = runCatching { parseIndexCommand(args) }.getOrElse { error ->
-            err.println(error.message)
-            err.println("Usage: kaios index [path ...]")
-            return 1
+            return printCommandUsageError(err, "index", error.message)
         }
 
         val index = runCatching { workspaceIndexer().index(paths) }.getOrElse { error ->
@@ -346,9 +355,7 @@ class KaiosCli(
 
     private fun analyzeWorkspace(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val command = runCatching { parseAnalyzeCommand(args) }.getOrElse { error ->
-            err.println(error.message)
-            err.println("Usage: kaios analyze [path ...] [--format markdown|json] [--out analysis.md] [--force]")
-            return 1
+            return printCommandUsageError(err, "analyze", error.message)
         }
 
         val index = runCatching { workspaceIndexer().index(command.paths) }.getOrElse { error ->
@@ -378,9 +385,7 @@ class KaiosCli(
 
     private fun initProject(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val command = runCatching { parseInitCommand(args) }.getOrElse { error ->
-            err.println(error.message)
-            err.println("Usage: kaios init [--template default|research|code-review|release] [--config kaios.json] [--force]")
-            return 1
+            return printCommandUsageError(err, "init", error.message)
         }
 
         if (command.listTemplates) {
@@ -411,8 +416,7 @@ class KaiosCli(
     private fun configCommand(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val subcommand = args.firstOrNull()
         if (subcommand == null) {
-            err.println("Usage: kaios config <validate|show|templates> [--config kaios.json]")
-            return 1
+            return printCommandUsageError(err, "config")
         }
 
         return when (subcommand) {
@@ -423,18 +427,14 @@ class KaiosCli(
             "validate" -> validateConfig(args.drop(1), out, err)
             "show" -> showConfig(args.drop(1), out, err)
             else -> {
-                err.println("Unknown config command '$subcommand'.")
-                err.println("Usage: kaios config <validate|show|templates> [--config kaios.json]")
-                1
+                printCommandUsageError(err, "config", "Unknown config command '$subcommand'.")
             }
         }
     }
 
     private fun validateConfig(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val path = runCatching { parseConfigPath(args) }.getOrElse { error ->
-            err.println(error.message)
-            err.println("Usage: kaios config validate [--config kaios.json]")
-            return 1
+            return printUsageError(err, "kaios config validate [--config kaios.json]", "config", error.message)
         }
 
         return runCatching { loadProjectWorkflow(path, SessionMemoryStore(), toolRegistry()) }
@@ -455,9 +455,7 @@ class KaiosCli(
 
     private fun showConfig(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val path = runCatching { parseConfigPath(args) }.getOrElse { error ->
-            err.println(error.message)
-            err.println("Usage: kaios config show [--config kaios.json]")
-            return 1
+            return printUsageError(err, "kaios config show [--config kaios.json]", "config", error.message)
         }
 
         val workflow = runCatching { loadProjectWorkflow(path, SessionMemoryStore(), toolRegistry()) }.getOrElse { error ->
@@ -518,8 +516,7 @@ class KaiosCli(
     private fun printProcessTable(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val runId = args.firstOrNull()?.let(::RunId)
         if (runId == null) {
-            err.println("Usage: kaios ps <run-id>")
-            return 1
+            return printCommandUsageError(err, "ps", "Run id is required.")
         }
 
         val snapshot = runCatching { snapshotStore.load(runId) }.getOrElse {
@@ -536,8 +533,7 @@ class KaiosCli(
     private fun generateReport(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val runId = args.firstOrNull()?.let(::RunId)
         if (runId == null) {
-            err.println("Usage: kaios report <run-id>")
-            return 1
+            return printCommandUsageError(err, "report", "Run id is required.")
         }
 
         val snapshots = snapshotStore.list()
@@ -560,9 +556,7 @@ class KaiosCli(
 
     private fun exportRun(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val command = runCatching { parseExportCommand(args) }.getOrElse { error ->
-            err.println(error.message)
-            err.println("Usage: kaios export <run-id> [--out artifact.md] [--force]")
-            return 1
+            return printCommandUsageError(err, "export", error.message)
         }
 
         val snapshot = runCatching { snapshotStore.load(command.runId) }.getOrElse { error ->
@@ -731,8 +725,7 @@ class KaiosCli(
     private fun inspectRun(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val runId = args.firstOrNull()?.let(::RunId)
         if (runId == null) {
-            err.println("Usage: kaios inspect <run-id>")
-            return 1
+            return printCommandUsageError(err, "inspect", "Run id is required.")
         }
 
         val snapshot = runCatching { snapshotStore.load(runId) }.getOrElse {

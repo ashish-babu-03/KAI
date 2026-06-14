@@ -8,9 +8,12 @@ Check the installed version at any time:
 kaios --version
 ```
 
+Running `kaios` with no arguments prints the quick start and exits successfully, so it is safe to use as a first smoke test.
+
 Every core command also supports local help with examples and notes:
 
 ```bash
+kaios
 kaios run --help
 kaios help run
 ```
@@ -49,11 +52,11 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.23.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.23/kaios-0.1.23.zip
-unzip kaios-0.1.23.zip
-./kaios-0.1.23/bin/kaios doctor
-./kaios-0.1.23/bin/kaios analyze . --out artifacts/analysis.md --force
-./kaios-0.1.23/bin/kaios run --index . --context README.md --out artifacts/project.md --force "summarize this project"
+curl -L -o kaios-0.1.24.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.24/kaios-0.1.24.zip
+unzip kaios-0.1.24.zip
+./kaios-0.1.24/bin/kaios doctor
+./kaios-0.1.24/bin/kaios analyze . --out artifacts/analysis.md --force
+./kaios-0.1.24/bin/kaios run --index . --context README.md --out artifacts/project.md --force "summarize this project"
 ```
 
 ## Build From Source

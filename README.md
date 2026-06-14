@@ -54,6 +54,7 @@ If the project does not have `README.md`, omit `--context README.md`. KAI OS sti
 Every command has local examples when you need the next move without opening docs:
 
 ```bash
+kaios
 kaios help run
 kaios help analyze
 kaios help config

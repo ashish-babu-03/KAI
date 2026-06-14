@@ -29,7 +29,22 @@ class KaiosCliSmokeTest {
         val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
 
         assertEquals(0, code)
-        assertEquals("kaios 0.1.23\n", out.toString())
+        assertEquals("kaios 0.1.24\n", out.toString())
+    }
+
+    @Test
+    fun `empty invocation shows quick start without looking broken`() {
+        val cli = cliFor(Files.createTempDirectory("kaios-cli-empty"))
+        val out = ByteArrayOutputStream()
+        val err = ByteArrayOutputStream()
+
+        val code = cli.run(emptyArray(), PrintStream(out), PrintStream(err))
+        val text = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(text.contains("Quick start (3 steps):"))
+        assertTrue(text.contains("kaios doctor"))
+        assertEquals("", err.toString())
     }
 
     @Test
@@ -123,7 +138,50 @@ class KaiosCliSmokeTest {
 
         assertEquals(1, code)
         assertTrue(text.contains("Unknown command 'missing'"))
+        assertTrue(text.contains("Run 'kaios help' for available commands."))
         assertTrue(text.contains("Usage: kaios help <command>"))
+    }
+
+    @Test
+    fun `unknown command points back to available commands`() {
+        val cli = cliFor(Files.createTempDirectory("kaios-cli-unknown"))
+        val err = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("wat"), PrintStream(ByteArrayOutputStream()), PrintStream(err))
+        val text = err.toString()
+
+        assertEquals(1, code)
+        assertTrue(text.contains("Unknown command 'wat'"))
+        assertTrue(text.contains("Run 'kaios help' for available commands."))
+        assertTrue(text.contains("Quick start (3 steps):"))
+    }
+
+    @Test
+    fun `missing run task points to command examples`() {
+        val cli = cliFor(Files.createTempDirectory("kaios-cli-missing-task"))
+        val err = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("run"), PrintStream(ByteArrayOutputStream()), PrintStream(err))
+        val text = err.toString()
+
+        assertEquals(1, code)
+        assertTrue(text.contains("Task cannot be blank."))
+        assertTrue(text.contains("Usage: kaios run"))
+        assertTrue(text.contains("Run 'kaios help run' for examples."))
+    }
+
+    @Test
+    fun `missing run id points to command examples`() {
+        val cli = cliFor(Files.createTempDirectory("kaios-cli-missing-run-id"))
+        val err = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("ps"), PrintStream(ByteArrayOutputStream()), PrintStream(err))
+        val text = err.toString()
+
+        assertEquals(1, code)
+        assertTrue(text.contains("Run id is required."))
+        assertTrue(text.contains("Usage: kaios ps <run-id>"))
+        assertTrue(text.contains("Run 'kaios help ps' for examples."))
     }
 
     @Test
@@ -141,6 +199,7 @@ class KaiosCliSmokeTest {
         assertEquals(1, badCode)
         assertTrue(err.toString().contains("Unknown run option '--bad-option'"))
         assertTrue(err.toString().contains("Use -- before a task that starts with '-'"))
+        assertTrue(err.toString().contains("Run 'kaios help run' for examples."))
 
         val out = ByteArrayOutputStream()
         val separatorCode = cli.run(
