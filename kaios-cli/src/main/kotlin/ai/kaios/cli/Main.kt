@@ -34,7 +34,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.46"
+private const val KAIOS_VERSION = "0.1.47"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val DOCTOR_SCHEMA = "kaios.doctor/v1"
 private const val RUNS_SCHEMA = "kaios.runs/v1"
@@ -723,7 +723,7 @@ class KaiosCli(
             return 1
         }
         val validation = buildConfigValidationReport(configPath)
-        val doctor = buildDoctorReport(configPath)
+        val doctor = buildDoctorReport(configPath, runtimeConfigFailureStatus = DoctorStatus.WARN)
         val report = SetupReport(
             schema = SETUP_SCHEMA,
             version = KAIOS_VERSION,
@@ -795,13 +795,19 @@ class KaiosCli(
         out.println("version: ${report.version}")
         out.println("cwd: ${report.cwd}")
         out.println("requested_template: ${report.requestedTemplate}")
-        out.println("doctor: ${report.doctor.summary.status}")
+        out.println("doctor: ${doctorSummaryText(report.doctor.summary)}")
         out.println("config: ${report.config.path}")
         out.println("config_action: ${report.config.action}")
         out.println("validation: ${if (report.validation.valid) "valid" else "invalid"}")
         out.println("workflow: ${report.validation.workflowName ?: "-"}")
         out.println("agents: ${report.validation.agentCount}")
         out.println("ci: ${report.ci.action}${report.ci.path?.let { " ($it)" }.orEmpty()}")
+        val warnings = doctorWarnings(report.doctor)
+        if (warnings.isNotEmpty()) {
+            out.println()
+            out.println("warnings:")
+            warnings.forEach { warning -> out.println("  - $warning") }
+        }
         if (report.validation.errors.isNotEmpty()) {
             out.println()
             out.println("errors:")
@@ -827,7 +833,7 @@ class KaiosCli(
     }
 
     private fun buildVerifyReport(configPath: Path): VerifyReport {
-        val doctor = buildDoctorReport(configPath)
+        val doctor = buildDoctorReport(configPath, runtimeConfigFailureStatus = DoctorStatus.WARN)
         val config = buildConfigValidationReport(configPath)
         val errors = mutableListOf<String>()
         var run: VerifyRun? = null
@@ -927,7 +933,7 @@ class KaiosCli(
         out.println("version: ${report.version}")
         out.println("cwd: ${report.cwd}")
         out.println("status: ${report.status}")
-        out.println("doctor: ${report.doctor.summary.status}")
+        out.println("doctor: ${doctorSummaryText(report.doctor.summary)}")
         out.println("config: ${if (report.config.valid) "valid" else "invalid"} (${report.config.config})")
         out.println("workflow: ${report.config.workflowName ?: "-"}")
         out.println("agents: ${report.config.agentCount}")
@@ -949,6 +955,12 @@ class KaiosCli(
             out.println("trace: ${if (trace.valid) "valid" else "invalid"} (${trace.schema})")
             out.println("processes: ${trace.processCount}")
             out.println("events: ${trace.eventCount}")
+        }
+        val warnings = doctorWarnings(report.doctor)
+        if (warnings.isNotEmpty()) {
+            out.println()
+            out.println("warnings:")
+            warnings.forEach { warning -> out.println("  - $warning") }
         }
         if (report.errors.isNotEmpty()) {
             out.println()
@@ -1489,15 +1501,18 @@ class KaiosCli(
         report.next.forEach { command -> appendLine("- `$command`") }
     }.trimEnd()
 
-    private fun buildDoctorReport(configPath: Path = defaultConfigPath()): DoctorReport {
+    private fun buildDoctorReport(
+        configPath: Path = defaultConfigPath(),
+        runtimeConfigFailureStatus: DoctorStatus = DoctorStatus.FAIL,
+    ): DoctorReport {
         val checks = listOf(
             javaCheck(),
             directoryCheck("runs directory", snapshotRoot),
             directoryCheck("reports directory", reportRoot),
             directoryCheck("artifacts directory", artifactRoot),
-            modelProviderCheck(),
+            modelProviderCheck(runtimeConfigFailureStatus),
             httpAllowlistCheck(),
-            memoryStoreCheck(),
+            memoryStoreCheck(runtimeConfigFailureStatus),
             configCheck(configPath),
             snapshotsCheck(),
         )
@@ -1530,6 +1545,18 @@ class KaiosCli(
             next = next,
         )
     }
+
+    private fun doctorSummaryText(summary: DoctorSummary): String =
+        when {
+            summary.failed > 0 -> "failed (${summary.failed} failed, ${summary.warnings} warning(s))"
+            summary.warnings > 0 -> "ready with ${summary.warnings} warning(s)"
+            else -> summary.status
+        }
+
+    private fun doctorWarnings(report: DoctorReport): List<String> =
+        report.checks
+            .filter { check -> check.status == DoctorStatus.WARN.name }
+            .map { check -> "${check.name}: ${singleLine(check.detail)}" }
 
     private fun renderDoctorText(report: DoctorReport, out: PrintStream) {
         out.println("KAI OS doctor")
@@ -1576,7 +1603,7 @@ class KaiosCli(
             DoctorCheck(name, DoctorStatus.FAIL, "${path.toAbsolutePath().normalize()} not writable (${error.message})")
         }
 
-    private fun modelProviderCheck(): DoctorCheck {
+    private fun modelProviderCheck(failureStatus: DoctorStatus): DoctorCheck {
         val selected = env("KAIOS_MODEL_PROVIDER")?.lowercase()?.trim().orEmpty().ifBlank { "mock" }
         return runCatching { modelProviderFromEnv(env) }
             .fold(
@@ -1590,12 +1617,12 @@ class KaiosCli(
                     DoctorCheck("model provider", DoctorStatus.OK, detail)
                 },
                 onFailure = { error ->
-                    DoctorCheck("model provider", DoctorStatus.FAIL, error.message ?: "invalid model provider configuration")
+                    DoctorCheck("model provider", failureStatus, error.message ?: "invalid model provider configuration")
                 },
             )
     }
 
-    private fun memoryStoreCheck(): DoctorCheck {
+    private fun memoryStoreCheck(failureStatus: DoctorStatus): DoctorCheck {
         val selected = env("KAIOS_MEMORY_STORE")?.lowercase()?.trim().orEmpty().ifBlank { "session" }
         return runCatching { memoryStoreFromEnv(env) }
             .fold(
@@ -1608,7 +1635,7 @@ class KaiosCli(
                     DoctorCheck("memory store", DoctorStatus.OK, detail)
                 },
                 onFailure = { error ->
-                    DoctorCheck("memory store", DoctorStatus.FAIL, error.message ?: "invalid memory store configuration")
+                    DoctorCheck("memory store", failureStatus, error.message ?: "invalid memory store configuration")
                 },
             )
     }

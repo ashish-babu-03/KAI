@@ -11,7 +11,7 @@ This command:
 - creates `kaios.json` from the `research` template when it is missing.
 - keeps existing config files unless `--force` is passed.
 - validates the workflow with `kaios.config-validation/v1`.
-- runs the same readiness checks as `kaios doctor`.
+- runs readiness checks and warns about optional real-provider or persisted-memory env problems.
 - writes `.github/workflows/kaios.yml` when `--ci` is passed.
 - points the generated Agent Gate at `kaios verify --config kaios.json`.
 - prints the next useful commands.

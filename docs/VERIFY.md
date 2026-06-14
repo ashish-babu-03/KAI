@@ -15,6 +15,8 @@ The command runs the same no-key checks locally and in CI:
 - process trace contract validation for `kaios.process-trace/v1`.
 - a normal run snapshot under `.kaios/runs/` for `ps`, `inspect`, `trace`, and `bug-report`.
 
+`kaios verify` always runs the smoke workflow with the deterministic mock provider and session memory. If optional real-provider or persisted-memory environment variables are misconfigured, verify reports them as warnings instead of blocking the no-key gate. Use `kaios doctor` when you want those optional runtime settings to be checked strictly.
+
 ## Output
 
 Text output is designed for humans:
