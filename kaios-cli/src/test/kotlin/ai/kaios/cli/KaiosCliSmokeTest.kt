@@ -29,7 +29,7 @@ class KaiosCliSmokeTest {
         val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
 
         assertEquals(0, code)
-        assertEquals("kaios 0.1.27\n", out.toString())
+        assertEquals("kaios 0.1.28\n", out.toString())
     }
 
     @Test
@@ -896,6 +896,27 @@ class KaiosCliSmokeTest {
         assertTrue(templatesText.contains("research"))
         assertTrue(templatesText.contains("code-review"))
         assertTrue(templatesText.contains("release"))
+    }
+
+    @Test
+    fun `config show and validate explain how to create a missing config`() {
+        val workspace = Files.createTempDirectory("kaios-cli-config-missing")
+        val cli = cliFor(workspace)
+
+        listOf(
+            arrayOf("config", "show"),
+            arrayOf("config", "validate"),
+        ).forEach { args ->
+            val err = ByteArrayOutputStream()
+            val code = cli.run(args, PrintStream(ByteArrayOutputStream()), PrintStream(err))
+            val text = err.toString()
+
+            assertEquals(1, code)
+            assertTrue(text.contains("Config file '${workspace.resolve("kaios.json")}' was not found."))
+            assertTrue(text.contains("Run 'kaios init --template default' to create a local workflow config."))
+            assertTrue(text.contains("Run 'kaios config templates' to list available templates."))
+            assertTrue(text.contains("Use '--config path/to/kaios.json' to inspect another config file."))
+        }
     }
 
     @Test

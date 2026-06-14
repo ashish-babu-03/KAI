@@ -29,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.27"
+private const val KAIOS_VERSION = "0.1.28"
 
 private val TOP_LEVEL_COMMANDS = listOf(
     "init",
@@ -578,8 +578,7 @@ class KaiosCli(
                     0
                 },
                 onFailure = { error ->
-                    err.println(error.message)
-                    1
+                    printConfigLoadError(err, path, error)
                 },
             )
     }
@@ -590,8 +589,7 @@ class KaiosCli(
         }
 
         val workflow = runCatching { loadProjectWorkflow(path, SessionMemoryStore(), toolRegistry()) }.getOrElse { error ->
-            err.println(error.message)
-            return 1
+            return printConfigLoadError(err, path, error)
         }
 
         out.println("config: $path")
@@ -616,6 +614,16 @@ class KaiosCli(
             }
         }
         return 0
+    }
+
+    private fun printConfigLoadError(err: PrintStream, path: Path, error: Throwable): Int {
+        err.println(error.message)
+        if (!path.exists()) {
+            err.println("Run 'kaios init --template default' to create a local workflow config.")
+            err.println("Run 'kaios config templates' to list available templates.")
+            err.println("Use '--config path/to/kaios.json' to inspect another config file.")
+        }
+        return 1
     }
 
     private fun listRuns(out: PrintStream): Int {
