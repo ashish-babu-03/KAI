@@ -38,8 +38,13 @@ Use a different path with `--config`:
 
 ```bash
 kaios init --template research --config workflows/research.json
+kaios verify --config workflows/research.json --evidence --force
+kaios doctor --config workflows/research.json
+kaios bug-report --config workflows/research.json
 kaios run --config workflows/research.json "analyze a release plan"
 ```
+
+Use the same `--config` path for validation, verification, diagnostics, and support reports. That keeps recovery hints and bug reports pointed at the workflow file your project actually uses.
 
 If a task itself starts with `-`, separate CLI options from task text with `--`:
 

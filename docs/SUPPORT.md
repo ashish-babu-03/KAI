@@ -17,17 +17,25 @@ The default output is Markdown you can paste into a GitHub issue. It includes:
 - safe next commands.
 
 It does not print API keys, tokens, or secret environment values. Do not manually add secrets when pasting the report into an issue.
+When your workflow config is not `kaios.json`, pass the same path to support commands so diagnostics and next commands follow the right file:
+
+```bash
+kaios doctor --config workflows/research.json --json
+kaios bug-report --config workflows/research.json
+```
 
 ## Save A Report
 
 ```bash
 kaios bug-report --out artifacts/kaios-bug-report.md --force
+kaios bug-report --config workflows/research.json --out artifacts/kaios-bug-report.md --force
 ```
 
 Use JSON when another tool needs to collect diagnostics:
 
 ```bash
 kaios bug-report --json
+kaios bug-report --config workflows/research.json --json
 kaios bug-report --format json --out artifacts/kaios-bug-report.json --force
 ```
 
@@ -52,4 +60,6 @@ For project-specific issues, include the workflow, trace, and capsule evidence:
 ```bash
 kaios verify --evidence --force
 kaios bug-report --out artifacts/kaios-bug-report.md --force
+kaios verify --config workflows/research.json --evidence --force
+kaios bug-report --config workflows/research.json --out artifacts/kaios-bug-report.md --force
 ```

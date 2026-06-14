@@ -85,10 +85,13 @@ Need a support-friendly environment check?
 kaios doctor
 kaios doctor --json
 kaios bug-report
+kaios doctor --config workflows/research.json --json
+kaios bug-report --config workflows/research.json --out artifacts/kaios-bug-report.md --force
 ```
 
 `kaios bug-report` creates a safe-to-paste Markdown report with doctor checks, config validation, latest run metrics, and trace contract status.
 `kaios doctor`, `kaios verify`, and `kaios bug-report` print the same recovery path: `kaios setup --ci` when no project workflow exists, `kaios verify --config kaios.json --evidence --force` when one is valid, or `kaios config validate --config kaios.json --json` plus `kaios setup --ci --force` when an existing config is invalid.
+Use `--config` with `doctor` and `bug-report` when your project workflow lives outside the default `kaios.json`; diagnostics and next commands will follow that exact file instead of falling back to the default.
 
 Need a machine-readable workspace report for CI or dashboards?
 

@@ -60,7 +60,11 @@ Use `--config` for another workflow:
 
 ```bash
 kaios verify --config workflows/research.json
+kaios doctor --config workflows/research.json
+kaios bug-report --config workflows/research.json
 ```
+
+The same `--config` path is honored by `doctor` and `bug-report`, so support diagnostics do not fall back to the default `kaios.json` in repositories with multiple workflow files.
 
 ## Exit Codes
 

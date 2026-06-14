@@ -35,7 +35,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.65"
+private const val KAIOS_VERSION = "0.1.66"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val RUN_CAPSULE_SCHEMA = "kaios.run-capsule/v1"
 private const val RUN_REPLAY_SCHEMA = "kaios.run-replay/v1"
@@ -556,10 +556,11 @@ class KaiosCli(
                 ),
             )
             "doctor" -> CommandHelp(
-                usage = "kaios doctor [--json|--format json]",
+                usage = "kaios doctor [--config kaios.json] [--json|--format json]",
                 summary = "Check the local Java runtime, writable KAI OS directories, provider config, and project config.",
                 examples = listOf(
                     "kaios doctor",
+                    "kaios doctor --config workflows/research.json",
                     "kaios doctor --json",
                 ),
                 notes = listOf(
@@ -568,10 +569,11 @@ class KaiosCli(
                 ),
             )
             "bug-report" -> CommandHelp(
-                usage = "kaios bug-report [--json|--format markdown|json] [--out report.md] [--force]",
+                usage = "kaios bug-report [--config kaios.json] [--json|--format markdown|json] [--out report.md] [--force]",
                 summary = "Generate a safe support report for GitHub issues and team handoff.",
                 examples = listOf(
                     "kaios bug-report",
+                    "kaios bug-report --config workflows/research.json",
                     "kaios bug-report --out artifacts/kaios-bug-report.md --force",
                     "kaios bug-report --json",
                 ),
@@ -883,11 +885,25 @@ class KaiosCli(
             if (ciFile.path != null) {
                 add("git add ${displayPath(Paths.get(validation.config))} ${displayPath(Paths.get(ciFile.path))}")
             }
-            add("kaios bug-report")
+            add(bugReportCommand(Paths.get(validation.config)))
         }.distinct()
 
     private fun verifyEvidenceCommand(configPath: Path): String =
         "kaios verify --config ${displayPath(configPath)} --evidence --force"
+
+    private fun bugReportCommand(configPath: Path): String =
+        if (configPath.toAbsolutePath().normalize() == defaultConfigPath().toAbsolutePath().normalize()) {
+            "kaios bug-report"
+        } else {
+            "kaios bug-report --config ${displayPath(configPath)}"
+        }
+
+    private fun doctorJsonCommand(configPath: Path): String =
+        if (configPath.toAbsolutePath().normalize() == defaultConfigPath().toAbsolutePath().normalize()) {
+            "kaios doctor --json"
+        } else {
+            "kaios doctor --config ${displayPath(configPath)} --json"
+        }
 
     private fun setupCommand(configPath: Path): String =
         if (configPath.toAbsolutePath().normalize() == defaultConfigPath().toAbsolutePath().normalize()) {
@@ -1090,7 +1106,7 @@ class KaiosCli(
             if (run != null) {
                 if (evidence == null) add("kaios evidence latest")
             }
-            add("kaios bug-report")
+            add(bugReportCommand(configPath))
         }.distinct()
 
     private fun renderVerifyText(report: VerifyReport, out: PrintStream) {
@@ -1496,7 +1512,7 @@ class KaiosCli(
         val command = runCatching { parseDoctorCommand(args) }.getOrElse { error ->
             return printCommandUsageError(err, "doctor", error.message)
         }
-        val report = buildDoctorReport()
+        val report = buildDoctorReport(command.configPath)
 
         when (command.format) {
             DoctorFormat.Text -> renderDoctorText(report, out)
@@ -1510,7 +1526,7 @@ class KaiosCli(
         val command = runCatching { parseBugReportCommand(args) }.getOrElse { error ->
             return printCommandUsageError(err, "bug-report", error.message)
         }
-        val report = buildBugReport()
+        val report = buildBugReport(command.configPath)
         val rendered = when (command.format) {
             BugReportFormat.Markdown -> renderBugReportMarkdown(report)
             BugReportFormat.Json -> TRACE_JSON.encodeToString(report)
@@ -1532,9 +1548,9 @@ class KaiosCli(
         return 0
     }
 
-    private fun buildBugReport(): BugReport {
-        val doctor = buildDoctorReport()
-        val config = buildConfigValidationReport(defaultConfigPath())
+    private fun buildBugReport(configPath: Path): BugReport {
+        val doctor = buildDoctorReport(configPath)
+        val config = buildConfigValidationReport(configPath)
         val snapshots = runCatching { snapshotStore.list() }.getOrElse { emptyList() }
         val latestSnapshot = snapshots.firstOrNull()
         val latestRun = latestSnapshot?.let(::bugReportRun)
@@ -1546,7 +1562,7 @@ class KaiosCli(
             generatedAt = Instant.now().toString(),
             cwd = workingDir.toString(),
             files = BugReportFiles(
-                config = defaultConfigPath().toString(),
+                config = configPath.toString(),
                 runsDir = snapshotRoot.toAbsolutePath().normalize().toString(),
                 reportsDir = reportRoot.toAbsolutePath().normalize().toString(),
                 artifactsDir = artifactRoot.toAbsolutePath().normalize().toString(),
@@ -1594,10 +1610,11 @@ class KaiosCli(
 
     private fun bugReportNextCommands(config: ConfigValidationReport, latestRun: BugReportRun?): List<String> =
         buildList {
+            val configPath = Paths.get(config.config)
             if (!config.valid) {
-                addAll(configRecoveryCommands(Paths.get(config.config)))
+                addAll(configRecoveryCommands(configPath))
             } else {
-                add(verifyEvidenceCommand(Paths.get(config.config)))
+                add(verifyEvidenceCommand(configPath))
             }
             if (latestRun == null) {
                 add("kaios demo")
@@ -1607,7 +1624,7 @@ class KaiosCli(
                 add("kaios evidence latest")
                 add("kaios inspect latest")
             }
-            add("kaios doctor --json")
+            add(doctorJsonCommand(configPath))
         }.distinct()
 
     private fun renderBugReportMarkdown(report: BugReport): String = buildString {
@@ -1720,6 +1737,7 @@ class KaiosCli(
             schema = DOCTOR_SCHEMA,
             version = KAIOS_VERSION,
             cwd = workingDir.toString(),
+            config = configPath.toString(),
             summary = DoctorSummary(
                 status = if (failed > 0) "failed" else "ready",
                 failed = failed,
@@ -1763,6 +1781,7 @@ class KaiosCli(
         out.println("KAI OS doctor")
         out.println("version: ${report.version}")
         out.println("cwd: ${report.cwd}")
+        out.println("config: ${report.config}")
         out.println()
         report.checks.forEach { check ->
             out.println("[${check.status}] ${check.name}: ${check.detail}")
@@ -2840,8 +2859,8 @@ class KaiosCli(
                 kaios evidence latest [--out capsule.json] [--baseline baseline.capsule.json] [--check]
                 kaios report latest
                 kaios export latest [--out artifact.md]
-                kaios doctor
-                kaios bug-report [--out report.md]
+                kaios doctor [--config kaios.json]
+                kaios bug-report [--config kaios.json] [--out report.md]
                 kaios --version
                 kaios help <command>
             """.trimIndent(),
@@ -4084,12 +4103,24 @@ class KaiosCli(
         }
 
     private fun parseDoctorCommand(args: List<String>): DoctorCommand {
+        var configPath = defaultConfigPath()
         var format = DoctorFormat.Text
         var index = 0
 
         while (index < args.size) {
             val arg = args[index]
             when {
+                arg == "--config" || arg == "-c" -> {
+                    val value = args.getOrNull(index + 1) ?: error("--config requires a path.")
+                    configPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--config=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--config requires a path." }
+                    configPath = resolvePath(value)
+                    index += 1
+                }
                 arg == "--json" -> {
                     format = DoctorFormat.Json
                     index += 1
@@ -4110,7 +4141,7 @@ class KaiosCli(
             }
         }
 
-        return DoctorCommand(format)
+        return DoctorCommand(configPath, format)
     }
 
     private fun parseDoctorFormat(value: String): DoctorFormat =
@@ -4121,6 +4152,7 @@ class KaiosCli(
         }
 
     private fun parseBugReportCommand(args: List<String>): BugReportCommand {
+        var configPath = defaultConfigPath()
         var outputPath: Path? = null
         var force = false
         var format = BugReportFormat.Markdown
@@ -4129,6 +4161,17 @@ class KaiosCli(
         while (index < args.size) {
             val arg = args[index]
             when {
+                arg == "--config" || arg == "-c" -> {
+                    val value = args.getOrNull(index + 1) ?: error("--config requires a path.")
+                    configPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--config=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--config requires a path." }
+                    configPath = resolvePath(value)
+                    index += 1
+                }
                 arg == "--json" -> {
                     format = BugReportFormat.Json
                     index += 1
@@ -4164,7 +4207,7 @@ class KaiosCli(
             }
         }
 
-        return BugReportCommand(outputPath, force, format)
+        return BugReportCommand(configPath, outputPath, force, format)
     }
 
     private fun parseBugReportFormat(value: String): BugReportFormat =
@@ -4710,6 +4753,7 @@ private data class ConfigValidationReport(
 )
 
 private data class DoctorCommand(
+    val configPath: Path,
     val format: DoctorFormat,
 )
 
@@ -4719,6 +4763,7 @@ private enum class DoctorFormat(val id: String) {
 }
 
 private data class BugReportCommand(
+    val configPath: Path,
     val outputPath: Path?,
     val force: Boolean,
     val format: BugReportFormat,
@@ -4734,6 +4779,7 @@ private data class DoctorReport(
     val schema: String,
     val version: String,
     val cwd: String,
+    val config: String,
     val summary: DoctorSummary,
     val checks: List<DoctorReportCheck>,
     val next: List<String>,
