@@ -34,7 +34,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.36"
+private const val KAIOS_VERSION = "0.1.37"
 
 private val TOP_LEVEL_COMMANDS = listOf(
     "init",
@@ -761,10 +761,11 @@ class KaiosCli(
         }
 
         out.println("RUNS (${snapshots.size})")
-        out.println("RUN ID        STATUS     WORKFLOW      PROCS  TOKENS  TASK")
-        snapshots.forEach { snapshot ->
+        out.println("RUN ID        STATUS     WORKFLOW      PROCS  TOKENS  ALIAS   TASK")
+        snapshots.forEachIndexed { index, snapshot ->
             val status = if (snapshot.success) "success" else "failed"
             val tokens = snapshot.processes.sumOf { it.tokens }
+            val alias = if (index == 0) "latest" else "-"
             out.println(
                 listOf(
                     snapshot.runId.padEnd(13),
@@ -772,6 +773,7 @@ class KaiosCli(
                     snapshot.workflowName.padEnd(13),
                     snapshot.processes.size.toString().padEnd(6),
                     tokens.toString().padEnd(7),
+                    alias.padEnd(8),
                     snapshot.task,
                 ).joinToString(""),
             )

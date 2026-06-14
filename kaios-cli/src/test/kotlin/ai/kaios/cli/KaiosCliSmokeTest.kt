@@ -31,7 +31,7 @@ class KaiosCliSmokeTest {
         val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
 
         assertEquals(0, code)
-        assertEquals("kaios 0.1.36\n", out.toString())
+        assertEquals("kaios 0.1.37\n", out.toString())
     }
 
     @Test
@@ -322,7 +322,14 @@ class KaiosCliSmokeTest {
         val runsCode = cli.run(arrayOf("runs"), PrintStream(runsOut), PrintStream(ByteArrayOutputStream()))
         val runsText = runsOut.toString()
         assertEquals(0, runsCode)
+        assertTrue(runsText.contains("ALIAS"))
         assertTrue(runsText.indexOf(secondRunId) < runsText.indexOf(firstRunId))
+        assertTrue(runsText.lineSequence().any { line ->
+            line.contains(secondRunId) && line.contains("latest") && line.contains("second agent process")
+        })
+        assertTrue(runsText.lineSequence().any { line ->
+            line.contains(firstRunId) && !line.contains("latest") && line.contains("first agent process")
+        })
 
         val psOut = ByteArrayOutputStream()
         val psCode = cli.run(arrayOf("ps", "latest"), PrintStream(psOut), PrintStream(ByteArrayOutputStream()))
@@ -606,6 +613,8 @@ class KaiosCliSmokeTest {
         val runsText = runsOut.toString()
 
         assertEquals(0, runsCode)
+        assertTrue(runsText.contains("ALIAS"))
+        assertTrue(runsText.contains("latest"))
         assertTrue(runsText.contains(runId))
         assertTrue(runsText.contains("success"))
 
