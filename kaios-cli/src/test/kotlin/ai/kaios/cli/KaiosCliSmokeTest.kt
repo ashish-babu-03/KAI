@@ -31,7 +31,7 @@ class KaiosCliSmokeTest {
         val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
 
         assertEquals(0, code)
-        assertEquals("kaios 0.1.41\n", out.toString())
+        assertEquals("kaios 0.1.42\n", out.toString())
     }
 
     @Test
@@ -1228,6 +1228,56 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `init ci writes a GitHub Actions agent gate`() {
+        val workspace = Files.createTempDirectory("kaios-cli-init-ci")
+        val cli = cliFor(workspace)
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(
+            arrayOf("init", "--template", "research", "--ci"),
+            PrintStream(out),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val configPath = workspace.resolve("kaios.json")
+        val workflowPath = workspace.resolve(".github").resolve("workflows").resolve("kaios.yml")
+        val workflowText = Files.readString(workflowPath)
+        val outputText = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(Files.exists(configPath))
+        assertTrue(outputText.contains("created_ci: $workflowPath"))
+        assertTrue(outputText.contains("kaios config validate --config kaios.json --json"))
+        assertTrue(workflowText.contains("name: KAI OS Agent Gate"))
+        assertTrue(workflowText.contains("KAIOS_VERSION: \"0.1.42\""))
+        assertTrue(workflowText.contains("KAIOS_MODEL_PROVIDER: mock"))
+        assertTrue(workflowText.contains("kaios doctor --json"))
+        assertTrue(workflowText.contains("kaios config validate --config 'kaios.json' --json"))
+        assertTrue(workflowText.contains("kaios run --config 'kaios.json' --trace-out .kaios/artifacts/ci-trace.json --force"))
+        assertTrue(workflowText.contains("kaios trace latest --check"))
+    }
+
+    @Test
+    fun `init ci refuses to overwrite an existing workflow without force`() {
+        val workspace = Files.createTempDirectory("kaios-cli-init-ci-existing")
+        val workflowPath = workspace.resolve(".github").resolve("workflows").resolve("kaios.yml")
+        Files.createDirectories(workflowPath.parent)
+        Files.writeString(workflowPath, "name: Existing\n")
+        val cli = cliFor(workspace)
+        val err = ByteArrayOutputStream()
+
+        val code = cli.run(
+            arrayOf("init", "--ci"),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(err),
+        )
+
+        assertEquals(1, code)
+        assertTrue(!Files.exists(workspace.resolve("kaios.json")))
+        assertEquals("name: Existing\n", Files.readString(workflowPath))
+        assertTrue(err.toString().contains("CI workflow '$workflowPath' already exists. Use --force to overwrite it."))
+    }
+
+    @Test
     fun `run default ignores an auto-detected project config`() {
         val workspace = Files.createTempDirectory("kaios-cli-default-flag")
         val cli = cliFor(workspace)
@@ -1718,7 +1768,7 @@ class KaiosCliSmokeTest {
 
         assertEquals(0, code)
         assertEquals("kaios.doctor/v1", json.getValue("schema").jsonPrimitive.content)
-        assertEquals("0.1.41", json.getValue("version").jsonPrimitive.content)
+        assertEquals("0.1.42", json.getValue("version").jsonPrimitive.content)
         assertEquals("ready", summary.getValue("status").jsonPrimitive.content)
         assertEquals(0, summary.getValue("failed").jsonPrimitive.int)
         assertTrue(checks.any { check ->

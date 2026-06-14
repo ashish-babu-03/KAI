@@ -1,16 +1,39 @@
 # CI Setup
 
-The repository is ready for GitHub Actions, but adding workflow files through the current automation token was blocked because the token did not include the `workflow` scope.
+KAI OS has two CI paths:
 
-## Fix
+- downstream projects can generate an Agent Gate with the CLI.
+- this repository can add a Gradle build workflow when the GitHub token has `workflow` scope.
 
-Run this locally with a GitHub CLI session that can request `workflow` scope:
+## Agent Gate
+
+In a project that uses KAI OS, run:
+
+```bash
+kaios init --template research --ci
+git add kaios.json .github/workflows/kaios.yml
+```
+
+The generated `.github/workflows/kaios.yml` is intentionally no-key by default. It pins the current KAI OS CLI version, sets `KAIOS_MODEL_PROVIDER=mock`, and runs:
+
+```bash
+kaios doctor --json
+kaios config validate --config kaios.json --json
+kaios run --config kaios.json --trace-out .kaios/artifacts/ci-trace.json --force "ci smoke: validate the agent workflow"
+kaios trace latest --check
+```
+
+This gives teams a stable gate for environment readiness, editable workflow validation, deterministic runtime execution, and process trace contract checks.
+
+## Repository CI
+
+This source repository is ready for GitHub Actions. If workflow-file pushes are blocked, refresh the GitHub CLI session with the `workflow` scope:
 
 ```bash
 gh auth refresh -h github.com -s workflow
 ```
 
-Then add this file as `.github/workflows/ci.yml`:
+Then add `.github/workflows/ci.yml`:
 
 ```yaml
 name: CI
@@ -42,9 +65,6 @@ jobs:
         with:
           arguments: clean test installDist
 ```
-
-After installing KAI OS in downstream projects, `kaios doctor --json` can be used as a machine-readable readiness check. It emits `kaios.doctor/v1` with a summary, check list, and safe next commands without printing API secrets.
-Use `kaios config validate --json` to gate editable agent workflow configs before running agents. It emits `kaios.config-validation/v1`.
 
 After pushing the workflow, restore this README badge if desired:
 

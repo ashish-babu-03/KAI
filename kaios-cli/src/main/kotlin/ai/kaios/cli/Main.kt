@@ -34,7 +34,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.41"
+private const val KAIOS_VERSION = "0.1.42"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val DOCTOR_SCHEMA = "kaios.doctor/v1"
 private const val RUNS_SCHEMA = "kaios.runs/v1"
@@ -263,14 +263,18 @@ class KaiosCli(
     private fun commandHelpOrNull(command: String): CommandHelp? =
         when (command) {
             "init" -> CommandHelp(
-                usage = "kaios init [--template default|research|code-review|release] [--config kaios.json] [--force]",
+                usage = "kaios init [--template default|research|code-review|release] [--config kaios.json] [--ci] [--force]",
                 summary = "Create a local kaios.json workflow so runs use your own agent process graph.",
                 examples = listOf(
                     "kaios init",
                     "kaios init --template research",
+                    "kaios init --template research --ci",
                     "kaios init --template code-review --force",
                 ),
-                notes = listOf("Run 'kaios config templates' to see built-in workflow templates."),
+                notes = listOf(
+                    "Run 'kaios config templates' to see built-in workflow templates.",
+                    "--ci also writes .github/workflows/kaios.yml with doctor, config validation, smoke run, and trace checks.",
+                ),
             )
             "demo" -> CommandHelp(
                 usage = "kaios demo",
@@ -655,20 +659,32 @@ class KaiosCli(
 
         val template = requireProjectTemplate(command.templateId)
         val path = command.configPath
+        val ciPath = if (command.writeCi) defaultCiWorkflowPath() else null
         if (path.exists() && !command.force) {
             err.println("Config '$path' already exists. Use --force to overwrite it.")
+            return 1
+        }
+        if (ciPath != null && ciPath.exists() && !command.force) {
+            err.println("CI workflow '$ciPath' already exists. Use --force to overwrite it.")
             return 1
         }
 
         path.parent?.let { Files.createDirectories(it) }
         path.writeText(projectConfigText(command.templateId))
+        ciPath?.let { workflowPath ->
+            workflowPath.parent?.let { Files.createDirectories(it) }
+            workflowPath.writeText(projectCiWorkflowText(path))
+        }
 
         out.println("created: $path")
+        ciPath?.let { out.println("created_ci: $it") }
         out.println("template: ${command.templateId}")
         out.println()
         out.println("next:")
+        out.println("  kaios config validate --config ${displayPath(path)} --json")
         out.println("  kaios config show --config ${displayPath(path)}")
         out.println("  kaios run \"${template.exampleTask}\"")
+        ciPath?.let { out.println("  git add ${displayPath(path)} ${displayPath(it)}") }
         out.println("  kaios ps latest")
         return 0
     }
@@ -1421,7 +1437,7 @@ class KaiosCli(
                 kaios context [path ...]
 
               Project config:
-                kaios init [--template default|research|code-review|release]
+                kaios init [--template default|research|code-review|release] [--ci]
                 kaios config validate [--config kaios.json]
                 kaios config show [--config kaios.json]
                 kaios config templates
@@ -1562,6 +1578,9 @@ class KaiosCli(
 
     private fun defaultConfigPath(): Path = workingDir.resolve(KAIOS_CONFIG_FILE).normalize()
 
+    private fun defaultCiWorkflowPath(): Path =
+        workingDir.resolve(".github").resolve("workflows").resolve("kaios.yml").normalize()
+
     private fun toolRegistry() =
         builtInToolRegistry(
             fileRoot = workingDir.resolve(".kaios").resolve("files"),
@@ -1682,6 +1701,61 @@ class KaiosCli(
         } else {
             path.toString()
         }
+
+    private fun ciDisplayPath(path: Path): String =
+        displayPath(path).replace('\\', '/')
+
+    private fun shellQuote(value: String): String =
+        "'${value.replace("'", "'\"'\"'")}'"
+
+    private fun projectCiWorkflowText(configPath: Path): String {
+        val config = shellQuote(ciDisplayPath(configPath))
+        return """
+            name: KAI OS Agent Gate
+
+            on:
+              pull_request:
+              push:
+                branches: [main]
+
+            permissions:
+              contents: read
+
+            jobs:
+              kaios:
+                name: Validate agent workflow
+                runs-on: ubuntu-latest
+                env:
+                  KAIOS_VERSION: "$KAIOS_VERSION"
+                  KAIOS_MODEL_PROVIDER: mock
+                steps:
+                  - name: Checkout
+                    uses: actions/checkout@v6.0.3
+
+                  - name: Set up Java
+                    uses: actions/setup-java@v5.2.0
+                    with:
+                      distribution: temurin
+                      java-version: "17"
+
+                  - name: Install KAI OS
+                    run: |
+                      curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
+                      echo "${'$'}HOME/.kaios/bin" >> "${'$'}GITHUB_PATH"
+
+                  - name: Check runtime
+                    run: kaios doctor --json
+
+                  - name: Validate agent workflow
+                    run: kaios config validate --config $config --json
+
+                  - name: Run deterministic smoke workflow
+                    run: kaios run --config $config --trace-out .kaios/artifacts/ci-trace.json --force "ci smoke: validate the agent workflow"
+
+                  - name: Check process trace contract
+                    run: kaios trace latest --check
+        """.trimIndent() + "\n"
+    }
 
     private fun parseRunCommand(args: List<String>): RunCommand {
         var configPath: Path? = null
@@ -1893,6 +1967,7 @@ class KaiosCli(
         var force = false
         var templateId = "default"
         var listTemplates = false
+        var writeCi = false
         var index = 0
 
         while (index < args.size) {
@@ -1904,6 +1979,10 @@ class KaiosCli(
                 }
                 arg == "--force" || arg == "-f" -> {
                     force = true
+                    index += 1
+                }
+                arg == "--ci" -> {
+                    writeCi = true
                     index += 1
                 }
                 arg == "--config" || arg == "-c" -> {
@@ -1934,7 +2013,7 @@ class KaiosCli(
             }
         }
 
-        return InitCommand(configPath, force, templateId, listTemplates)
+        return InitCommand(configPath, force, templateId, listTemplates, writeCi)
     }
 
     private fun parseConfigPath(args: List<String>): Path {
@@ -2217,6 +2296,7 @@ private data class InitCommand(
     val force: Boolean,
     val templateId: String,
     val listTemplates: Boolean,
+    val writeCi: Boolean,
 )
 
 private data class ExportCommand(

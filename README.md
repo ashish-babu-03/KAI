@@ -88,11 +88,13 @@ kaios run --index . --trace-out artifacts/trace.json --force "summarize this pro
 Create a local workflow config when you want your own agent process graph:
 
 ```bash
-kaios init --template research
+kaios init --template research --ci
 kaios config show
 kaios config validate --json
 kaios run --out artifacts/runtime.md "map the JVM agent runtime"
 ```
+
+`--ci` also writes `.github/workflows/kaios.yml`, a no-key Agent Gate that installs KAI OS, runs `doctor --json`, validates `kaios.json`, executes a deterministic smoke run, and checks the process trace contract.
 
 Or install with the hosted script:
 
@@ -241,7 +243,7 @@ See [examples/README.md](examples/README.md) for runnable CLI examples and the c
 
 ## Project Config
 
-Use `kaios init` to generate `kaios.json`, then edit the agent DAG without recompiling Kotlin. Built-in templates include `default`, `research`, `code-review`, and `release`.
+Use `kaios init` to generate `kaios.json`, then edit the agent DAG without recompiling Kotlin. Add `--ci` when you also want the official GitHub Actions Agent Gate. Built-in templates include `default`, `research`, `code-review`, and `release`.
 
 ```json
 {
@@ -276,6 +278,13 @@ kaios config show
 kaios run "map the JVM agent runtime"
 ```
 
+Generate the production-ready gate with:
+
+```bash
+kaios init --template research --ci
+git add kaios.json .github/workflows/kaios.yml
+```
+
 When `kaios.json` exists in the current directory, `kaios run "task"` uses it automatically. Use `kaios run --default "task"` to force the built-in workflow, or `kaios run --config path/to/workflow.json "task"` for a specific file.
 
 See [docs/CONFIG.md](docs/CONFIG.md) for templates, config fields, validation rules, built-in tools, and fallback routing.
@@ -305,6 +314,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Permissioned tools: `echo`, `clock`, `mock-http`, allowlisted `http`, scoped `file`.
 - Project workflow templates, retry policy, config validation, config graph display, and auto-detected `kaios.json` runs.
 - `kaios config validate --json` emits `kaios.config-validation/v1` for CI and release gates.
+- `kaios init --ci` writes a GitHub Actions Agent Gate using `doctor --json`, config validation, a mock-provider smoke run, and `trace --check`.
 - Deterministic workspace analysis with `kaios analyze` for no-key Markdown and JSON project reports.
 - Workspace Index with `kaios index` and `kaios run --index <path>` for language stats, notable files, and project source maps.
 - Project-aware runs with `kaios context`, `.kaiosignore`, and bounded `kaios run --context <file-or-dir>` ingestion.
