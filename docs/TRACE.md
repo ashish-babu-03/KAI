@@ -71,10 +71,15 @@ Example JSON shape:
 
 ## CI Pattern
 
-Use trace files when a workflow run should become a build artifact:
+Use `--trace-out` when a workflow run should become a build artifact without parsing `run_id` from stdout:
 
 ```bash
-kaios run --index . --out artifacts/project.md --force "summarize this project"
+kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
+```
+
+You can also generate a trace later from any saved run snapshot:
+
+```bash
 kaios trace <run-id> --json --out artifacts/trace.json --force
 ```
 

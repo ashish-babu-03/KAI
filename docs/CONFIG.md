@@ -232,6 +232,7 @@ graph:
 Configured workflows use the same process observability as the built-in workflow:
 
 ```bash
+kaios run --config kaios.json --trace-out artifacts/trace.json --force "review this release"
 kaios ps <run-id>
 kaios inspect <run-id>
 kaios trace <run-id>

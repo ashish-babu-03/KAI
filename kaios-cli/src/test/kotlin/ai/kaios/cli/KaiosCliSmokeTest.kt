@@ -29,7 +29,7 @@ class KaiosCliSmokeTest {
         val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
 
         assertEquals(0, code)
-        assertEquals("kaios 0.1.30\n", out.toString())
+        assertEquals("kaios 0.1.31\n", out.toString())
     }
 
     @Test
@@ -484,6 +484,45 @@ class KaiosCliSmokeTest {
 
         val forcedCode = cli.run(
             arrayOf("run", "--out", artifact.toString(), "--force", "draft", "again"),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        assertEquals(0, forcedCode)
+    }
+
+    @Test
+    fun `run trace out writes process trace json and protects existing files`() {
+        val workspace = Files.createTempDirectory("kaios-cli-run-trace-out")
+        val cli = cliFor(workspace)
+        val trace = workspace.resolve("artifacts/trace.json")
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(
+            arrayOf("run", "--trace-out", trace.toString(), "record", "a", "trace"),
+            PrintStream(out),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val text = out.toString()
+        val traceJson = Json.parseToJsonElement(Files.readString(trace)).jsonObject
+
+        assertEquals(0, code)
+        assertTrue(text.contains("trace: $trace"))
+        assertEquals("kaios.process-trace/v1", traceJson.getValue("schema").jsonPrimitive.content)
+        assertEquals(3, traceJson.getValue("metrics").jsonObject.getValue("processCount").jsonPrimitive.int)
+
+        val err = ByteArrayOutputStream()
+        val secondCode = cli.run(
+            arrayOf("run", "--trace-out", trace.toString(), "record", "again"),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(err),
+        )
+
+        assertEquals(1, secondCode)
+        assertTrue(err.toString().contains("already exists"))
+        assertTrue(err.toString().contains("Use --force"))
+
+        val forcedCode = cli.run(
+            arrayOf("run", "--trace-out", trace.toString(), "--force", "record", "again"),
             PrintStream(ByteArrayOutputStream()),
             PrintStream(ByteArrayOutputStream()),
         )

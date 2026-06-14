@@ -80,6 +80,7 @@ Snapshots are JSON files under `.kaios/runs/` and are used by the CLI to inspect
 - `kaios analyze [path ...]`
 - `kaios index [path ...]`
 - `kaios run --index . "task"`
+- `kaios run --index . --trace-out artifacts/trace.json "task"`
 - `kaios run --context README.md "task"`
 - `kaios context [path ...]`
 - `kaios runs`

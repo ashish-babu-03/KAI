@@ -70,6 +70,12 @@ Need a machine-readable workspace report for CI or dashboards?
 kaios analyze . --format json --out artifacts/analysis.json --force
 ```
 
+Need the run itself as a machine-readable process trace?
+
+```bash
+kaios run --index . --trace-out artifacts/trace.json --force "summarize this project"
+```
+
 Create a local workflow config when you want your own agent process graph:
 
 ```bash

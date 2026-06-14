@@ -30,7 +30,7 @@ brew install kaios
 
 kaios doctor
 kaios analyze . --out artifacts/analysis.md --force
-kaios run --index . --context README.md --out artifacts/project.md --force "summarize this project"
+kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
 If your project has no `README.md`, omit `--context README.md`.
@@ -44,7 +44,7 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
 kaios doctor
 kaios analyze . --out artifacts/analysis.md --force
-kaios run --index . --context README.md --out artifacts/project.md --force "summarize this project"
+kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
 Set `KAIOS_INSTALL_DIR` to install somewhere else:
@@ -56,11 +56,11 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.30.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.30/kaios-0.1.30.zip
-unzip kaios-0.1.30.zip
-./kaios-0.1.30/bin/kaios doctor
-./kaios-0.1.30/bin/kaios analyze . --out artifacts/analysis.md --force
-./kaios-0.1.30/bin/kaios run --index . --context README.md --out artifacts/project.md --force "summarize this project"
+curl -L -o kaios-0.1.31.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.31/kaios-0.1.31.zip
+unzip kaios-0.1.31.zip
+./kaios-0.1.31/bin/kaios doctor
+./kaios-0.1.31/bin/kaios analyze . --out artifacts/analysis.md --force
+./kaios-0.1.31/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
 ## Build From Source
@@ -71,7 +71,7 @@ cd KAI
 ./gradlew test installDist
 build/install/kaios-cli/bin/kaios doctor
 build/install/kaios-cli/bin/kaios analyze . --out artifacts/analysis.md --force
-build/install/kaios-cli/bin/kaios run --index . --context README.md --out artifacts/project.md --force "summarize this project"
+build/install/kaios-cli/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
 Useful next commands after the first artifact:
@@ -80,6 +80,7 @@ Useful next commands after the first artifact:
 kaios analyze . --format json --out artifacts/analysis.json --force
 kaios init --template research
 kaios config show
+kaios run --index . --trace-out artifacts/trace.json --force "summarize this project"
 kaios ps <run-id>
 kaios inspect <run-id>
 kaios trace <run-id>

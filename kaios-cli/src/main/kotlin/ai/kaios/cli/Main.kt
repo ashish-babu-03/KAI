@@ -34,7 +34,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.30"
+private const val KAIOS_VERSION = "0.1.31"
 
 private val TOP_LEVEL_COMMANDS = listOf(
     "init",
@@ -259,16 +259,18 @@ class KaiosCli(
                 notes = listOf("Run 'kaios config templates' to see built-in workflow templates."),
             )
             "run" -> CommandHelp(
-                usage = "kaios run [--context path] [--index path] [--config kaios.json] [--out artifact.md] [--force] \"task\"",
+                usage = "kaios run [--context path] [--index path] [--config kaios.json] [--out artifact.md] [--trace-out trace.json] [--force] \"task\"",
                 summary = "Run an inspectable agent workflow and persist a snapshot under .kaios/runs/.",
                 examples = listOf(
                     "kaios run \"summarize this project\"",
                     "kaios run --index . --out artifacts/project.md --force \"summarize this project\"",
+                    "kaios run --index . --trace-out artifacts/trace.json --force \"summarize this project\"",
                     "kaios run --index . --context README.md --out artifacts/project.md --force \"explain the architecture\"",
                     "kaios run --config kaios.json \"review this release\"",
                 ),
                 notes = listOf(
                     "No API key is required by default; the mock provider is deterministic.",
+                    "Use --trace-out to write kaios.process-trace/v1 JSON during the run.",
                     "Use -- before a task that starts with '-'.",
                     "After a run, use 'kaios ps <run-id>', 'kaios inspect <run-id>', and 'kaios trace <run-id>'.",
                 ),
@@ -426,10 +428,22 @@ class KaiosCli(
 
         val result = scheduler.run(workflow, composeRunInput(command.task, context, workspaceIndex))
         val path = snapshotStore.save(composeTaskSummary(command.task, context, workspaceIndex), result)
+        val storedSnapshot = if (command.outputPath != null || command.traceOutputPath != null) {
+            snapshotStore.load(result.runId)
+        } else {
+            null
+        }
         val artifactPath = runCatching {
             command.outputPath?.let { outputPath ->
-                val snapshot = snapshotStore.load(result.runId)
-                writeArtifact(snapshot, outputPath, command.forceOutput)
+                writeArtifact(storedSnapshot ?: snapshotStore.load(result.runId), outputPath, command.forceOutput)
+            }
+        }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+        val tracePath = runCatching {
+            command.traceOutputPath?.let { outputPath ->
+                writeTraceJson(storedSnapshot ?: snapshotStore.load(result.runId), outputPath, command.forceOutput)
             }
         }.getOrElse { error ->
             err.println(error.message)
@@ -447,6 +461,7 @@ class KaiosCli(
             out.println("index: ${workspaceIndex.summary()}")
         }
         artifactPath?.let { out.println("artifact: $it") }
+        tracePath?.let { out.println("trace: $it") }
         out.println()
         out.println(result.finalOutput)
         out.println()
@@ -1086,7 +1101,7 @@ class KaiosCli(
             Command groups:
               Runtime:
                 kaios run "task"
-                kaios run --index . --context README.md --out artifact.md --force "task"
+                kaios run --index . --context README.md --out artifact.md --trace-out trace.json --force "task"
 
               Workspace:
                 kaios analyze [path ...] [--format markdown|json] [--out analysis.md]
@@ -1286,6 +1301,9 @@ class KaiosCli(
         return path
     }
 
+    private fun writeTraceJson(snapshot: StoredRunSnapshot, path: Path, force: Boolean): Path =
+        writeTextOutput("${TRACE_JSON.encodeToString(buildProcessTrace(snapshot))}\n", path, force)
+
     private fun composeRunInput(task: String, context: ContextBundle, workspaceIndex: WorkspaceIndex): String {
         if (context.sources.isEmpty() && workspaceIndex.files.isEmpty()) return task
 
@@ -1354,6 +1372,7 @@ class KaiosCli(
         var configPath: Path? = null
         var useBuiltInDefault = false
         var outputPath: Path? = null
+        var traceOutputPath: Path? = null
         var forceOutput = false
         val contextPaths = mutableListOf<Path>()
         val indexPaths = mutableListOf<Path>()
@@ -1387,6 +1406,17 @@ class KaiosCli(
                     val value = arg.substringAfter("=")
                     require(value.isNotBlank()) { "$arg requires a path." }
                     outputPath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--trace-out" || arg == "--trace-output" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    traceOutputPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--trace-out=") || arg.startsWith("--trace-output=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "$arg requires a path." }
+                    traceOutputPath = resolvePath(value)
                     index += 1
                 }
                 arg == "--force-output" || arg == "--force" || arg == "-f" -> {
@@ -1432,7 +1462,7 @@ class KaiosCli(
         val task = taskParts.joinToString(" ").trim()
         require(task.isNotBlank()) { "Task cannot be blank." }
         require(!(configPath != null && useBuiltInDefault)) { "Use either --config or --default, not both." }
-        return RunCommand(task, configPath, useBuiltInDefault, outputPath, forceOutput, contextPaths, indexPaths)
+        return RunCommand(task, configPath, useBuiltInDefault, outputPath, traceOutputPath, forceOutput, contextPaths, indexPaths)
     }
 
     private fun parseContextCommand(args: List<String>): List<Path> {
@@ -1727,6 +1757,7 @@ private data class RunCommand(
     val configPath: Path?,
     val useBuiltInDefault: Boolean,
     val outputPath: Path?,
+    val traceOutputPath: Path?,
     val forceOutput: Boolean,
     val contextPaths: List<Path>,
     val indexPaths: List<Path>,
