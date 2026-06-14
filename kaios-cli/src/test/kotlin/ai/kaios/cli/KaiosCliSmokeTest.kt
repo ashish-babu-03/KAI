@@ -328,6 +328,73 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `analyze command renders deterministic workspace report`() {
+        val workspace = Files.createTempDirectory("kaios-cli-analyze")
+        Files.writeString(workspace.resolve("README.md"), "# Demo\nUseful public overview.\n")
+        Files.writeString(workspace.resolve("settings.gradle.kts"), "rootProject.name = \"demo\"\n")
+        Files.createDirectories(workspace.resolve(".github/workflows"))
+        Files.writeString(workspace.resolve(".github/workflows/ci.yml"), "name: CI\n")
+        Files.createDirectories(workspace.resolve("src/main/kotlin"))
+        Files.writeString(workspace.resolve("src/main/kotlin/App.kt"), "fun main() = println(\"kai\")\n")
+        Files.createDirectories(workspace.resolve("src/test/kotlin"))
+        Files.writeString(workspace.resolve("src/test/kotlin/AppTest.kt"), "class AppTest\n")
+        val cli = cliFor(workspace)
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("analyze", "."), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(text.contains("# KAI OS Workspace Analysis"))
+        assertTrue(text.contains("Gradle Kotlin DSL project detected"))
+        assertTrue(text.contains("Kotlin is present"))
+        assertTrue(text.contains("GitHub Actions workflow files are present"))
+        assertTrue(text.contains("1 test file(s) found"))
+        assertTrue(text.contains("kaios run --index . --context README.md"))
+        assertTrue(!text.contains("Useful public overview."))
+    }
+
+    @Test
+    fun `analyze out writes report and protects existing files`() {
+        val workspace = Files.createTempDirectory("kaios-cli-analyze-out")
+        Files.writeString(workspace.resolve("README.md"), "# Demo\n")
+        Files.createDirectories(workspace.resolve("src/main/kotlin"))
+        Files.writeString(workspace.resolve("src/main/kotlin/App.kt"), "fun main() = println(\"kai\")\n")
+        val cli = cliFor(workspace)
+        val report = workspace.resolve("artifacts/analysis.md")
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(
+            arrayOf("analyze", ".", "--out", report.toString()),
+            PrintStream(out),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val reportText = Files.readString(report)
+
+        assertEquals(0, code)
+        assertTrue(out.toString().contains("analysis: $report"))
+        assertTrue(reportText.contains("# KAI OS Workspace Analysis"))
+        assertTrue(reportText.contains("## Suggested KAI OS Commands"))
+
+        val err = ByteArrayOutputStream()
+        val secondCode = cli.run(
+            arrayOf("analyze", ".", "--out", report.toString()),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(err),
+        )
+
+        assertEquals(1, secondCode)
+        assertTrue(err.toString().contains("already exists"))
+
+        val forcedCode = cli.run(
+            arrayOf("analyze", ".", "--out", report.toString(), "--force"),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        assertEquals(0, forcedCode)
+    }
+
+    @Test
     fun `init writes a project config and refuses accidental overwrite`() {
         val workspace = Files.createTempDirectory("kaios-cli-init")
         val cli = cliFor(workspace)

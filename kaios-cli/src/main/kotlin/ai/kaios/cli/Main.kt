@@ -29,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.14"
+private const val KAIOS_VERSION = "0.1.15"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -57,6 +57,7 @@ class KaiosCli(
             "run" -> runWorkflow(args.drop(1), out, err)
             "context" -> previewContext(args.drop(1), out, err)
             "index" -> previewIndex(args.drop(1), out, err)
+            "analyze" -> analyzeWorkspace(args.drop(1), out, err)
             "config" -> configCommand(args.drop(1), out, err)
             "runs" -> listRuns(out)
             "ps" -> printProcessTable(args.drop(1), out, err)
@@ -190,6 +191,33 @@ class KaiosCli(
         }
 
         out.println(index.render())
+        return 0
+    }
+
+    private fun analyzeWorkspace(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val command = runCatching { parseAnalyzeCommand(args) }.getOrElse { error ->
+            err.println(error.message)
+            err.println("Usage: kaios analyze [path ...] [--out analysis.md] [--force]")
+            return 1
+        }
+
+        val index = runCatching { workspaceIndexer().index(command.paths) }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+        val report = WorkspaceAnalyzer().render(index)
+
+        if (command.outputPath == null) {
+            out.println(report)
+            return 0
+        }
+
+        val path = runCatching { writeTextOutput(report, command.outputPath, command.force) }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+        out.println("analysis: $path")
+        out.println("index: ${index.summary()}")
         return 0
     }
 
@@ -574,6 +602,7 @@ class KaiosCli(
               kaios run --context README.md "task"
               kaios context [path ...]
               kaios index [path ...]
+              kaios analyze [path ...] [--out analysis.md]
               kaios run --index . "task"
               kaios run --config kaios.json "task"
               kaios run --default "task"
@@ -692,6 +721,15 @@ class KaiosCli(
         }
         path.parent?.let { Files.createDirectories(it) }
         path.writeText(artifactExporter.render(snapshot))
+        return path
+    }
+
+    private fun writeTextOutput(text: String, path: Path, force: Boolean): Path {
+        if (path.exists() && !force) {
+            error("Output '$path' already exists. Use --force to overwrite it.")
+        }
+        path.parent?.let { Files.createDirectories(it) }
+        path.writeText(text)
         return path
     }
 
@@ -887,6 +925,45 @@ class KaiosCli(
         return paths.ifEmpty { listOf(workingDir) }
     }
 
+    private fun parseAnalyzeCommand(args: List<String>): AnalyzeCommand {
+        var outputPath: Path? = null
+        var force = false
+        val paths = mutableListOf<Path>()
+        var index = 0
+
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--out" || arg == "--output" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    outputPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--out=") || arg.startsWith("--output=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "$arg requires a path." }
+                    outputPath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--force" || arg == "-f" -> {
+                    force = true
+                    index += 1
+                }
+                arg == "--" -> {
+                    paths.addAll(args.drop(index + 1).map(::resolvePath))
+                    index = args.size
+                }
+                arg.startsWith("-") -> error("Unknown analyze option '$arg'.")
+                else -> {
+                    paths.add(resolvePath(arg))
+                    index += 1
+                }
+            }
+        }
+
+        return AnalyzeCommand(paths.ifEmpty { listOf(workingDir) }, outputPath, force)
+    }
+
     private fun parseInitCommand(args: List<String>): InitCommand {
         var configPath = defaultConfigPath()
         var force = false
@@ -1020,6 +1097,12 @@ private data class InitCommand(
 private data class ExportCommand(
     val runId: RunId,
     val outputPath: Path,
+    val force: Boolean,
+)
+
+private data class AnalyzeCommand(
+    val paths: List<Path>,
+    val outputPath: Path?,
     val force: Boolean,
 )
 

@@ -26,6 +26,7 @@ KAI OS is starting with a small, inspectable runtime. The goal is to grow into a
 - HTTP tool with allowlist policy, shipped in v0.1.12
 - observable scheduler retry policy, shipped in v0.1.13
 - Workspace Index for project source maps, shipped in v0.1.14
+- no-key workspace analysis reports, shipped in v0.1.15
 - better error surfaces
 
 ## v0.3 - Scheduler Kernel

@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-VERSION="${KAIOS_VERSION:-0.1.14}"
+VERSION="${KAIOS_VERSION:-0.1.15}"
 REPO="morning-verlu/KAI"
 BASE_URL="https://github.com/${REPO}/releases/download/v${VERSION}"
 ARCHIVE="kaios-${VERSION}.zip"
@@ -72,6 +72,7 @@ echo
 if command -v kaios >/dev/null 2>&1; then
   echo "Try:"
   echo "  kaios doctor"
+  echo "  kaios analyze . --out artifacts/analysis.md"
   echo "  kaios index ."
   echo "  kaios run --index . --context README.md --out artifacts/project.md \"summarize this project\""
 else
@@ -80,6 +81,7 @@ else
   echo
   echo "Try now:"
   echo "  ${BIN_DIR}/kaios doctor"
+  echo "  ${BIN_DIR}/kaios analyze . --out artifacts/analysis.md"
   echo "  ${BIN_DIR}/kaios index ."
   echo "  ${BIN_DIR}/kaios run --index . --context README.md --out artifacts/project.md \"summarize this project\""
 fi

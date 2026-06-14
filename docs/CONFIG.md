@@ -31,19 +31,21 @@ kaios run --config workflows/research.json "analyze a release plan"
 
 ## Workspace Index
 
-Build a project source map before a run:
+Build a no-key project report and source map before a run:
 
 ```bash
+kaios analyze . --out artifacts/analysis.md
 kaios index .
 kaios run --index . "summarize the project shape"
 kaios run --index . --config workflows/research.json "map the runtime architecture"
 ```
 
-`kaios index` reports language distribution, top directories, notable files, line counts, and largest readable text files. It uses the same workspace boundary and `.kaiosignore` rules as context loading.
+`kaios analyze` writes a deterministic Markdown report with stack signals, architecture map, hotspots, quality signals, and suggested next commands. `kaios index` reports language distribution, top directories, notable files, line counts, and largest readable text files. Both use the same workspace boundary and `.kaiosignore` rules as context loading.
 
 Use Workspace Index for orientation and `--context` for specific file evidence:
 
 ```bash
+kaios analyze . --out artifacts/analysis.md
 kaios run --index . --context README.md --context docs "explain the architecture"
 ```
 
@@ -52,6 +54,7 @@ kaios run --index . --context README.md --context docs "explain the architecture
 Attach files or directories from the current workspace when a run needs project context:
 
 ```bash
+kaios analyze . --out artifacts/analysis.md
 kaios index .
 kaios context .
 kaios context README.md docs

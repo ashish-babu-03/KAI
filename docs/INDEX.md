@@ -5,12 +5,24 @@ Workspace Index gives KAI OS a cheap project map before an agent run.
 Use it when you want the runtime to understand repository shape without loading every file into context.
 
 ```bash
+kaios analyze . --out artifacts/analysis.md
 kaios index .
 kaios run --index . "explain this project"
 kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
 ```
 
-## Index vs Context
+## Analyze vs Index vs Context
+
+`kaios analyze` is a deterministic Markdown report:
+
+- project summary
+- stack signals
+- language and directory tables
+- notable files and hotspots
+- test and quality signals
+- suggested KAI OS commands
+
+It does not require a model provider or API key.
 
 `kaios index` is a source map:
 
@@ -30,6 +42,7 @@ kaios run --index . --context README.md --out artifacts/project.md "summarize th
 Use both when a task needs orientation and evidence:
 
 ```bash
+kaios analyze . --out artifacts/analysis.md
 kaios index .
 kaios context README.md docs
 kaios run --index . --context README.md --context docs "explain the architecture"
@@ -62,6 +75,7 @@ Workspace Index records metadata, not full file contents. Use `--context` for th
 When `--index` is used during a run, snapshots and Markdown artifacts include a compact `Workspace Index` summary:
 
 ```bash
+kaios analyze . --out artifacts/analysis.md
 kaios run --index . --out artifacts/project.md "summarize this project"
 kaios export <run-id>
 ```

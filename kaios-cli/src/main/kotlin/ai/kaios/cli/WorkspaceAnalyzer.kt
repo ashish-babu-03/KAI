@@ -1,0 +1,160 @@
+package ai.kaios.cli
+
+internal class WorkspaceAnalyzer {
+    fun render(index: WorkspaceIndex): String = buildString {
+        appendLine("# KAI OS Workspace Analysis")
+        appendLine()
+        appendLine("## Summary")
+        appendLine()
+        appendLine("- Root: `${index.root}`")
+        appendLine("- Files indexed: `${index.files.size}`")
+        appendLine("- Lines indexed: `${index.totalLines}`")
+        appendLine("- Bytes indexed: `${index.totalBytes}`")
+        appendLine("- Truncated: `${index.truncated}`")
+        if (index.ignorePatternCount > 0) {
+            appendLine("- Ignore rules: `.kaiosignore` with `${index.ignorePatternCount}` pattern(s)")
+        }
+        appendLine()
+
+        appendLine("## Stack Signals")
+        appendLine()
+        stackSignals(index).forEach { appendLine("- $it") }
+        appendLine()
+
+        appendLine("## Language Map")
+        appendLine()
+        appendLine("| Language | Files | Lines | Bytes |")
+        appendLine("| --- | ---: | ---: | ---: |")
+        index.languageStats.forEach { stat ->
+            appendLine("| ${stat.language} | ${stat.files} | ${stat.lines} | ${stat.bytes} |")
+        }
+        appendLine()
+
+        appendLine("## Architecture Map")
+        appendLine()
+        appendLine("| Directory | Files | Bytes |")
+        appendLine("| --- | ---: | ---: |")
+        index.directoryStats.take(16).forEach { stat ->
+            appendLine("| ${escapeCell(stat.directory)} | ${stat.files} | ${stat.bytes} |")
+        }
+        appendLine()
+
+        appendLine("## Notable Files")
+        appendLine()
+        index.notableFiles.ifEmpty { index.largestFiles.take(10) }.forEach { file ->
+            appendLine("- `${file.path}` - ${file.language}, ${file.lines} lines, ${file.bytes} bytes")
+        }
+        appendLine()
+
+        appendLine("## Hotspots")
+        appendLine()
+        index.largestFiles.take(10).forEach { file ->
+            appendLine("- `${file.path}` - ${file.language}, ${file.lines} lines, ${file.bytes} bytes")
+        }
+        appendLine()
+
+        appendLine("## Test And Quality Signals")
+        appendLine()
+        qualitySignals(index).forEach { appendLine("- $it") }
+        appendLine()
+
+        appendLine("## Suggested KAI OS Commands")
+        appendLine()
+        suggestedCommands(index).forEach { command ->
+            appendLine("```bash")
+            appendLine(command)
+            appendLine("```")
+            appendLine()
+        }
+    }.trimEnd()
+
+    private fun stackSignals(index: WorkspaceIndex): List<String> {
+        val files = index.files.map { it.path }.toSet()
+        val languages = index.languageStats.associate { it.language to it.files }
+        val signals = mutableListOf<String>()
+
+        when {
+            "settings.gradle.kts" in files || "build.gradle.kts" in files -> signals += "Gradle Kotlin DSL project detected."
+            "settings.gradle" in files || "build.gradle" in files -> signals += "Gradle project detected."
+            "pom.xml" in files -> signals += "Maven project detected."
+            "package.json" in files -> signals += "Node.js package detected."
+            "pyproject.toml" in files -> signals += "Python project metadata detected."
+            else -> signals += "No dominant build manifest detected in indexed text files."
+        }
+
+        if ((languages["Kotlin"] ?: 0) > 0) signals += "Kotlin is present and likely a primary implementation language."
+        if ((languages["Java"] ?: 0) > 0) signals += "Java sources are present."
+        if ((languages["TypeScript"] ?: 0) + (languages["JavaScript"] ?: 0) > 0) signals += "JavaScript/TypeScript sources are present."
+        if ("README.md" in files || "README" in files) signals += "README documentation is present."
+        if ("LICENSE" in files) signals += "License file is present."
+        if ("SECURITY.md" in files) signals += "Security policy is present."
+        if (files.any { it.startsWith(".github/workflows/") }) signals += "GitHub Actions workflow files are present."
+        if (files.any { it.endsWith("kaios.json") }) signals += "KAI OS project workflow config is present."
+
+        return signals
+    }
+
+    private fun qualitySignals(index: WorkspaceIndex): List<String> {
+        val files = index.files.map { it.path }
+        val testFiles = files.filter { "/src/test/" in it || it.startsWith("test/") || it.contains("/test/") }
+        val docs = files.filter { it.startsWith("docs/") && it.endsWith(".md") }
+        val sourceFiles = files.filter { "/src/main/" in it || it.startsWith("src/") }
+        val signals = mutableListOf<String>()
+
+        signals += if (testFiles.isEmpty()) {
+            "No test files were found in the indexed text set."
+        } else {
+            "${testFiles.size} test file(s) found."
+        }
+
+        signals += if (docs.isEmpty()) {
+            "No Markdown docs under `docs/` were found."
+        } else {
+            "${docs.size} documentation file(s) found under `docs/`."
+        }
+
+        signals += if (sourceFiles.isEmpty()) {
+            "No source directory pattern was detected."
+        } else {
+            "${sourceFiles.size} source file(s) found under source-style directories."
+        }
+
+        val largest = index.largestFiles.firstOrNull()
+        if (largest != null && largest.lines > 600) {
+            signals += "Largest file `${largest.path}` has ${largest.lines} lines; consider splitting or documenting its internal sections."
+        }
+
+        if (index.truncated) {
+            signals += "Index was truncated at ${index.maxFiles} files; raise `KAIOS_INDEX_MAX_FILES` for a fuller map."
+        }
+
+        return signals
+    }
+
+    private fun suggestedCommands(index: WorkspaceIndex): List<String> {
+        val commands = mutableListOf(
+            "kaios index .",
+            "kaios run --index . \"summarize the project shape\"",
+        )
+
+        val readme = index.files.firstOrNull { it.path.equals("README.md", ignoreCase = true) || it.path == "README" }
+        if (readme != null) {
+            commands += "kaios run --index . --context ${readme.path} --out artifacts/project.md \"summarize this project\""
+        }
+
+        if (index.files.any { it.path.startsWith("docs/") }) {
+            commands += "kaios run --index . --context docs --out artifacts/architecture.md \"explain the architecture\""
+        }
+
+        if (index.files.any { it.path == "kaios.json" }) {
+            commands += "kaios config show"
+        } else {
+            commands += "kaios init --template research"
+        }
+
+        return commands.distinct()
+    }
+
+    private fun escapeCell(value: String): String =
+        value.replace("|", "\\|")
+}

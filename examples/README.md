@@ -44,6 +44,7 @@ build/install/kaios-cli/bin/kaios run --out artifacts/runtime.md "map the JVM ag
 Attach local context files or directories when the workflow should reason over project material:
 
 ```bash
+build/install/kaios-cli/bin/kaios analyze . --out artifacts/analysis.md
 build/install/kaios-cli/bin/kaios index .
 build/install/kaios-cli/bin/kaios context README.md docs
 build/install/kaios-cli/bin/kaios run --index . --context README.md --context docs --out artifacts/project.md "summarize this project"
@@ -51,9 +52,17 @@ build/install/kaios-cli/bin/kaios run --index . --context README.md --context do
 
 The run snapshot and Markdown artifact include a source summary such as `README.md` and `docs/CONFIG.md`, while the saved context metadata avoids copying the full payload.
 
-## Build a Workspace Index
+## Analyze a Workspace
 
-Use `kaios index` when you want a project map without loading full file contents:
+Use `kaios analyze` when you want a deterministic Markdown project report without configuring an API key:
+
+```bash
+build/install/kaios-cli/bin/kaios analyze . --out artifacts/analysis.md
+```
+
+The report includes stack signals, language and directory tables, notable files, hotspots, test and quality signals, and suggested next KAI OS commands.
+
+Use `kaios index` when you want a compact project map without loading full file contents:
 
 ```bash
 build/install/kaios-cli/bin/kaios index .

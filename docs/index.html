@@ -695,8 +695,8 @@
             </article>
             <article class="feature">
               <h3>Project context</h3>
-              <p>Map project shape with kaios index, preview bounded local files with kaios context, and keep source summaries in snapshots.</p>
-              <span class="tag">kaios index</span>
+              <p>Generate no-key project reports with kaios analyze, map source shape with kaios index, and preview bounded context files.</p>
+              <span class="tag">kaios analyze</span>
             </article>
             <article class="feature">
               <h3>Project configs</h3>
@@ -716,7 +716,7 @@
         <div class="section-inner quickstart">
           <div class="section-heading">
             <h2>Install it, check it, inspect it.</h2>
-            <p>The v0.1.14 CLI installs locally with no API key. Run doctor first, preview project shape and context, then launch a demo workflow or generate a template kaios.json DAG and export a Markdown artifact.</p>
+            <p>The v0.1.15 CLI installs locally with no API key. Run doctor first, generate a project report, preview source shape and context, then launch a demo workflow or export a Markdown artifact.</p>
             <div class="link-grid">
               <a class="button primary" href="https://github.com/morning-verlu/KAI">Open repository</a>
               <a class="button secondary" href="https://github.com/morning-verlu/KAI/releases">View releases</a>
@@ -725,6 +725,7 @@
           <pre class="command"><code>brew tap morning-verlu/tap
 brew install kaios
 kaios doctor
+kaios analyze . --out artifacts/analysis.md
 kaios run "analyze crypto market"
 kaios config templates
 kaios init --template research
@@ -740,6 +741,7 @@ kaios export &lt;run-id&gt;
 curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
 kaios doctor
+kaios analyze . --out artifacts/analysis.md
 kaios run "analyze crypto market"
 kaios index .
 kaios context .
