@@ -29,7 +29,7 @@ class KaiosCliSmokeTest {
         val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
 
         assertEquals(0, code)
-        assertEquals("kaios 0.1.21\n", out.toString())
+        assertEquals("kaios 0.1.22\n", out.toString())
     }
 
     @Test
@@ -46,6 +46,7 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("kaios analyze . --out artifacts/analysis.md --force"))
         assertTrue(text.contains("kaios run --index . --out artifacts/project.md --force \"summarize this project\""))
         assertTrue(text.contains("kaios --version"))
+        assertTrue(text.contains("kaios help <command>"))
         assertTrue(text.contains("Command groups:"))
     }
 
@@ -77,6 +78,46 @@ class KaiosCliSmokeTest {
             assertTrue(text.contains("kaios help"), command)
             assertTrue(!text.contains("run_id:"), command)
         }
+    }
+
+    @Test
+    fun `help command can show a specific command usage`() {
+        val cli = cliFor(Files.createTempDirectory("kaios-cli-help-command"))
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("help", "run"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(text.contains("Usage: kaios run"))
+        assertTrue(text.contains("kaios help"))
+        assertTrue(!text.contains("run_id:"))
+    }
+
+    @Test
+    fun `help command help flag shows global help`() {
+        val cli = cliFor(Files.createTempDirectory("kaios-cli-help-help"))
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("help", "--help"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(text.contains("Quick start (3 steps):"))
+        assertTrue(text.contains("kaios help <command>"))
+    }
+
+    @Test
+    fun `help command rejects unknown command names`() {
+        val cli = cliFor(Files.createTempDirectory("kaios-cli-help-unknown"))
+        val err = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("help", "missing"), PrintStream(ByteArrayOutputStream()), PrintStream(err))
+        val text = err.toString()
+
+        assertEquals(1, code)
+        assertTrue(text.contains("Unknown command 'missing'"))
+        assertTrue(text.contains("Usage: kaios help <command>"))
     }
 
     @Test
