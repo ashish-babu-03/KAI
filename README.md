@@ -45,6 +45,7 @@ brew tap morning-verlu/tap
 brew install kaios
 kaios doctor
 kaios analyze . --out artifacts/analysis.md
+kaios analyze . --format json --out artifacts/analysis.json
 kaios run "analyze crypto market"
 ```
 
@@ -60,6 +61,7 @@ Run against local project files when you want the agents to see real context:
 
 ```bash
 kaios analyze . --out artifacts/analysis.md
+kaios analyze . --format json --out artifacts/analysis.json
 kaios index .
 kaios context .
 kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
@@ -80,6 +82,7 @@ Or build from source:
 ./gradlew test installDist
 build/install/kaios-cli/bin/kaios run "analyze crypto market"
 build/install/kaios-cli/bin/kaios analyze . --out artifacts/analysis.md
+build/install/kaios-cli/bin/kaios analyze . --format json --out artifacts/analysis.json
 ```
 
 Example output:
@@ -129,6 +132,7 @@ Attach local context files or directories:
 
 ```bash
 kaios analyze . --out artifacts/analysis.md
+kaios analyze . --format json --out artifacts/analysis.json
 kaios index .
 kaios context README.md docs
 kaios run --index . --context README.md --context docs "explain the architecture"
@@ -249,7 +253,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Coroutine-based DAG scheduler with parallel-ready nodes, observable retry policy, fallback routing, timeout policy, and sibling cancellation.
 - Permissioned tools: `echo`, `clock`, `mock-http`, allowlisted `http`, scoped `file`.
 - Project workflow templates, retry policy, config validation, config graph display, and auto-detected `kaios.json` runs.
-- Deterministic workspace analysis with `kaios analyze` for no-key Markdown project reports.
+- Deterministic workspace analysis with `kaios analyze` for no-key Markdown and JSON project reports.
 - Workspace Index with `kaios index` and `kaios run --index <path>` for language stats, notable files, and project source maps.
 - Project-aware runs with `kaios context`, `.kaiosignore`, and bounded `kaios run --context <file-or-dir>` ingestion.
 - Session memory and JSON snapshots under `.kaios/runs/`.

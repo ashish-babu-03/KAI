@@ -6,6 +6,7 @@ Use it when you want the runtime to understand repository shape without loading 
 
 ```bash
 kaios analyze . --out artifacts/analysis.md
+kaios analyze . --format json --out artifacts/analysis.json
 kaios index .
 kaios run --index . "explain this project"
 kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
@@ -13,7 +14,7 @@ kaios run --index . --context README.md --out artifacts/project.md "summarize th
 
 ## Analyze vs Index vs Context
 
-`kaios analyze` is a deterministic Markdown report:
+`kaios analyze` is a deterministic Markdown or JSON report:
 
 - project summary
 - stack signals
@@ -23,6 +24,12 @@ kaios run --index . --context README.md --out artifacts/project.md "summarize th
 - suggested KAI OS commands
 
 It does not require a model provider or API key.
+
+Use JSON when CI, dashboards, or other tools need a stable schema:
+
+```bash
+kaios analyze . --format json --out artifacts/analysis.json
+```
 
 `kaios index` is a source map:
 
@@ -43,6 +50,7 @@ Use both when a task needs orientation and evidence:
 
 ```bash
 kaios analyze . --out artifacts/analysis.md
+kaios analyze . --format json --out artifacts/analysis.json
 kaios index .
 kaios context README.md docs
 kaios run --index . --context README.md --context docs "explain the architecture"
@@ -76,6 +84,7 @@ When `--index` is used during a run, snapshots and Markdown artifacts include a 
 
 ```bash
 kaios analyze . --out artifacts/analysis.md
+kaios analyze . --format json --out artifacts/analysis.json
 kaios run --index . --out artifacts/project.md "summarize this project"
 kaios export <run-id>
 ```

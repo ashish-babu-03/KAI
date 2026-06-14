@@ -6,6 +6,11 @@ import ai.kaios.OllamaModelProvider
 import ai.kaios.OpenAiCompatibleModelProvider
 import ai.kaios.SQLiteMemoryStore
 import ai.kaios.SessionMemoryStore
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.file.Files
@@ -376,6 +381,31 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `analyze command renders structured json`() {
+        val workspace = Files.createTempDirectory("kaios-cli-analyze-json")
+        Files.writeString(workspace.resolve("README.md"), "# Demo\nUseful public overview.\n")
+        Files.createDirectories(workspace.resolve("src/main/kotlin"))
+        Files.writeString(workspace.resolve("src/main/kotlin/App.kt"), "fun main() = println(\"kai\")\n")
+        val cli = cliFor(workspace)
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("analyze", ".", "--format", "json"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+        val root = Json.parseToJsonElement(text).jsonObject
+        val summary = root.getValue("summary").jsonObject
+        val languages = root.getValue("languages").jsonArray
+
+        assertEquals(0, code)
+        assertEquals(1, root.getValue("schemaVersion").jsonPrimitive.int)
+        assertEquals(2, summary.getValue("files").jsonPrimitive.int)
+        assertTrue(languages.any { language ->
+            language.jsonObject.getValue("language").jsonPrimitive.content == "Kotlin"
+        })
+        assertTrue(root.getValue("suggestedCommands").jsonArray.isNotEmpty())
+        assertTrue(!text.contains("Useful public overview."))
+    }
+
+    @Test
     fun `analyze out writes report and protects existing files`() {
         val workspace = Files.createTempDirectory("kaios-cli-analyze-out")
         Files.writeString(workspace.resolve("README.md"), "# Demo\n")
@@ -394,6 +424,7 @@ class KaiosCliSmokeTest {
 
         assertEquals(0, code)
         assertTrue(out.toString().contains("analysis: $report"))
+        assertTrue(out.toString().contains("format: markdown"))
         assertTrue(reportText.contains("# KAI OS Workspace Analysis"))
         assertTrue(reportText.contains("## Suggested KAI OS Commands"))
 
@@ -413,6 +444,28 @@ class KaiosCliSmokeTest {
             PrintStream(ByteArrayOutputStream()),
         )
         assertEquals(0, forcedCode)
+    }
+
+    @Test
+    fun `analyze json out writes parseable report`() {
+        val workspace = Files.createTempDirectory("kaios-cli-analyze-json-out")
+        Files.writeString(workspace.resolve("README.md"), "# Demo\n")
+        val cli = cliFor(workspace)
+        val report = workspace.resolve("artifacts/analysis.json")
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(
+            arrayOf("analyze", ".", "--json", "--out", report.toString()),
+            PrintStream(out),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val reportText = Files.readString(report)
+        val root = Json.parseToJsonElement(reportText).jsonObject
+
+        assertEquals(0, code)
+        assertTrue(out.toString().contains("format: json"))
+        assertEquals(1, root.getValue("schemaVersion").jsonPrimitive.int)
+        assertEquals(1, root.getValue("summary").jsonObject.getValue("files").jsonPrimitive.int)
     }
 
     @Test

@@ -58,9 +58,10 @@ Use `kaios analyze` when you want a deterministic Markdown project report withou
 
 ```bash
 build/install/kaios-cli/bin/kaios analyze . --out artifacts/analysis.md
+build/install/kaios-cli/bin/kaios analyze . --format json --out artifacts/analysis.json
 ```
 
-The report includes stack signals, language and directory tables, notable files, hotspots, test and quality signals, and suggested next KAI OS commands.
+The report includes stack signals, language and directory tables, notable files, hotspots, test and quality signals, and suggested next KAI OS commands. Use JSON for CI, dashboards, or any automation that should consume the same analysis.
 
 Use `kaios index` when you want a compact project map without loading full file contents:
 

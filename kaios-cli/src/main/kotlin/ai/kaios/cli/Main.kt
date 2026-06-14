@@ -29,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.15"
+private const val KAIOS_VERSION = "0.1.16"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -197,7 +197,7 @@ class KaiosCli(
     private fun analyzeWorkspace(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val command = runCatching { parseAnalyzeCommand(args) }.getOrElse { error ->
             err.println(error.message)
-            err.println("Usage: kaios analyze [path ...] [--out analysis.md] [--force]")
+            err.println("Usage: kaios analyze [path ...] [--format markdown|json] [--out analysis.md] [--force]")
             return 1
         }
 
@@ -205,7 +205,11 @@ class KaiosCli(
             err.println(error.message)
             return 1
         }
-        val report = WorkspaceAnalyzer().render(index)
+        val analyzer = WorkspaceAnalyzer()
+        val report = when (command.format) {
+            AnalyzeFormat.Markdown -> analyzer.render(index)
+            AnalyzeFormat.Json -> analyzer.renderJson(index)
+        }
 
         if (command.outputPath == null) {
             out.println(report)
@@ -217,6 +221,7 @@ class KaiosCli(
             return 1
         }
         out.println("analysis: $path")
+        out.println("format: ${command.format.id}")
         out.println("index: ${index.summary()}")
         return 0
     }
@@ -602,7 +607,7 @@ class KaiosCli(
               kaios run --context README.md "task"
               kaios context [path ...]
               kaios index [path ...]
-              kaios analyze [path ...] [--out analysis.md]
+              kaios analyze [path ...] [--format markdown|json] [--out analysis.md]
               kaios run --index . "task"
               kaios run --config kaios.json "task"
               kaios run --default "task"
@@ -928,6 +933,7 @@ class KaiosCli(
     private fun parseAnalyzeCommand(args: List<String>): AnalyzeCommand {
         var outputPath: Path? = null
         var force = false
+        var format = AnalyzeFormat.Markdown
         val paths = mutableListOf<Path>()
         var index = 0
 
@@ -949,6 +955,21 @@ class KaiosCli(
                     force = true
                     index += 1
                 }
+                arg == "--json" -> {
+                    format = AnalyzeFormat.Json
+                    index += 1
+                }
+                arg == "--format" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires markdown or json.")
+                    format = parseAnalyzeFormat(value)
+                    index += 2
+                }
+                arg.startsWith("--format=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--format requires markdown or json." }
+                    format = parseAnalyzeFormat(value)
+                    index += 1
+                }
                 arg == "--" -> {
                     paths.addAll(args.drop(index + 1).map(::resolvePath))
                     index = args.size
@@ -961,8 +982,15 @@ class KaiosCli(
             }
         }
 
-        return AnalyzeCommand(paths.ifEmpty { listOf(workingDir) }, outputPath, force)
+        return AnalyzeCommand(paths.ifEmpty { listOf(workingDir) }, outputPath, force, format)
     }
+
+    private fun parseAnalyzeFormat(value: String): AnalyzeFormat =
+        when (value.lowercase().trim()) {
+            "markdown", "md" -> AnalyzeFormat.Markdown
+            "json" -> AnalyzeFormat.Json
+            else -> error("Unknown analyze format '$value'. Use markdown or json.")
+        }
 
     private fun parseInitCommand(args: List<String>): InitCommand {
         var configPath = defaultConfigPath()
@@ -1104,7 +1132,13 @@ private data class AnalyzeCommand(
     val paths: List<Path>,
     val outputPath: Path?,
     val force: Boolean,
+    val format: AnalyzeFormat,
 )
+
+private enum class AnalyzeFormat(val id: String) {
+    Markdown("markdown"),
+    Json("json"),
+}
 
 private enum class DoctorStatus {
     OK,

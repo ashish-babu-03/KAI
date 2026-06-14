@@ -1,31 +1,74 @@
 package ai.kaios.cli
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
 internal class WorkspaceAnalyzer {
-    fun render(index: WorkspaceIndex): String = buildString {
+    private val json = Json {
+        prettyPrint = true
+        encodeDefaults = true
+    }
+
+    fun analyze(index: WorkspaceIndex): WorkspaceAnalysis =
+        WorkspaceAnalysis(
+            schemaVersion = 1,
+            summary = WorkspaceAnalysisSummary(
+                root = index.root.toString(),
+                files = index.files.size,
+                lines = index.totalLines,
+                bytes = index.totalBytes,
+                truncated = index.truncated,
+                maxFiles = index.maxFiles,
+                ignorePatternCount = index.ignorePatternCount,
+            ),
+            stackSignals = stackSignals(index),
+            languages = index.languageStats.map { stat ->
+                WorkspaceAnalysisLanguage(stat.language, stat.files, stat.lines, stat.bytes)
+            },
+            directories = index.directoryStats.take(16).map { stat ->
+                WorkspaceAnalysisDirectory(stat.directory, stat.files, stat.bytes)
+            },
+            notableFiles = index.notableFiles.ifEmpty { index.largestFiles.take(10) }.map { file ->
+                WorkspaceAnalysisFile(file.path, file.language, file.lines, file.bytes)
+            },
+            hotspots = index.largestFiles.take(10).map { file ->
+                WorkspaceAnalysisFile(file.path, file.language, file.lines, file.bytes)
+            },
+            qualitySignals = qualitySignals(index),
+            suggestedCommands = suggestedCommands(index),
+        )
+
+    fun render(index: WorkspaceIndex): String = renderMarkdown(analyze(index))
+
+    fun renderJson(index: WorkspaceIndex): String =
+        json.encodeToString(analyze(index))
+
+    private fun renderMarkdown(analysis: WorkspaceAnalysis): String = buildString {
         appendLine("# KAI OS Workspace Analysis")
         appendLine()
         appendLine("## Summary")
         appendLine()
-        appendLine("- Root: `${index.root}`")
-        appendLine("- Files indexed: `${index.files.size}`")
-        appendLine("- Lines indexed: `${index.totalLines}`")
-        appendLine("- Bytes indexed: `${index.totalBytes}`")
-        appendLine("- Truncated: `${index.truncated}`")
-        if (index.ignorePatternCount > 0) {
-            appendLine("- Ignore rules: `.kaiosignore` with `${index.ignorePatternCount}` pattern(s)")
+        appendLine("- Root: `${analysis.summary.root}`")
+        appendLine("- Files indexed: `${analysis.summary.files}`")
+        appendLine("- Lines indexed: `${analysis.summary.lines}`")
+        appendLine("- Bytes indexed: `${analysis.summary.bytes}`")
+        appendLine("- Truncated: `${analysis.summary.truncated}`")
+        if (analysis.summary.ignorePatternCount > 0) {
+            appendLine("- Ignore rules: `.kaiosignore` with `${analysis.summary.ignorePatternCount}` pattern(s)")
         }
         appendLine()
 
         appendLine("## Stack Signals")
         appendLine()
-        stackSignals(index).forEach { appendLine("- $it") }
+        analysis.stackSignals.forEach { appendLine("- $it") }
         appendLine()
 
         appendLine("## Language Map")
         appendLine()
         appendLine("| Language | Files | Lines | Bytes |")
         appendLine("| --- | ---: | ---: | ---: |")
-        index.languageStats.forEach { stat ->
+        analysis.languages.forEach { stat ->
             appendLine("| ${stat.language} | ${stat.files} | ${stat.lines} | ${stat.bytes} |")
         }
         appendLine()
@@ -34,33 +77,33 @@ internal class WorkspaceAnalyzer {
         appendLine()
         appendLine("| Directory | Files | Bytes |")
         appendLine("| --- | ---: | ---: |")
-        index.directoryStats.take(16).forEach { stat ->
+        analysis.directories.forEach { stat ->
             appendLine("| ${escapeCell(stat.directory)} | ${stat.files} | ${stat.bytes} |")
         }
         appendLine()
 
         appendLine("## Notable Files")
         appendLine()
-        index.notableFiles.ifEmpty { index.largestFiles.take(10) }.forEach { file ->
+        analysis.notableFiles.forEach { file ->
             appendLine("- `${file.path}` - ${file.language}, ${file.lines} lines, ${file.bytes} bytes")
         }
         appendLine()
 
         appendLine("## Hotspots")
         appendLine()
-        index.largestFiles.take(10).forEach { file ->
+        analysis.hotspots.forEach { file ->
             appendLine("- `${file.path}` - ${file.language}, ${file.lines} lines, ${file.bytes} bytes")
         }
         appendLine()
 
         appendLine("## Test And Quality Signals")
         appendLine()
-        qualitySignals(index).forEach { appendLine("- $it") }
+        analysis.qualitySignals.forEach { appendLine("- $it") }
         appendLine()
 
         appendLine("## Suggested KAI OS Commands")
         appendLine()
-        suggestedCommands(index).forEach { command ->
+        analysis.suggestedCommands.forEach { command ->
             appendLine("```bash")
             appendLine(command)
             appendLine("```")
@@ -158,3 +201,50 @@ internal class WorkspaceAnalyzer {
     private fun escapeCell(value: String): String =
         value.replace("|", "\\|")
 }
+
+@Serializable
+internal data class WorkspaceAnalysis(
+    val schemaVersion: Int,
+    val summary: WorkspaceAnalysisSummary,
+    val stackSignals: List<String>,
+    val languages: List<WorkspaceAnalysisLanguage>,
+    val directories: List<WorkspaceAnalysisDirectory>,
+    val notableFiles: List<WorkspaceAnalysisFile>,
+    val hotspots: List<WorkspaceAnalysisFile>,
+    val qualitySignals: List<String>,
+    val suggestedCommands: List<String>,
+)
+
+@Serializable
+internal data class WorkspaceAnalysisSummary(
+    val root: String,
+    val files: Int,
+    val lines: Int,
+    val bytes: Long,
+    val truncated: Boolean,
+    val maxFiles: Int,
+    val ignorePatternCount: Int,
+)
+
+@Serializable
+internal data class WorkspaceAnalysisLanguage(
+    val language: String,
+    val files: Int,
+    val lines: Int,
+    val bytes: Long,
+)
+
+@Serializable
+internal data class WorkspaceAnalysisDirectory(
+    val directory: String,
+    val files: Int,
+    val bytes: Long,
+)
+
+@Serializable
+internal data class WorkspaceAnalysisFile(
+    val path: String,
+    val language: String,
+    val lines: Int,
+    val bytes: Long,
+)
