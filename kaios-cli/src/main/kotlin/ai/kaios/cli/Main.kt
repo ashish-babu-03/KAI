@@ -34,11 +34,12 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.42"
+private const val KAIOS_VERSION = "0.1.43"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val DOCTOR_SCHEMA = "kaios.doctor/v1"
 private const val RUNS_SCHEMA = "kaios.runs/v1"
 private const val CONFIG_VALIDATION_SCHEMA = "kaios.config-validation/v1"
+private const val BUG_REPORT_SCHEMA = "kaios.bug-report/v1"
 
 private val TOP_LEVEL_COMMANDS = listOf(
     "init",
@@ -55,6 +56,7 @@ private val TOP_LEVEL_COMMANDS = listOf(
     "report",
     "export",
     "doctor",
+    "bug-report",
     "version",
 )
 
@@ -111,6 +113,7 @@ class KaiosCli(
             "report" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("report")) else generateReport(commandArgs, out, err)
             "export" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("export")) else exportRun(commandArgs, out, err)
             "doctor" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("doctor")) else doctor(commandArgs, out, err)
+            "bug-report" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("bug-report")) else bugReport(commandArgs, out, err)
             "version", "--version", "-V" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("version")) else {
                 if (rejectUnexpectedArguments(commandArgs, "version", err)) 1 else version(out)
             }
@@ -432,6 +435,20 @@ class KaiosCli(
                 notes = listOf(
                     "Run this first when a command behaves differently across machines.",
                     "JSON output uses schema $DOCTOR_SCHEMA for CI and issue diagnostics.",
+                ),
+            )
+            "bug-report" -> CommandHelp(
+                usage = "kaios bug-report [--json|--format markdown|json] [--out report.md] [--force]",
+                summary = "Generate a safe support report for GitHub issues and team handoff.",
+                examples = listOf(
+                    "kaios bug-report",
+                    "kaios bug-report --out artifacts/kaios-bug-report.md --force",
+                    "kaios bug-report --json",
+                ),
+                notes = listOf(
+                    "The report includes doctor checks, project config validation, latest run summary, and trace contract status.",
+                    "It does not print API keys or secret environment values.",
+                    "JSON output uses schema $BUG_REPORT_SCHEMA for support automation.",
                 ),
             )
             "version" -> CommandHelp(
@@ -990,6 +1007,191 @@ class KaiosCli(
         return if (report.summary.failed > 0) 2 else 0
     }
 
+    private fun bugReport(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val command = runCatching { parseBugReportCommand(args) }.getOrElse { error ->
+            return printCommandUsageError(err, "bug-report", error.message)
+        }
+        val report = buildBugReport()
+        val rendered = when (command.format) {
+            BugReportFormat.Markdown -> renderBugReportMarkdown(report)
+            BugReportFormat.Json -> TRACE_JSON.encodeToString(report)
+        }
+
+        val outputPath = command.outputPath
+        if (outputPath == null) {
+            out.println(rendered)
+        } else {
+            val path = runCatching { writeTextOutput("$rendered\n", outputPath, command.force) }.getOrElse { error ->
+                err.println(error.message)
+                return 1
+            }
+            out.println("bug_report: $path")
+            out.println("format: ${command.format.id}")
+            out.println("schema: ${report.schema}")
+        }
+
+        return 0
+    }
+
+    private fun buildBugReport(): BugReport {
+        val doctor = buildDoctorReport()
+        val config = buildConfigValidationReport(defaultConfigPath())
+        val snapshots = runCatching { snapshotStore.list() }.getOrElse { emptyList() }
+        val latestSnapshot = snapshots.firstOrNull()
+        val latestRun = latestSnapshot?.let(::bugReportRun)
+        val trace = latestSnapshot?.let(::bugReportTrace)
+
+        return BugReport(
+            schema = BUG_REPORT_SCHEMA,
+            version = KAIOS_VERSION,
+            generatedAt = Instant.now().toString(),
+            cwd = workingDir.toString(),
+            files = BugReportFiles(
+                config = defaultConfigPath().toString(),
+                runsDir = snapshotRoot.toAbsolutePath().normalize().toString(),
+                reportsDir = reportRoot.toAbsolutePath().normalize().toString(),
+                artifactsDir = artifactRoot.toAbsolutePath().normalize().toString(),
+            ),
+            doctor = doctor,
+            config = config,
+            latestRun = latestRun,
+            trace = trace,
+            next = bugReportNextCommands(config, latestRun),
+        )
+    }
+
+    private fun buildConfigValidationReport(path: Path): ConfigValidationReport =
+        runCatching { loadProjectWorkflow(path, SessionMemoryStore(), toolRegistry()) }
+            .fold(
+                onSuccess = { workflow -> configValidationReport(path, workflow, emptyList()) },
+                onFailure = { error -> configValidationReport(path, null, listOf(error.message ?: "invalid project config")) },
+            )
+
+    private fun bugReportRun(snapshot: StoredRunSnapshot): BugReportRun =
+        BugReportRun(
+            runId = snapshot.runId,
+            workflowName = snapshot.workflowName,
+            success = snapshot.success,
+            task = snapshot.task,
+            processCount = snapshot.processes.size,
+            tokenTotal = snapshot.processes.sumOf { it.tokens },
+            syscallCount = snapshot.processes.sumOf { it.syscallCount },
+            contextBytes = snapshot.processes.sumOf { it.contextSize },
+            durationMillis = snapshot.processes.sumOf { it.durationMillis },
+        )
+
+    private fun bugReportTrace(snapshot: StoredRunSnapshot): BugReportTrace {
+        val trace = buildProcessTrace(snapshot)
+        val issues = validateProcessTrace(trace)
+        return BugReportTrace(
+            runId = trace.runId,
+            schema = trace.schema,
+            valid = issues.isEmpty(),
+            processCount = trace.metrics.processCount,
+            eventCount = trace.metrics.eventCount,
+            issues = issues,
+        )
+    }
+
+    private fun bugReportNextCommands(config: ConfigValidationReport, latestRun: BugReportRun?): List<String> =
+        buildList {
+            if (!config.valid) add("kaios init --template research --ci")
+            if (latestRun == null) {
+                add("kaios demo")
+                add(firstProjectRunCommand())
+            } else {
+                add("kaios ps latest")
+                add("kaios trace latest --check")
+                add("kaios inspect latest")
+            }
+            add("kaios doctor --json")
+        }.distinct()
+
+    private fun renderBugReportMarkdown(report: BugReport): String = buildString {
+        appendLine("# KAI OS Bug Report")
+        appendLine()
+        appendLine("> Safe to paste into a GitHub issue. Do not add API keys, tokens, or private prompts.")
+        appendLine()
+        appendLine("## Summary")
+        appendLine()
+        appendLine("- schema: `${report.schema}`")
+        appendLine("- version: `${report.version}`")
+        appendLine("- generated_at: `${report.generatedAt}`")
+        appendLine("- cwd: `${report.cwd}`")
+        appendLine()
+        appendLine("## What Happened")
+        appendLine()
+        appendLine("- Expected:")
+        appendLine("- Actual:")
+        appendLine("- Command:")
+        appendLine()
+        appendLine("## Doctor")
+        appendLine()
+        appendLine("- status: `${report.doctor.summary.status}`")
+        appendLine("- failed: `${report.doctor.summary.failed}`")
+        appendLine("- warnings: `${report.doctor.summary.warnings}`")
+        report.doctor.checks.forEach { check ->
+            appendLine("- [${check.status}] ${check.name}: ${singleLine(check.detail)}")
+        }
+        appendLine()
+        appendLine("## Project Config")
+        appendLine()
+        appendLine("- config: `${report.config.config}`")
+        appendLine("- valid: `${report.config.valid}`")
+        appendLine("- workflow: `${report.config.workflowName ?: "-"}`")
+        appendLine("- agents: `${report.config.agentCount}`")
+        if (report.config.agentIds.isNotEmpty()) {
+            appendLine("- agent_ids: `${report.config.agentIds.joinToString(", ")}`")
+        }
+        if (report.config.errors.isNotEmpty()) {
+            appendLine("- errors:")
+            report.config.errors.forEach { error -> appendLine("  - ${singleLine(error)}") }
+        }
+        appendLine()
+        appendLine("## Latest Run")
+        appendLine()
+        if (report.latestRun == null) {
+            appendLine("No saved run snapshot was found.")
+        } else {
+            appendLine("- run_id: `${report.latestRun.runId}`")
+            appendLine("- workflow: `${report.latestRun.workflowName}`")
+            appendLine("- success: `${report.latestRun.success}`")
+            appendLine("- task: `${singleLine(report.latestRun.task)}`")
+            appendLine("- processes: `${report.latestRun.processCount}`")
+            appendLine("- tokens: `${report.latestRun.tokenTotal}`")
+            appendLine("- syscalls: `${report.latestRun.syscallCount}`")
+            appendLine("- context_bytes: `${report.latestRun.contextBytes}`")
+            appendLine("- duration_ms: `${report.latestRun.durationMillis}`")
+        }
+        appendLine()
+        appendLine("## Trace Contract")
+        appendLine()
+        if (report.trace == null) {
+            appendLine("No trace could be built because there is no saved run snapshot.")
+        } else {
+            appendLine("- run_id: `${report.trace.runId}`")
+            appendLine("- schema: `${report.trace.schema}`")
+            appendLine("- valid: `${report.trace.valid}`")
+            appendLine("- processes: `${report.trace.processCount}`")
+            appendLine("- events: `${report.trace.eventCount}`")
+            if (report.trace.issues.isNotEmpty()) {
+                appendLine("- issues:")
+                report.trace.issues.forEach { issue -> appendLine("  - ${singleLine(issue)}") }
+            }
+        }
+        appendLine()
+        appendLine("## Files")
+        appendLine()
+        appendLine("- config: `${report.files.config}`")
+        appendLine("- runs_dir: `${report.files.runsDir}`")
+        appendLine("- reports_dir: `${report.files.reportsDir}`")
+        appendLine("- artifacts_dir: `${report.files.artifactsDir}`")
+        appendLine()
+        appendLine("## Next Commands")
+        appendLine()
+        report.next.forEach { command -> appendLine("- `$command`") }
+    }.trimEnd()
+
     private fun buildDoctorReport(): DoctorReport {
         val checks = listOf(
             javaCheck(),
@@ -1450,6 +1652,7 @@ class KaiosCli(
                 kaios report latest
                 kaios export latest [--out artifact.md]
                 kaios doctor
+                kaios bug-report [--out report.md]
                 kaios --version
                 kaios help <command>
             """.trimIndent(),
@@ -2228,6 +2431,60 @@ class KaiosCli(
             else -> error("Unknown doctor format '$value'. Use text or json.")
         }
 
+    private fun parseBugReportCommand(args: List<String>): BugReportCommand {
+        var outputPath: Path? = null
+        var force = false
+        var format = BugReportFormat.Markdown
+        var index = 0
+
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--json" -> {
+                    format = BugReportFormat.Json
+                    index += 1
+                }
+                arg == "--format" -> {
+                    val value = args.getOrNull(index + 1) ?: error("--format requires markdown or json.")
+                    format = parseBugReportFormat(value)
+                    index += 2
+                }
+                arg.startsWith("--format=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--format requires markdown or json." }
+                    format = parseBugReportFormat(value)
+                    index += 1
+                }
+                arg == "--out" || arg == "--output" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    outputPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--out=") || arg.startsWith("--output=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "$arg requires a path." }
+                    outputPath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--force" || arg == "-f" -> {
+                    force = true
+                    index += 1
+                }
+                arg.startsWith("-") -> error("Unknown bug-report option '$arg'.")
+                else -> error("Unexpected bug-report argument '$arg'.")
+            }
+        }
+
+        return BugReportCommand(outputPath, force, format)
+    }
+
+    private fun parseBugReportFormat(value: String): BugReportFormat =
+        when (value.lowercase().trim()) {
+            "markdown", "md", "text", "plain" -> BugReportFormat.Markdown
+            "json" -> BugReportFormat.Json
+            else -> error("Unknown bug-report format '$value'. Use markdown or json.")
+        }
+
     private fun parseRunsCommand(args: List<String>): RunsCommand {
         var format = RunsFormat.Text
         var index = 0
@@ -2410,6 +2667,17 @@ private enum class DoctorFormat(val id: String) {
     Json("json"),
 }
 
+private data class BugReportCommand(
+    val outputPath: Path?,
+    val force: Boolean,
+    val format: BugReportFormat,
+)
+
+private enum class BugReportFormat(val id: String) {
+    Markdown("markdown"),
+    Json("json"),
+}
+
 @Serializable
 private data class DoctorReport(
     val schema: String,
@@ -2432,6 +2700,51 @@ private data class DoctorReportCheck(
     val name: String,
     val status: String,
     val detail: String,
+)
+
+@Serializable
+private data class BugReport(
+    val schema: String,
+    val version: String,
+    val generatedAt: String,
+    val cwd: String,
+    val files: BugReportFiles,
+    val doctor: DoctorReport,
+    val config: ConfigValidationReport,
+    val latestRun: BugReportRun?,
+    val trace: BugReportTrace?,
+    val next: List<String>,
+)
+
+@Serializable
+private data class BugReportFiles(
+    val config: String,
+    val runsDir: String,
+    val reportsDir: String,
+    val artifactsDir: String,
+)
+
+@Serializable
+private data class BugReportRun(
+    val runId: String,
+    val workflowName: String,
+    val success: Boolean,
+    val task: String,
+    val processCount: Int,
+    val tokenTotal: Int,
+    val syscallCount: Int,
+    val contextBytes: Int,
+    val durationMillis: Long,
+)
+
+@Serializable
+private data class BugReportTrace(
+    val runId: String,
+    val schema: String,
+    val valid: Boolean,
+    val processCount: Int,
+    val eventCount: Int,
+    val issues: List<String>,
 )
 
 private data class RunsCommand(

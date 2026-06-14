@@ -70,7 +70,10 @@ Need a support-friendly environment check?
 ```bash
 kaios doctor
 kaios doctor --json
+kaios bug-report
 ```
+
+`kaios bug-report` creates a safe-to-paste Markdown report with doctor checks, config validation, latest run metrics, and trace contract status.
 
 Need a machine-readable workspace report for CI or dashboards?
 
@@ -299,6 +302,8 @@ For persisted memory, see [docs/MEMORY.md](docs/MEMORY.md).
 
 For Workspace Index and project context, see [docs/INDEX.md](docs/INDEX.md).
 
+For issue diagnostics and safe bug reports, see [docs/SUPPORT.md](docs/SUPPORT.md).
+
 For all install options, see [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Current Status
@@ -326,6 +331,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - `kaios runs --json` emits `kaios.runs/v1` for Agent Desktop, CI, and local tooling.
 - Markdown run artifacts with `kaios run --out` and `kaios export`.
 - `kaios doctor` and `kaios doctor --json` environment diagnostics for Java, provider, memory, snapshots, and writable runtime directories.
+- `kaios bug-report` emits safe Markdown or `kaios.bug-report/v1` JSON for GitHub issues and team handoff.
 - Static Agent Process Manager HTML reports under `.kaios/reports/`.
 - README-ready terminal process preview for launch sharing.
 - CLI demo GIF for README, launch site, and social posts.

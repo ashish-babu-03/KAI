@@ -31,7 +31,7 @@ class KaiosCliSmokeTest {
         val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
 
         assertEquals(0, code)
-        assertEquals("kaios 0.1.42\n", out.toString())
+        assertEquals("kaios 0.1.43\n", out.toString())
     }
 
     @Test
@@ -85,6 +85,7 @@ class KaiosCliSmokeTest {
             "report" to "Usage: kaios report",
             "export" to "Usage: kaios export",
             "doctor" to "Usage: kaios doctor",
+            "bug-report" to "Usage: kaios bug-report",
         )
 
         cases.forEach { (command, usage) ->
@@ -181,6 +182,21 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("Usage: kaios trace"))
         assertTrue(text.contains("kaios trace latest --check"))
         assertTrue(text.contains("validate the trace contract"))
+    }
+
+    @Test
+    fun `bug report help documents safe support report`() {
+        val cli = cliFor(Files.createTempDirectory("kaios-cli-help-bug-report"))
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("help", "bug-report"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(text.contains("Usage: kaios bug-report"))
+        assertTrue(text.contains("safe support report"))
+        assertTrue(text.contains("kaios.bug-report/v1"))
+        assertTrue(text.contains("does not print API keys"))
     }
 
     @Test
@@ -1248,7 +1264,7 @@ class KaiosCliSmokeTest {
         assertTrue(outputText.contains("created_ci: $workflowPath"))
         assertTrue(outputText.contains("kaios config validate --config kaios.json --json"))
         assertTrue(workflowText.contains("name: KAI OS Agent Gate"))
-        assertTrue(workflowText.contains("KAIOS_VERSION: \"0.1.42\""))
+        assertTrue(workflowText.contains("KAIOS_VERSION: \"0.1.43\""))
         assertTrue(workflowText.contains("KAIOS_MODEL_PROVIDER: mock"))
         assertTrue(workflowText.contains("kaios doctor --json"))
         assertTrue(workflowText.contains("kaios config validate --config 'kaios.json' --json"))
@@ -1768,7 +1784,7 @@ class KaiosCliSmokeTest {
 
         assertEquals(0, code)
         assertEquals("kaios.doctor/v1", json.getValue("schema").jsonPrimitive.content)
-        assertEquals("0.1.42", json.getValue("version").jsonPrimitive.content)
+        assertEquals("0.1.43", json.getValue("version").jsonPrimitive.content)
         assertEquals("ready", summary.getValue("status").jsonPrimitive.content)
         assertEquals(0, summary.getValue("failed").jsonPrimitive.int)
         assertTrue(checks.any { check ->
@@ -1779,6 +1795,118 @@ class KaiosCliSmokeTest {
         })
         assertTrue(next.any { command -> command.jsonPrimitive.content == "kaios demo" })
         assertTrue(next.any { command -> command.jsonPrimitive.content.contains("kaios run --index .") })
+    }
+
+    @Test
+    fun `bug report prints safe markdown without a saved run`() {
+        val workspace = Files.createTempDirectory("kaios-cli-bug-report-empty")
+        val cli = cliFor(workspace)
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("bug-report"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(text.contains("# KAI OS Bug Report"))
+        assertTrue(text.contains("schema: `kaios.bug-report/v1`"))
+        assertTrue(text.contains("version: `0.1.43`"))
+        assertTrue(text.contains("## What Happened"))
+        assertTrue(text.contains("## Doctor"))
+        assertTrue(text.contains("No saved run snapshot was found."))
+        assertTrue(text.contains("Config file '${workspace.resolve("kaios.json")}' was not found."))
+        assertTrue(!text.contains("secret-key"))
+    }
+
+    @Test
+    fun `bug report json includes latest run and trace status`() {
+        val workspace = Files.createTempDirectory("kaios-cli-bug-report-json")
+        val cli = cliFor(workspace)
+        val demoOut = ByteArrayOutputStream()
+        val demoCode = cli.run(arrayOf("demo"), PrintStream(demoOut), PrintStream(ByteArrayOutputStream()))
+        val runId = Regex("run_id: (\\S+)").find(demoOut.toString())?.groupValues?.get(1)
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("bug-report", "--json"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val json = Json.parseToJsonElement(out.toString()).jsonObject
+        val latestRun = json.getValue("latestRun").jsonObject
+        val trace = json.getValue("trace").jsonObject
+        val config = json.getValue("config").jsonObject
+
+        assertEquals(0, demoCode)
+        assertEquals(0, code)
+        assertEquals("kaios.bug-report/v1", json.getValue("schema").jsonPrimitive.content)
+        assertEquals("0.1.43", json.getValue("version").jsonPrimitive.content)
+        assertEquals(runId, latestRun.getValue("runId").jsonPrimitive.content)
+        assertEquals("default", latestRun.getValue("workflowName").jsonPrimitive.content)
+        assertEquals(3, latestRun.getValue("processCount").jsonPrimitive.int)
+        assertEquals(runId, trace.getValue("runId").jsonPrimitive.content)
+        assertTrue(trace.getValue("valid").jsonPrimitive.content == "true")
+        assertEquals(3, trace.getValue("processCount").jsonPrimitive.int)
+        assertEquals("kaios.config-validation/v1", config.getValue("schema").jsonPrimitive.content)
+        assertTrue(config.getValue("valid").jsonPrimitive.content == "false")
+    }
+
+    @Test
+    fun `bug report output file is protected unless forced`() {
+        val workspace = Files.createTempDirectory("kaios-cli-bug-report-out")
+        val cli = cliFor(workspace)
+        val report = workspace.resolve("artifacts").resolve("kaios-bug-report.md")
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(
+            arrayOf("bug-report", "--out", report.toString()),
+            PrintStream(out),
+            PrintStream(ByteArrayOutputStream()),
+        )
+
+        assertEquals(0, code)
+        assertTrue(out.toString().contains("bug_report: $report"))
+        assertTrue(Files.readString(report).contains("# KAI OS Bug Report"))
+
+        val err = ByteArrayOutputStream()
+        val protectedCode = cli.run(
+            arrayOf("bug-report", "--out", report.toString()),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(err),
+        )
+
+        assertEquals(1, protectedCode)
+        assertTrue(err.toString().contains("already exists"))
+
+        val forcedCode = cli.run(
+            arrayOf("bug-report", "--out", report.toString(), "--force"),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(ByteArrayOutputStream()),
+        )
+
+        assertEquals(0, forcedCode)
+    }
+
+    @Test
+    fun `bug report still succeeds when doctor finds provider errors`() {
+        val root = Files.createTempDirectory("kaios-cli-bug-report-bad-provider-runs")
+        val reportRoot = Files.createTempDirectory("kaios-cli-bug-report-bad-provider-reports")
+        val cli = KaiosCli(
+            FileRunSnapshotStore(root),
+            reportRoot,
+            artifactRoot = Files.createTempDirectory("kaios-cli-bug-report-bad-provider-artifacts"),
+            snapshotRoot = root,
+            env = { key ->
+                mapOf(
+                    "KAIOS_MODEL_PROVIDER" to "openai",
+                    "OPENAI_API_KEY" to "secret-key",
+                )[key]
+            },
+        )
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("bug-report"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(text.contains("[FAIL] model provider"))
+        assertTrue(text.contains("OPENAI_MODEL is required"))
+        assertTrue(!text.contains("secret-key"))
     }
 
     @Test

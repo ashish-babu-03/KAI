@@ -21,6 +21,7 @@ kaios demo --help
 kaios run --help
 kaios help run
 kaios help config show
+kaios help bug-report
 ```
 
 ## Homebrew
@@ -57,11 +58,11 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.42.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.42/kaios-0.1.42.zip
-unzip kaios-0.1.42.zip
-./kaios-0.1.42/bin/kaios demo
-./kaios-0.1.42/bin/kaios analyze . --out artifacts/analysis.md --force
-./kaios-0.1.42/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
+curl -L -o kaios-0.1.43.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.43/kaios-0.1.43.zip
+unzip kaios-0.1.43.zip
+./kaios-0.1.43/bin/kaios demo
+./kaios-0.1.43/bin/kaios analyze . --out artifacts/analysis.md --force
+./kaios-0.1.43/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
 ## Build From Source
@@ -90,4 +91,5 @@ kaios inspect latest
 kaios trace latest
 kaios trace latest --json
 kaios trace latest --json --out artifacts/trace.json --force
+kaios bug-report --out artifacts/kaios-bug-report.md --force
 ```
