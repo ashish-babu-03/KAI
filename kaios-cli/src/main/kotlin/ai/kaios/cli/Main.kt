@@ -36,7 +36,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.79"
+private const val KAIOS_VERSION = "0.1.80"
 private const val CI_AGENT_GATE_ARTIFACT_NAME = "kaios-agent-gate"
 private const val CI_WORKFLOW_PUSH_NOTE = "Pushing .github/workflows/kaios.yml may require GitHub workflow permission/scope."
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
@@ -395,9 +395,10 @@ class KaiosCli(
     private fun commandHelpOrNull(command: String): CommandHelp? =
         when (command) {
             "quickstart" -> CommandHelp(
-                usage = "kaios quickstart [--no-ci|--local] [--force] [--json|--format json]",
+                usage = "kaios quickstart [--dry-run] [--no-ci|--local] [--force] [--json|--format json]",
                 summary = "Run the no-key onboarding path: demo, setup, optional CI gate, verify evidence, and next moves.",
                 examples = listOf(
+                    "kaios quickstart --dry-run",
                     "kaios quickstart",
                     "kaios quickstart --no-ci",
                     "kaios quickstart --json",
@@ -405,6 +406,7 @@ class KaiosCli(
                 ),
                 notes = listOf(
                     "The command uses the deterministic mock provider; no API key is required.",
+                    "Use --dry-run to preview generated files and commands without writing anything.",
                     "Use --no-ci or --local when you want a local-only workflow without writing .github/workflows/kaios.yml.",
                     "Existing config and CI files are kept unless --force is passed.",
                     "Evidence is written to a quickstart-owned capsule so repeated runs stay low-friction.",
@@ -733,10 +735,27 @@ class KaiosCli(
             QuickstartFormat.Json -> out.println(TRACE_JSON.encodeToString(report))
         }
 
-        return if (report.status == "ready") 0 else 2
+        return if (report.status == "ready" || report.status == "planned") 0 else 2
     }
 
     private fun buildQuickstartReport(command: QuickstartCommand): QuickstartReport {
+        val plan = quickstartPlan(command)
+        if (command.dryRun) {
+            val next = listOf(quickstartRunCommand(command), "kaios help quickstart").distinct()
+            return QuickstartReport(
+                schema = QUICKSTART_SCHEMA,
+                version = KAIOS_VERSION,
+                cwd = workingDir.toString(),
+                status = "planned",
+                plan = plan,
+                demo = null,
+                setup = null,
+                verify = null,
+                errors = emptyList(),
+                next = next,
+                nextActions = nextActions(next),
+            )
+        }
         val errors = mutableListOf<String>()
         val demo = runCatching { createDemoRun() }
             .getOrElse { error ->
@@ -785,6 +804,7 @@ class KaiosCli(
             version = KAIOS_VERSION,
             cwd = workingDir.toString(),
             status = status,
+            plan = plan,
             demo = demo,
             setup = setup,
             verify = verify,
@@ -793,6 +813,91 @@ class KaiosCli(
             nextActions = nextActions(next),
         )
     }
+
+    private fun quickstartPlan(command: QuickstartCommand): QuickstartPlan {
+        val configPath = defaultConfigPath()
+        val ciPath = defaultCiWorkflowPath()
+        val evidencePath = defaultQuickstartEvidencePath()
+        val writes = buildList {
+            add(
+                QuickstartPlannedWrite(
+                    id = "config",
+                    path = displayPath(configPath),
+                    action = plannedFileAction(configPath, command.force),
+                    reason = "research workflow config",
+                ),
+            )
+            add(
+                QuickstartPlannedWrite(
+                    id = "ci",
+                    path = if (command.writeCi) displayPath(ciPath) else null,
+                    action = if (command.writeCi) plannedFileAction(ciPath, command.force) else SetupFileAction.Skipped.id,
+                    reason = "GitHub Actions Agent Gate",
+                ),
+            )
+            add(
+                QuickstartPlannedWrite(
+                    id = "run_snapshots",
+                    path = displayPath(snapshotRoot.resolve("<run-id>.json")),
+                    action = SetupFileAction.Created.id,
+                    reason = "demo and verify run snapshots",
+                ),
+            )
+            add(
+                QuickstartPlannedWrite(
+                    id = "run_artifacts",
+                    path = "${displayPath(artifactRoot.resolve("<run-id>.md"))} and ${displayPath(artifactRoot.resolve("<run-id>.trace.json"))}",
+                    action = SetupFileAction.Created.id,
+                    reason = "demo artifact and process trace",
+                ),
+            )
+            add(
+                QuickstartPlannedWrite(
+                    id = "evidence_capsule",
+                    path = displayPath(evidencePath),
+                    action = plannedFileAction(evidencePath, force = true),
+                    reason = "quickstart-owned evidence capsule",
+                ),
+            )
+        }
+        return QuickstartPlan(
+            dryRun = command.dryRun,
+            mode = if (command.writeCi) "with-ci" else "local-only",
+            writes = writes,
+            commands = listOf(
+                "kaios demo",
+                quickstartSetupCommand(command),
+                "kaios verify --config kaios.json --evidence-out ${displayPath(evidencePath)} --force",
+            ),
+            notes = buildList {
+                add("No API key is required; quickstart uses the deterministic mock provider.")
+                if (command.dryRun) add("Dry run only previews the plan; no files were written.")
+                if (!command.force) add("Existing config and CI files are kept. Pass --force to overwrite them.")
+                if (command.writeCi) add(CI_WORKFLOW_PUSH_NOTE)
+            },
+        )
+    }
+
+    private fun plannedFileAction(path: Path, force: Boolean): String =
+        when {
+            path.exists() && force -> SetupFileAction.Overwritten.id
+            path.exists() -> SetupFileAction.Existing.id
+            else -> SetupFileAction.Created.id
+        }
+
+    private fun quickstartSetupCommand(command: QuickstartCommand): String =
+        buildString {
+            append("kaios setup --template research")
+            if (command.writeCi) append(" --ci")
+            if (command.force) append(" --force")
+        }
+
+    private fun quickstartRunCommand(command: QuickstartCommand): String =
+        buildString {
+            append("kaios quickstart")
+            if (!command.writeCi) append(" --no-ci")
+            if (command.force) append(" --force")
+        }
 
     private fun quickstartNextCommands(
         status: String,
@@ -831,6 +936,16 @@ class KaiosCli(
         out.println("version: ${report.version}")
         out.println("cwd: ${report.cwd}")
         out.println("status: ${report.status}")
+        if (report.status == "planned") {
+            out.println()
+            renderQuickstartPlan(report.plan, out)
+            if (report.next.isNotEmpty()) {
+                out.println()
+                out.println("next:")
+                report.next.forEach { command -> out.println("  $command") }
+            }
+            return
+        }
         out.println()
         out.println("steps:")
         val demo = report.demo
@@ -877,6 +992,23 @@ class KaiosCli(
         out.println()
         out.println("next:")
         report.next.forEach { command -> out.println("  $command") }
+    }
+
+    private fun renderQuickstartPlan(plan: QuickstartPlan, out: PrintStream) {
+        out.println("plan:")
+        out.println("  mode: ${plan.mode}")
+        out.println("  dry_run: ${plan.dryRun}")
+        out.println("  writes:")
+        plan.writes.forEach { write ->
+            val path = write.path?.let { " ($it)" }.orEmpty()
+            out.println("    ${write.id}: ${write.action}$path")
+        }
+        out.println("  commands:")
+        plan.commands.forEach { command -> out.println("    $command") }
+        if (plan.notes.isNotEmpty()) {
+            out.println("  notes:")
+            plan.notes.forEach { note -> out.println("    - $note") }
+        }
     }
 
     private fun runDemo(args: List<String>, out: PrintStream, err: PrintStream): Int {
@@ -3212,6 +3344,7 @@ class KaiosCli(
             KAI OS - AI Agent Operating System in Kotlin
 
             Quick start (one command):
+              kaios quickstart --dry-run
               kaios quickstart
 
             Manual path (3 steps):
@@ -3221,7 +3354,7 @@ class KaiosCli(
 
             Command groups:
               Setup:
-                kaios quickstart
+                kaios quickstart [--dry-run]
                 kaios setup [--ci]
                 kaios gate [--config kaios.json]
                 kaios verify [--config kaios.json] [--evidence]
@@ -4043,12 +4176,17 @@ class KaiosCli(
     private fun parseQuickstartCommand(args: List<String>): QuickstartCommand {
         var force = false
         var writeCi = true
+        var dryRun = false
         var format = QuickstartFormat.Text
         var index = 0
 
         while (index < args.size) {
             val arg = args[index]
             when {
+                arg == "--dry-run" || arg == "--plan" -> {
+                    dryRun = true
+                    index += 1
+                }
                 arg == "--force" || arg == "-f" -> {
                     force = true
                     index += 1
@@ -4077,7 +4215,7 @@ class KaiosCli(
             }
         }
 
-        return QuickstartCommand(force = force, writeCi = writeCi, format = format)
+        return QuickstartCommand(force = force, writeCi = writeCi, dryRun = dryRun, format = format)
     }
 
     private fun parseQuickstartFormat(value: String): QuickstartFormat =
@@ -4952,6 +5090,7 @@ private data class RunCommand(
 private data class QuickstartCommand(
     val force: Boolean,
     val writeCi: Boolean,
+    val dryRun: Boolean,
     val format: QuickstartFormat,
 )
 
@@ -4966,12 +5105,30 @@ private data class QuickstartReport(
     val version: String,
     val cwd: String,
     val status: String,
+    val plan: QuickstartPlan,
     val demo: DemoRunReport?,
     val setup: SetupReport?,
     val verify: VerifyReport?,
     val errors: List<String>,
     val next: List<String>,
     val nextActions: List<NextAction>,
+)
+
+@Serializable
+private data class QuickstartPlan(
+    val dryRun: Boolean,
+    val mode: String,
+    val writes: List<QuickstartPlannedWrite>,
+    val commands: List<String>,
+    val notes: List<String>,
+)
+
+@Serializable
+private data class QuickstartPlannedWrite(
+    val id: String,
+    val path: String?,
+    val action: String,
+    val reason: String,
 )
 
 @Serializable

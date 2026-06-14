@@ -54,6 +54,18 @@ assert_contains() {
   fi
 }
 
+run_step "kaios quickstart --dry-run" "$KAIOS_BIN" quickstart --dry-run > quickstart-plan.out
+assert_contains quickstart-plan.out "KAI OS quickstart"
+assert_contains quickstart-plan.out "status: planned"
+assert_contains quickstart-plan.out "dry_run: true"
+assert_contains quickstart-plan.out "config: created (kaios.json)"
+assert_contains quickstart-plan.out "ci: created (.github/workflows/kaios.yml)"
+assert_contains quickstart-plan.out "Dry run only previews the plan; no files were written."
+if [[ -f kaios.json || -f .github/workflows/kaios.yml || -d .kaios ]]; then
+  echo "Expected dry-run quickstart not to write config, CI, or runtime files." >&2
+  exit 1
+fi
+
 run_step "kaios quickstart" "$KAIOS_BIN" quickstart > quickstart.out
 assert_contains quickstart.out "KAI OS quickstart"
 assert_contains quickstart.out "schema: kaios.quickstart/v1"

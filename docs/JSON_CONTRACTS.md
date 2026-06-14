@@ -118,12 +118,14 @@ kaios quickstart --json
 Gate on:
 
 - `status == "ready"`
+- `plan.writes` matches the files your onboarding flow is allowed to create or keep.
 - `demo.success == true`
 - `setup.validation.valid == true`
 - `verify.status == "ready"`
 - `verify.evidence.valid == true`
 - `errors` is empty
 
+Use `kaios quickstart --dry-run --json` when automation or docs need to preview the first-run write plan without creating `kaios.json`, `.github/workflows/kaios.yml`, snapshots, traces, or evidence. In that mode `status == "planned"`, `plan.dryRun == true`, and `demo`, `setup`, and `verify` are `null`.
 Use `kaios quickstart --no-ci --json` when automation should prove local onboarding without writing `.github/workflows/kaios.yml`. In that mode `setup.ci.action == "skipped"` and `setup.ciArtifact == null`.
 Read `nextActions` to send the user to process inspection, trace validation, or the first project run without parsing terminal text.
 

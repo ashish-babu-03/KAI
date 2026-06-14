@@ -36,8 +36,11 @@ kaios help bug-report
 brew tap morning-verlu/tap
 brew install kaios
 
+kaios quickstart --dry-run
 kaios quickstart
 ```
+
+`kaios quickstart --dry-run` previews generated files, commands, and CI behavior without writing anything.
 
 Local-only first run:
 
@@ -75,9 +78,9 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.79.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.79/kaios-0.1.79.zip
-unzip kaios-0.1.79.zip
-./kaios-0.1.79/bin/kaios quickstart
+curl -L -o kaios-0.1.80.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.80/kaios-0.1.80.zip
+unzip kaios-0.1.80.zip
+./kaios-0.1.80/bin/kaios quickstart
 ```
 
 ## Build From Source
