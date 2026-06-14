@@ -35,7 +35,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.60"
+private const val KAIOS_VERSION = "0.1.61"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val RUN_CAPSULE_SCHEMA = "kaios.run-capsule/v1"
 private const val RUN_REPLAY_SCHEMA = "kaios.run-replay/v1"
@@ -802,8 +802,9 @@ class KaiosCli(
             err.println(error.message)
             return 1
         }
+        val validation = buildConfigValidationReport(configPath)
         val ciFile = runCatching {
-            if (command.writeCi) {
+            if (command.writeCi && validation.valid) {
                 setupCiFile(defaultCiWorkflowPath(), configPath, command.force)
             } else {
                 SetupFileReport(path = null, action = SetupFileAction.Skipped.id)
@@ -812,7 +813,6 @@ class KaiosCli(
             err.println(error.message)
             return 1
         }
-        val validation = buildConfigValidationReport(configPath)
         val doctor = buildDoctorReport(configPath, runtimeConfigFailureStatus = DoctorStatus.WARN)
         val report = SetupReport(
             schema = SETUP_SCHEMA,
