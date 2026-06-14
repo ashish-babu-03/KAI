@@ -5,7 +5,7 @@ plugins {
 
 allprojects {
     group = "ai.kaios"
-    version = "0.1.10"
+    version = "0.1.11"
 }
 
 tasks.register<Sync>("installDist") {

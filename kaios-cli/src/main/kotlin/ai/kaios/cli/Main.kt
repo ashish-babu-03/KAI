@@ -29,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.10"
+private const val KAIOS_VERSION = "0.1.11"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -55,6 +55,7 @@ class KaiosCli(
         return when (args.first()) {
             "init" -> initProject(args.drop(1), out, err)
             "run" -> runWorkflow(args.drop(1), out, err)
+            "context" -> previewContext(args.drop(1), out, err)
             "config" -> configCommand(args.drop(1), out, err)
             "runs" -> listRuns(out)
             "ps" -> printProcessTable(args.drop(1), out, err)
@@ -138,6 +139,32 @@ class KaiosCli(
         out.println("  kaios report ${result.runId.value}")
         out.println("  kaios export ${result.runId.value}")
         return if (result.success) 0 else 2
+    }
+
+    private fun previewContext(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val paths = runCatching { parseContextCommand(args) }.getOrElse { error ->
+            err.println(error.message)
+            err.println("Usage: kaios context [path ...]")
+            return 1
+        }
+
+        val context = runCatching { contextLoader().load(paths) }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+
+        out.println("CONTEXT")
+        out.println("root: $workingDir")
+        out.println("files: ${context.sources.size}")
+        out.println("chars: ${context.totalChars}/${context.maxChars}")
+        out.println("truncated: ${context.truncated}")
+        if (context.ignorePatternCount > 0) {
+            out.println("ignore: .kaiosignore (${context.ignorePatternCount} pattern(s))")
+        }
+        out.println()
+        out.println(formatContextHeader(context.sources))
+        context.sources.forEach { source -> out.println(formatContextSource(source, context.sources)) }
+        return 0
     }
 
     private fun initProject(args: List<String>, out: PrintStream, err: PrintStream): Int {
@@ -507,6 +534,7 @@ class KaiosCli(
               kaios config templates
               kaios run "task"
               kaios run --context README.md "task"
+              kaios context [path ...]
               kaios run --config kaios.json "task"
               kaios run --default "task"
               kaios runs
@@ -556,6 +584,31 @@ class KaiosCli(
         4 -> 8
         5 -> 8
         else -> 10
+    }
+
+    private fun formatContextHeader(sources: List<ContextSource>): String =
+        listOf(
+            "PATH".padEnd(contextPathWidth(sources)),
+            "CHARS".padEnd(8),
+            "ORIGINAL".padEnd(10),
+            "STATUS",
+        ).joinToString("  ")
+
+    private fun formatContextSource(source: ContextSource, sources: List<ContextSource>): String =
+        listOf(
+            abbreviate(source.path, contextPathWidth(sources)).padEnd(contextPathWidth(sources)),
+            source.content.length.toString().padEnd(8),
+            source.originalChars.toString().padEnd(10),
+            if (source.truncated) "truncated" else "loaded",
+        ).joinToString("  ")
+
+    private fun contextPathWidth(sources: List<ContextSource>): Int =
+        (sources.maxOfOrNull { it.path.length } ?: 4).coerceAtLeast(28).coerceAtMost(72)
+
+    private fun abbreviate(value: String, width: Int): String {
+        if (value.length <= width) return value
+        if (width <= 3) return value.take(width)
+        return value.take(width - 3) + "..."
     }
 
     private fun defaultConfigPath(): Path = workingDir.resolve(KAIOS_CONFIG_FILE).normalize()
@@ -661,6 +714,29 @@ class KaiosCli(
         require(task.isNotBlank()) { "Task cannot be blank." }
         require(!(configPath != null && useBuiltInDefault)) { "Use either --config or --default, not both." }
         return RunCommand(task, configPath, useBuiltInDefault, outputPath, forceOutput, contextPaths)
+    }
+
+    private fun parseContextCommand(args: List<String>): List<Path> {
+        if (args.isEmpty()) return listOf(workingDir)
+
+        val paths = mutableListOf<Path>()
+        var index = 0
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--" -> {
+                    paths.addAll(args.drop(index + 1).map(::resolvePath))
+                    index = args.size
+                }
+                arg.startsWith("-") -> error("Unknown context option '$arg'.")
+                else -> {
+                    paths.add(resolvePath(arg))
+                    index += 1
+                }
+            }
+        }
+
+        return paths.ifEmpty { listOf(workingDir) }
     }
 
     private fun parseInitCommand(args: List<String>): InitCommand {

@@ -217,6 +217,63 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `context command previews workspace sources`() {
+        val workspace = Files.createTempDirectory("kaios-cli-context-preview")
+        Files.writeString(workspace.resolve("README.md"), "# KAI OS\nUseful context.\n")
+        Files.createDirectories(workspace.resolve("src"))
+        Files.writeString(workspace.resolve("src/Main.kt"), "fun main() = println(\"kai\")\n")
+        val cli = cliFor(workspace)
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("context", "."), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(text.contains("CONTEXT"))
+        assertTrue(text.contains("files: 2"))
+        assertTrue(text.contains("README.md"))
+        assertTrue(text.contains("src/Main.kt"))
+        assertTrue(text.contains("PATH"))
+        assertTrue(text.contains("CHARS"))
+    }
+
+    @Test
+    fun `kaiosignore controls context preview and run context`() {
+        val workspace = Files.createTempDirectory("kaios-cli-context-ignore")
+        Files.writeString(workspace.resolve(".kaiosignore"), "secrets/\n*.skip.md\n")
+        Files.writeString(workspace.resolve("README.md"), "# KAI OS\nPublic context.\n")
+        Files.writeString(workspace.resolve("notes.skip.md"), "ignored note\n")
+        Files.createDirectories(workspace.resolve("secrets"))
+        Files.writeString(workspace.resolve("secrets/private.md"), "do not load\n")
+        val cli = cliFor(workspace)
+        val previewOut = ByteArrayOutputStream()
+
+        val previewCode = cli.run(arrayOf("context", "."), PrintStream(previewOut), PrintStream(ByteArrayOutputStream()))
+        val previewText = previewOut.toString()
+
+        assertEquals(0, previewCode)
+        assertTrue(previewText.contains("ignore: .kaiosignore (2 pattern(s))"))
+        assertTrue(previewText.contains("README.md"))
+        assertTrue(!previewText.contains("notes.skip.md"))
+        assertTrue(!previewText.contains("secrets/private.md"))
+
+        val artifact = workspace.resolve("artifacts/context.md")
+        val runOut = ByteArrayOutputStream()
+        val runCode = cli.run(
+            arrayOf("run", "--context", ".", "--out", artifact.toString(), "summarize", "public", "context"),
+            PrintStream(runOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val artifactText = Files.readString(artifact)
+
+        assertEquals(0, runCode)
+        assertTrue(runOut.toString().contains("context: 1 file(s)"))
+        assertTrue(artifactText.contains("README.md"))
+        assertTrue(!artifactText.contains("notes.skip.md"))
+        assertTrue(!artifactText.contains("secrets/private.md"))
+    }
+
+    @Test
     fun `init writes a project config and refuses accidental overwrite`() {
         val workspace = Files.createTempDirectory("kaios-cli-init")
         val cli = cliFor(workspace)

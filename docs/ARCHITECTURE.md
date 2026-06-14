@@ -75,6 +75,7 @@ Snapshots are JSON files under `.kaios/runs/` and are used by the CLI to inspect
 
 - `kaios run "task"`
 - `kaios run --context README.md "task"`
+- `kaios context [path ...]`
 - `kaios runs`
 - `kaios ps <run-id>`
 - `kaios inspect <run-id>`
@@ -87,7 +88,7 @@ Reports are static HTML files generated from JSON snapshots under `.kaios/runs/`
 
 Artifacts are Markdown files generated with `kaios run --out <path>` or `kaios export <run-id>`. They are designed for handoff into issues, pull requests, docs, and release notes, and default to `.kaios/artifacts/<run-id>.md`.
 
-Context files are loaded by the CLI before scheduling. `kaios run --context <file-or-dir>` expands readable text inside the current workspace, skips generated/runtime directories, enforces character limits, and passes the bounded payload into the workflow input. Snapshots and artifacts persist source summaries so the run remains inspectable without dumping full project files into every handoff.
+Context files are loaded by the CLI before scheduling. `kaios context [path ...]` previews the bounded file set, and `kaios run --context <file-or-dir>` passes the same bounded payload into the workflow input. Context loading expands readable text inside the current workspace, honors `.kaiosignore`, skips generated/runtime directories, and enforces character limits. Snapshots and artifacts persist source summaries so the run remains inspectable without dumping full project files into every handoff.
 
 The default workflow is:
 

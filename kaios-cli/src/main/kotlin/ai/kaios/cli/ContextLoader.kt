@@ -12,6 +12,7 @@ internal data class ContextBundle(
     val sources: List<ContextSource>,
     val truncated: Boolean,
     val maxChars: Int,
+    val ignorePatternCount: Int = 0,
 ) {
     val totalChars: Int
         get() = sources.sumOf { it.content.length }
@@ -72,6 +73,8 @@ internal class ContextLoader(
     private val maxFileChars: Int = 20_000,
     private val maxFiles: Int = 40,
 ) {
+    private val ignore = ContextIgnore.load(workingDir)
+
     fun load(paths: List<Path>): ContextBundle {
         if (paths.isEmpty()) return ContextBundle.Empty
 
@@ -108,7 +111,7 @@ internal class ContextLoader(
         if (files.size > maxFiles) truncated = true
         require(sources.isNotEmpty()) { "No readable text context files found." }
 
-        return ContextBundle(sources, truncated, maxChars)
+        return ContextBundle(sources, truncated, maxChars, ignorePatternCount = ignore.rules.size)
     }
 
     private fun expand(path: Path): List<Path> {
@@ -120,10 +123,20 @@ internal class ContextLoader(
         if (normalized.isRegularFile()) return listOf(normalized)
         if (!normalized.isDirectory()) return emptyList()
 
-        return Files.walk(normalized).use { stream ->
-            stream
-                .toList()
-                .filter { candidate -> candidate.isRegularFile() && !shouldSkip(candidate) && hasTextExtension(candidate) }
+        val files = mutableListOf<Path>()
+        collectFiles(normalized, files)
+        return files
+    }
+
+    private fun collectFiles(path: Path, files: MutableList<Path>) {
+        if (shouldSkip(path)) return
+        when {
+            path.isRegularFile() && hasTextExtension(path) -> files.add(path)
+            path.isDirectory() -> runCatching {
+                Files.list(path).use { stream ->
+                    stream.toList().forEach { candidate -> collectFiles(candidate, files) }
+                }
+            }
         }
     }
 
@@ -145,8 +158,11 @@ internal class ContextLoader(
         return extension.lowercase() in textExtensions
     }
 
-    private fun shouldSkip(path: Path): Boolean =
-        path.iterator().asSequence().any { segment -> segment.toString() in skippedSegments }
+    private fun shouldSkip(path: Path): Boolean {
+        val relative = if (path.startsWith(workingDir)) workingDir.relativize(path) else path
+        return relative.iterator().asSequence().any { segment -> segment.toString() in skippedSegments } ||
+            ignore.isIgnored(relative, path.isDirectory())
+    }
 
     private fun displayPath(path: Path): String =
         if (path.startsWith(workingDir)) workingDir.relativize(path).toString() else path.toString()
@@ -176,5 +192,92 @@ internal class ContextLoader(
             "yaml",
             "yml",
         )
+    }
+}
+
+internal data class ContextIgnore(
+    val rules: List<ContextIgnoreRule>,
+) {
+    fun isIgnored(relativePath: Path, directory: Boolean): Boolean {
+        val normalized = relativePath
+            .normalize()
+            .joinToString("/")
+            .trim('/')
+        if (normalized.isBlank()) return false
+
+        var ignored = false
+        rules.forEach { rule ->
+            if (rule.matches(normalized, directory)) {
+                ignored = !rule.negated
+            }
+        }
+        return ignored
+    }
+
+    companion object {
+        fun load(workingDir: Path): ContextIgnore {
+            val path = workingDir.resolve(".kaiosignore").normalize()
+            if (!path.exists() || !path.isRegularFile()) return ContextIgnore(emptyList())
+
+            val rules = path.readText()
+                .lineSequence()
+                .map { it.trim() }
+                .filter { it.isNotBlank() && !it.startsWith("#") }
+                .map(::ContextIgnoreRule)
+                .toList()
+            return ContextIgnore(rules)
+        }
+    }
+}
+
+internal class ContextIgnoreRule(rawPattern: String) {
+    val negated: Boolean = rawPattern.startsWith("!")
+    private val pattern = rawPattern.removePrefix("!").trim().trimStart('/')
+    private val directoryOnly = pattern.endsWith("/")
+    private val body = pattern.trimEnd('/').ifBlank { rawPattern.trim() }
+    private val hasSlash = "/" in body
+    private val regex = globToRegex(body)
+
+    fun matches(path: String, directory: Boolean): Boolean {
+        if (directoryOnly) {
+            return pathPrefixes(path, includeSelf = directory).any { regex.matches(it) }
+        }
+
+        if (hasSlash) {
+            return regex.matches(path)
+        }
+
+        return path.split('/').any { segment -> regex.matches(segment) }
+    }
+
+    private fun pathPrefixes(path: String, includeSelf: Boolean): List<String> {
+        val segments = path.split('/').filter { it.isNotBlank() }
+        val limit = if (includeSelf) segments.size else segments.size - 1
+        if (limit <= 0) return emptyList()
+        return (1..limit).map { count -> segments.take(count).joinToString("/") }
+    }
+
+    private fun globToRegex(glob: String): Regex {
+        val builder = StringBuilder("^")
+        var index = 0
+        while (index < glob.length) {
+            val char = glob[index]
+            when (char) {
+                '*' -> {
+                    if (glob.getOrNull(index + 1) == '*') {
+                        builder.append(".*")
+                        index += 1
+                    } else {
+                        builder.append("[^/]*")
+                    }
+                }
+                '?' -> builder.append("[^/]")
+                '.', '(', ')', '+', '|', '^', '$', '@', '%', '{', '}', '[', ']', '\\' -> builder.append('\\').append(char)
+                else -> builder.append(char)
+            }
+            index += 1
+        }
+        builder.append('$')
+        return Regex(builder.toString())
     }
 }

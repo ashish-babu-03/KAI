@@ -57,6 +57,7 @@ kaios run --out artifacts/market.md "analyze crypto market"
 Run against local project files when you want the agents to see real context:
 
 ```bash
+kaios context .
 kaios run --context README.md --out artifacts/project.md "summarize this project"
 ```
 
@@ -122,10 +123,16 @@ kaios export run-97381ae9
 Attach local context files or directories:
 
 ```bash
+kaios context README.md docs
 kaios run --context README.md --context docs "explain the architecture"
 ```
 
-KAI OS reads text files inside the current workspace, skips generated/runtime directories such as `.git`, `.kaios`, `build`, and `node_modules`, enforces size limits, and records a source summary in snapshots and artifacts.
+KAI OS reads text files inside the current workspace, skips generated/runtime directories such as `.git`, `.kaios`, `build`, and `node_modules`, enforces size limits, and records a source summary in snapshots and artifacts. Add a `.kaiosignore` file to exclude extra paths before they reach an agent process:
+
+```gitignore
+secrets/
+*.local.md
+```
 
 ## Architecture
 
@@ -230,7 +237,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Coroutine-based DAG scheduler with parallel-ready nodes, fallback routing, timeout policy, and sibling cancellation.
 - Permissioned tools: `echo`, `clock`, `mock-http`, scoped `file`.
 - Project workflow templates, config validation, config graph display, and auto-detected `kaios.json` runs.
-- Project-aware runs with `kaios run --context <file-or-dir>` and bounded text ingestion.
+- Project-aware runs with `kaios context`, `.kaiosignore`, and bounded `kaios run --context <file-or-dir>` ingestion.
 - Session memory and JSON snapshots under `.kaios/runs/`.
 - SQLite memory adapter for persisted agent process memory.
 - CLI process table and run inspector.

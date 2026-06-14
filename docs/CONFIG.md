@@ -34,8 +34,24 @@ kaios run --config workflows/research.json "analyze a release plan"
 Attach files or directories from the current workspace when a run needs project context:
 
 ```bash
+kaios context .
+kaios context README.md docs
 kaios run --context README.md "summarize this project"
 kaios run --context README.md --context docs --out artifacts/project.md "explain the architecture"
+```
+
+`kaios context` previews the exact bounded source set before a run:
+
+```text
+CONTEXT
+root: /path/to/project
+files: 2
+chars: 12842/80000
+truncated: false
+
+PATH                          CHARS     ORIGINAL    STATUS
+README.md                     8139      8139        loaded
+docs/CONFIG.md                4703      4703        loaded
 ```
 
 Context is bounded and local by default:
@@ -45,6 +61,15 @@ Context is bounded and local by default:
 - only readable text files are loaded.
 - the default total context limit is 80,000 characters. Override it with `KAIOS_CONTEXT_MAX_CHARS`.
 - snapshots and Markdown artifacts store context source summaries rather than the raw context payload.
+
+Add `.kaiosignore` at the workspace root to exclude extra paths. It supports comments, `*` and `?` globs, directory rules with trailing `/`, and `!` negation:
+
+```gitignore
+# never send local secrets into agent context
+secrets/
+*.local.md
+!docs/public.local.md
+```
 
 ## Templates
 
