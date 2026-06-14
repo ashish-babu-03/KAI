@@ -52,7 +52,7 @@ kaios run --index . --context README.md --context docs "explain the architecture
 
 Workspace Index uses the same safety rules as context loading.
 
-Generated and runtime directories such as `.git`, `.kaios`, `build`, `node_modules`, `out`, and `target` are skipped by default. Add `.kaiosignore` for project-specific exclusions:
+Generated and runtime directories such as `.git`, `.kaios`, `artifacts`, `build`, `node_modules`, `out`, and `target` are skipped by default. Add `.kaiosignore` for project-specific exclusions:
 
 ```gitignore
 secrets/

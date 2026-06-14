@@ -160,7 +160,17 @@ internal class ContextLoader(
 }
 
 internal object WorkspaceFileRules {
-    private val skippedSegments = setOf(".git", ".gradle", ".idea", ".kaios", "build", "node_modules", "out", "target")
+    private val skippedSegments = setOf(
+        ".git",
+        ".gradle",
+        ".idea",
+        ".kaios",
+        "artifacts",
+        "build",
+        "node_modules",
+        "out",
+        "target",
+    )
     private val textFileNames = setOf(".gitignore", "Dockerfile", "LICENSE", "README", "Makefile")
     private val textExtensions = setOf(
         "cfg",

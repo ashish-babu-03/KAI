@@ -274,6 +274,27 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `generated artifacts are skipped by context and index previews`() {
+        val workspace = Files.createTempDirectory("kaios-cli-generated-artifacts")
+        Files.writeString(workspace.resolve("README.md"), "# KAI OS\nPublic context.\n")
+        Files.createDirectories(workspace.resolve("artifacts"))
+        Files.writeString(workspace.resolve("artifacts/analysis.md"), "# Generated report\nDo not feed this back.\n")
+        val cli = cliFor(workspace)
+        val contextOut = ByteArrayOutputStream()
+        val indexOut = ByteArrayOutputStream()
+
+        val contextCode = cli.run(arrayOf("context", "."), PrintStream(contextOut), PrintStream(ByteArrayOutputStream()))
+        val indexCode = cli.run(arrayOf("index", "."), PrintStream(indexOut), PrintStream(ByteArrayOutputStream()))
+
+        assertEquals(0, contextCode)
+        assertEquals(0, indexCode)
+        assertTrue(contextOut.toString().contains("README.md"))
+        assertTrue(!contextOut.toString().contains("artifacts/analysis.md"))
+        assertTrue(indexOut.toString().contains("README.md"))
+        assertTrue(!indexOut.toString().contains("artifacts/analysis.md"))
+    }
+
+    @Test
     fun `index command summarizes workspace shape and honors ignore rules`() {
         val workspace = Files.createTempDirectory("kaios-cli-index")
         Files.writeString(workspace.resolve(".kaiosignore"), "secrets/\n")

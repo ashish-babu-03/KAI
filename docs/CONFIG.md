@@ -79,7 +79,7 @@ docs/CONFIG.md                4703      4703        loaded
 Context is bounded and local by default:
 
 - paths must stay inside the current working directory.
-- generated/runtime directories such as `.git`, `.kaios`, `build`, `node_modules`, `out`, and `target` are skipped.
+- generated/runtime directories such as `.git`, `.kaios`, `artifacts`, `build`, `node_modules`, `out`, and `target` are skipped.
 - only readable text files are loaded.
 - the default total context limit is 80,000 characters. Override it with `KAIOS_CONTEXT_MAX_CHARS`.
 - snapshots and Markdown artifacts store context source summaries rather than the raw context payload.
