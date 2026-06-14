@@ -34,8 +34,8 @@ kaios run --config workflows/research.json "analyze a release plan"
 Build a no-key project report and source map before a run:
 
 ```bash
-kaios analyze . --out artifacts/analysis.md
-kaios analyze . --format json --out artifacts/analysis.json
+kaios analyze . --out artifacts/analysis.md --force
+kaios analyze . --format json --out artifacts/analysis.json --force
 kaios index .
 kaios run --index . "summarize the project shape"
 kaios run --index . --config workflows/research.json "map the runtime architecture"
@@ -46,8 +46,8 @@ kaios run --index . --config workflows/research.json "map the runtime architectu
 Use Workspace Index for orientation and `--context` for specific file evidence:
 
 ```bash
-kaios analyze . --out artifacts/analysis.md
-kaios analyze . --format json --out artifacts/analysis.json
+kaios analyze . --out artifacts/analysis.md --force
+kaios analyze . --format json --out artifacts/analysis.json --force
 kaios run --index . --context README.md --context docs "explain the architecture"
 ```
 
@@ -56,13 +56,13 @@ kaios run --index . --context README.md --context docs "explain the architecture
 Attach files or directories from the current workspace when a run needs project context:
 
 ```bash
-kaios analyze . --out artifacts/analysis.md
-kaios analyze . --format json --out artifacts/analysis.json
+kaios analyze . --out artifacts/analysis.md --force
+kaios analyze . --format json --out artifacts/analysis.json --force
 kaios index .
 kaios context .
 kaios context README.md docs
 kaios run --context README.md "summarize this project"
-kaios run --index . --context README.md --context docs --out artifacts/project.md "explain the architecture"
+kaios run --index . --context README.md --context docs --out artifacts/project.md --force "explain the architecture"
 ```
 
 `kaios context` previews the exact bounded source set before a run:
@@ -244,4 +244,4 @@ kaios export <run-id>
 kaios export <run-id> --out artifacts/run.md
 ```
 
-Artifacts include the task, final output, process table, and lifecycle events. The default export path is `.kaios/artifacts/<run-id>.md`. Existing files are protected; use `kaios run --force-output --out ...` for run-time artifacts and `kaios export <run-id> --force` for exports.
+Artifacts include the task, final output, process table, and lifecycle events. The default export path is `.kaios/artifacts/<run-id>.md`. Existing files are protected; use `kaios run --force --out ...` for run-time artifacts and `kaios export <run-id> --force` for exports.

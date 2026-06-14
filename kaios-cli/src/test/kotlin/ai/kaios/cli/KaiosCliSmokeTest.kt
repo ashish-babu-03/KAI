@@ -32,8 +32,8 @@ class KaiosCliSmokeTest {
         assertEquals(0, code)
         assertTrue(text.contains("Quick start (3 steps):"))
         assertTrue(text.contains("kaios doctor"))
-        assertTrue(text.contains("kaios analyze . --out artifacts/analysis.md"))
-        assertTrue(text.contains("kaios run --index . --out artifacts/project.md \"summarize this project\""))
+        assertTrue(text.contains("kaios analyze . --out artifacts/analysis.md --force"))
+        assertTrue(text.contains("kaios run --index . --out artifacts/project.md --force \"summarize this project\""))
         assertTrue(text.contains("Command groups:"))
     }
 
@@ -146,6 +146,14 @@ class KaiosCliSmokeTest {
 
         assertEquals(1, secondCode)
         assertTrue(err.toString().contains("already exists"))
+        assertTrue(err.toString().contains("Use --force"))
+
+        val forcedCode = cli.run(
+            arrayOf("run", "--out", artifact.toString(), "--force", "draft", "again"),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        assertEquals(0, forcedCode)
     }
 
     @Test
@@ -896,8 +904,9 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("[OK] project config"))
         assertTrue(text.contains("summary: ready"))
         assertTrue(text.contains("next:"))
-        assertTrue(text.contains("kaios analyze . --out artifacts/analysis.md"))
+        assertTrue(text.contains("kaios analyze . --out artifacts/analysis.md --force"))
         assertTrue(text.contains("kaios run --index ."))
+        assertTrue(text.contains("--force"))
         assertTrue(text.contains("\"summarize this project\""))
     }
 

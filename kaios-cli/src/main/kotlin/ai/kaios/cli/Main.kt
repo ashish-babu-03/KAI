@@ -29,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.17"
+private const val KAIOS_VERSION = "0.1.18"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -80,7 +80,7 @@ class KaiosCli(
     private fun runWorkflow(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val command = runCatching { parseRunCommand(args) }.getOrElse { error ->
             err.println(error.message)
-            err.println("Usage: kaios run [--context path] [--index path] [--config kaios.json] [--out artifact.md] \"task\"")
+            err.println("Usage: kaios run [--context path] [--index path] [--config kaios.json] [--out artifact.md] [--force] \"task\"")
             return 1
         }
 
@@ -463,7 +463,7 @@ class KaiosCli(
         if (failed > 0) {
             out.println("  fix failed checks above")
         }
-        out.println("  kaios analyze . --out artifacts/analysis.md")
+        out.println("  kaios analyze . --out artifacts/analysis.md --force")
         out.println("  ${firstProjectRunCommand()}")
 
         return if (failed > 0) 2 else 0
@@ -607,13 +607,13 @@ class KaiosCli(
 
             Quick start (3 steps):
               kaios doctor
-              kaios analyze . --out artifacts/analysis.md
-              kaios run --index . --out artifacts/project.md "summarize this project"
+              kaios analyze . --out artifacts/analysis.md --force
+              kaios run --index . --out artifacts/project.md --force "summarize this project"
 
             Command groups:
               Runtime:
                 kaios run "task"
-                kaios run --index . --context README.md --out artifact.md "task"
+                kaios run --index . --context README.md --out artifact.md --force "task"
 
               Workspace:
                 kaios analyze [path ...] [--format markdown|json] [--out analysis.md]
@@ -640,7 +640,7 @@ class KaiosCli(
     private fun firstProjectRunCommand(): String {
         val readme = preferredReadmePath()
         val context = readme?.let { " --context ${displayPath(it)}" }.orEmpty()
-        return "kaios run --index .$context --out artifacts/project.md \"summarize this project\""
+        return "kaios run --index .$context --out artifacts/project.md --force \"summarize this project\""
     }
 
     private fun preferredReadmePath(): Path? =
@@ -868,7 +868,7 @@ class KaiosCli(
                     outputPath = resolvePath(value)
                     index += 1
                 }
-                arg == "--force-output" -> {
+                arg == "--force-output" || arg == "--force" || arg == "-f" -> {
                     forceOutput = true
                     index += 1
                 }

@@ -5,8 +5,8 @@ Workspace Index gives KAI OS a cheap project map before an agent run.
 Use it when you want the runtime to understand repository shape without loading every file into context.
 
 ```bash
-kaios analyze . --out artifacts/analysis.md
-kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
+kaios analyze . --out artifacts/analysis.md --force
+kaios run --index . --context README.md --out artifacts/project.md --force "summarize this project"
 ```
 
 ## Analyze vs Index vs Context
@@ -25,7 +25,7 @@ It does not require a model provider or API key.
 Use JSON when CI, dashboards, or other tools need a stable schema:
 
 ```bash
-kaios analyze . --format json --out artifacts/analysis.json
+kaios analyze . --format json --out artifacts/analysis.json --force
 ```
 
 `kaios index` is a source map:
@@ -46,8 +46,8 @@ kaios analyze . --format json --out artifacts/analysis.json
 Use both when a task needs orientation and evidence:
 
 ```bash
-kaios analyze . --out artifacts/analysis.md
-kaios analyze . --format json --out artifacts/analysis.json
+kaios analyze . --out artifacts/analysis.md --force
+kaios analyze . --format json --out artifacts/analysis.json --force
 kaios index .
 kaios context README.md docs
 kaios run --index . --context README.md --context docs "explain the architecture"
@@ -80,9 +80,9 @@ Workspace Index records metadata, not full file contents. Use `--context` for th
 When `--index` is used during a run, snapshots and Markdown artifacts include a compact `Workspace Index` summary:
 
 ```bash
-kaios analyze . --out artifacts/analysis.md
-kaios analyze . --format json --out artifacts/analysis.json
-kaios run --index . --out artifacts/project.md "summarize this project"
+kaios analyze . --out artifacts/analysis.md --force
+kaios analyze . --format json --out artifacts/analysis.json --force
+kaios run --index . --out artifacts/project.md --force "summarize this project"
 kaios export <run-id>
 ```
 

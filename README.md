@@ -45,8 +45,8 @@ brew tap morning-verlu/tap
 brew install kaios
 
 kaios doctor
-kaios analyze . --out artifacts/analysis.md
-kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
+kaios analyze . --out artifacts/analysis.md --force
+kaios run --index . --context README.md --out artifacts/project.md --force "summarize this project"
 ```
 
 If the project does not have `README.md`, omit `--context README.md`. KAI OS still uses the Workspace Index to orient the run.
@@ -54,7 +54,7 @@ If the project does not have `README.md`, omit `--context README.md`. KAI OS sti
 Need a machine-readable workspace report for CI or dashboards?
 
 ```bash
-kaios analyze . --format json --out artifacts/analysis.json
+kaios analyze . --format json --out artifacts/analysis.json --force
 ```
 
 Create a local workflow config when you want your own agent process graph:
@@ -71,8 +71,8 @@ Or install with the hosted script:
 curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
 kaios doctor
-kaios analyze . --out artifacts/analysis.md
-kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
+kaios analyze . --out artifacts/analysis.md --force
+kaios run --index . --context README.md --out artifacts/project.md --force "summarize this project"
 ```
 
 Or build from source:
@@ -80,8 +80,8 @@ Or build from source:
 ```bash
 ./gradlew test installDist
 build/install/kaios-cli/bin/kaios doctor
-build/install/kaios-cli/bin/kaios analyze . --out artifacts/analysis.md
-build/install/kaios-cli/bin/kaios run --index . --context README.md --out artifacts/project.md "summarize this project"
+build/install/kaios-cli/bin/kaios analyze . --out artifacts/analysis.md --force
+build/install/kaios-cli/bin/kaios run --index . --context README.md --out artifacts/project.md --force "summarize this project"
 ```
 
 Example output:
@@ -130,8 +130,8 @@ kaios export run-97381ae9
 Attach local context files or directories:
 
 ```bash
-kaios analyze . --out artifacts/analysis.md
-kaios analyze . --format json --out artifacts/analysis.json
+kaios analyze . --out artifacts/analysis.md --force
+kaios analyze . --format json --out artifacts/analysis.json --force
 kaios index .
 kaios context README.md docs
 kaios run --index . --context README.md --context docs "explain the architecture"
