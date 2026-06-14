@@ -29,7 +29,7 @@ class KaiosCliSmokeTest {
         val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
 
         assertEquals(0, code)
-        assertEquals("kaios 0.1.20\n", out.toString())
+        assertEquals("kaios 0.1.21\n", out.toString())
     }
 
     @Test
@@ -47,6 +47,36 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("kaios run --index . --out artifacts/project.md --force \"summarize this project\""))
         assertTrue(text.contains("kaios --version"))
         assertTrue(text.contains("Command groups:"))
+    }
+
+    @Test
+    fun `core subcommands support help flag without running work`() {
+        val cli = cliFor(Files.createTempDirectory("kaios-cli-subcommand-help"))
+        val cases = mapOf(
+            "init" to "Usage: kaios init",
+            "run" to "Usage: kaios run",
+            "context" to "Usage: kaios context",
+            "index" to "Usage: kaios index",
+            "analyze" to "Usage: kaios analyze",
+            "config" to "Usage: kaios config",
+            "runs" to "Usage: kaios runs",
+            "ps" to "Usage: kaios ps",
+            "inspect" to "Usage: kaios inspect",
+            "report" to "Usage: kaios report",
+            "export" to "Usage: kaios export",
+            "doctor" to "Usage: kaios doctor",
+        )
+
+        cases.forEach { (command, usage) ->
+            val out = ByteArrayOutputStream()
+            val code = cli.run(arrayOf(command, "--help"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+            val text = out.toString()
+
+            assertEquals(0, code)
+            assertTrue(text.contains(usage), command)
+            assertTrue(text.contains("kaios help"), command)
+            assertTrue(!text.contains("run_id:"), command)
+        }
     }
 
     @Test

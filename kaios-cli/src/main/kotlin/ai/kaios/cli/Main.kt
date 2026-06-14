@@ -29,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.20"
+private const val KAIOS_VERSION = "0.1.21"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -52,19 +52,20 @@ class KaiosCli(
             return 1
         }
 
+        val commandArgs = args.drop(1)
         return when (args.first()) {
-            "init" -> initProject(args.drop(1), out, err)
-            "run" -> runWorkflow(args.drop(1), out, err)
-            "context" -> previewContext(args.drop(1), out, err)
-            "index" -> previewIndex(args.drop(1), out, err)
-            "analyze" -> analyzeWorkspace(args.drop(1), out, err)
-            "config" -> configCommand(args.drop(1), out, err)
-            "runs" -> listRuns(out)
-            "ps" -> printProcessTable(args.drop(1), out, err)
-            "inspect" -> inspectRun(args.drop(1), out, err)
-            "report" -> generateReport(args.drop(1), out, err)
-            "export" -> exportRun(args.drop(1), out, err)
-            "doctor" -> doctor(out)
+            "init" -> if (isHelp(commandArgs)) printCommandHelp(out, "kaios init [--template default|research|code-review|release] [--config kaios.json] [--force]") else initProject(commandArgs, out, err)
+            "run" -> if (isHelp(commandArgs)) printCommandHelp(out, "kaios run [--context path] [--index path] [--config kaios.json] [--out artifact.md] [--force] \"task\"") else runWorkflow(commandArgs, out, err)
+            "context" -> if (isHelp(commandArgs)) printCommandHelp(out, "kaios context [path ...]") else previewContext(commandArgs, out, err)
+            "index" -> if (isHelp(commandArgs)) printCommandHelp(out, "kaios index [path ...]") else previewIndex(commandArgs, out, err)
+            "analyze" -> if (isHelp(commandArgs)) printCommandHelp(out, "kaios analyze [path ...] [--format markdown|json] [--out analysis.md] [--force]") else analyzeWorkspace(commandArgs, out, err)
+            "config" -> if (isHelp(commandArgs)) printCommandHelp(out, "kaios config <validate|show|templates> [--config kaios.json]") else configCommand(commandArgs, out, err)
+            "runs" -> if (isHelp(commandArgs)) printCommandHelp(out, "kaios runs") else listRuns(out)
+            "ps" -> if (isHelp(commandArgs)) printCommandHelp(out, "kaios ps <run-id>") else printProcessTable(commandArgs, out, err)
+            "inspect" -> if (isHelp(commandArgs)) printCommandHelp(out, "kaios inspect <run-id>") else inspectRun(commandArgs, out, err)
+            "report" -> if (isHelp(commandArgs)) printCommandHelp(out, "kaios report <run-id>") else generateReport(commandArgs, out, err)
+            "export" -> if (isHelp(commandArgs)) printCommandHelp(out, "kaios export <run-id> [--out artifact.md] [--force]") else exportRun(commandArgs, out, err)
+            "doctor" -> if (isHelp(commandArgs)) printCommandHelp(out, "kaios doctor") else doctor(out)
             "version", "--version", "-V" -> version(out)
             "help", "--help", "-h" -> {
                 printUsage(out)
@@ -76,6 +77,15 @@ class KaiosCli(
                 1
             }
         }
+    }
+
+    private fun isHelp(args: List<String>): Boolean =
+        args.size == 1 && args.first() in setOf("help", "--help", "-h")
+
+    private fun printCommandHelp(out: PrintStream, usage: String): Int {
+        out.println("Usage: $usage")
+        out.println("Run 'kaios help' for all commands.")
+        return 0
     }
 
     private fun runWorkflow(args: List<String>, out: PrintStream, err: PrintStream): Int {
