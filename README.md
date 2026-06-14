@@ -46,11 +46,12 @@ brew tap morning-verlu/tap
 brew install kaios
 
 kaios demo
-kaios analyze . --out artifacts/analysis.md --force
+kaios setup --ci
 kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
 If the project does not have `README.md`, omit `--context README.md`. KAI OS still uses the Workspace Index to orient the run.
+`kaios setup --ci` creates a validated `kaios.json` and a no-key GitHub Actions Agent Gate without overwriting existing files.
 
 Every command has local examples when you need the next move without opening docs:
 
@@ -91,13 +92,13 @@ kaios run --index . --trace-out artifacts/trace.json --force "summarize this pro
 Create a local workflow config when you want your own agent process graph:
 
 ```bash
-kaios init --template research --ci
+kaios setup --ci
 kaios config show
 kaios config validate --json
 kaios run --out artifacts/runtime.md "map the JVM agent runtime"
 ```
 
-`--ci` also writes `.github/workflows/kaios.yml`, a no-key Agent Gate that installs KAI OS, runs `doctor --json`, validates `kaios.json`, executes a deterministic smoke run, and checks the process trace contract.
+`kaios setup --ci` also writes `.github/workflows/kaios.yml`, a no-key Agent Gate that installs KAI OS, runs `doctor --json`, validates `kaios.json`, executes a deterministic smoke run, and checks the process trace contract.
 
 Or install with the hosted script:
 
@@ -298,6 +299,8 @@ For real model execution, see [docs/PROVIDERS.md](docs/PROVIDERS.md).
 
 For built-in syscall tools, see [docs/TOOLS.md](docs/TOOLS.md).
 
+For one-command project setup, see [docs/SETUP.md](docs/SETUP.md).
+
 For persisted memory, see [docs/MEMORY.md](docs/MEMORY.md).
 
 For Workspace Index and project context, see [docs/INDEX.md](docs/INDEX.md).
@@ -318,6 +321,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Coroutine-based DAG scheduler with parallel-ready nodes, observable retry policy, fallback routing, timeout policy, and sibling cancellation.
 - Permissioned tools: `echo`, `clock`, `mock-http`, allowlisted `http`, scoped `file`.
 - Project workflow templates, retry policy, config validation, config graph display, and auto-detected `kaios.json` runs.
+- `kaios setup` bootstraps a validated project workflow and can add the CI Agent Gate in one command.
 - `kaios config validate --json` emits `kaios.config-validation/v1` for CI and release gates.
 - `kaios init --ci` writes a GitHub Actions Agent Gate using `doctor --json`, config validation, a mock-provider smoke run, and `trace --check`.
 - Deterministic workspace analysis with `kaios analyze` for no-key Markdown and JSON project reports.

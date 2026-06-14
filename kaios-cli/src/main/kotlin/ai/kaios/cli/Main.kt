@@ -34,14 +34,16 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.43"
+private const val KAIOS_VERSION = "0.1.44"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val DOCTOR_SCHEMA = "kaios.doctor/v1"
 private const val RUNS_SCHEMA = "kaios.runs/v1"
 private const val CONFIG_VALIDATION_SCHEMA = "kaios.config-validation/v1"
 private const val BUG_REPORT_SCHEMA = "kaios.bug-report/v1"
+private const val SETUP_SCHEMA = "kaios.setup/v1"
 
 private val TOP_LEVEL_COMMANDS = listOf(
+    "setup",
     "init",
     "demo",
     "run",
@@ -99,6 +101,7 @@ class KaiosCli(
 
         val commandArgs = args.drop(1)
         return when (args.first()) {
+            "setup" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("setup")) else setupProject(commandArgs, out, err)
             "init" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("init")) else initProject(commandArgs, out, err)
             "demo" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("demo")) else runDemo(commandArgs, out, err)
             "run" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("run")) else runWorkflow(commandArgs, out, err)
@@ -265,6 +268,21 @@ class KaiosCli(
 
     private fun commandHelpOrNull(command: String): CommandHelp? =
         when (command) {
+            "setup" -> CommandHelp(
+                usage = "kaios setup [--template default|research|code-review|release] [--config kaios.json] [--ci] [--force] [--json|--format json]",
+                summary = "Bootstrap a project workflow, validate it, and print the next useful commands.",
+                examples = listOf(
+                    "kaios setup",
+                    "kaios setup --ci",
+                    "kaios setup --template code-review --ci",
+                    "kaios setup --json",
+                ),
+                notes = listOf(
+                    "The default setup template is research because it is useful for project onboarding.",
+                    "Existing config and CI files are kept unless --force is passed.",
+                    "JSON output uses schema $SETUP_SCHEMA for automation.",
+                ),
+            )
             "init" -> CommandHelp(
                 usage = "kaios init [--template default|research|code-review|release] [--config kaios.json] [--ci] [--force]",
                 summary = "Create a local kaios.json workflow so runs use your own agent process graph.",
@@ -662,6 +680,119 @@ class KaiosCli(
         out.println("format: ${command.format.id}")
         out.println("index: ${index.summary()}")
         return 0
+    }
+
+    private fun setupProject(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val command = runCatching { parseSetupCommand(args) }.getOrElse { error ->
+            return printCommandUsageError(err, "setup", error.message)
+        }
+
+        val template = requireProjectTemplate(command.templateId)
+        val configPath = command.configPath
+        val configFile = runCatching {
+            setupConfigFile(configPath, command.templateId, command.force)
+        }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+        val ciFile = runCatching {
+            if (command.writeCi) {
+                setupCiFile(defaultCiWorkflowPath(), configPath, command.force)
+            } else {
+                SetupFileReport(path = null, action = SetupFileAction.Skipped.id)
+            }
+        }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+        val validation = buildConfigValidationReport(configPath)
+        val doctor = buildDoctorReport()
+        val report = SetupReport(
+            schema = SETUP_SCHEMA,
+            version = KAIOS_VERSION,
+            cwd = workingDir.toString(),
+            requestedTemplate = command.templateId,
+            config = configFile,
+            ci = ciFile,
+            doctor = doctor,
+            validation = validation,
+            next = setupNextCommands(validation, ciFile, template),
+        )
+
+        when (command.format) {
+            SetupFormat.Text -> renderSetupText(report, out)
+            SetupFormat.Json -> out.println(TRACE_JSON.encodeToString(report))
+        }
+
+        return if (doctor.summary.failed > 0 || !validation.valid) 1 else 0
+    }
+
+    private fun setupConfigFile(path: Path, templateId: String, force: Boolean): SetupFileReport {
+        val action = when {
+            path.exists() && force -> SetupFileAction.Overwritten
+            path.exists() -> SetupFileAction.Existing
+            else -> SetupFileAction.Created
+        }
+        if (action != SetupFileAction.Existing) {
+            path.parent?.let { Files.createDirectories(it) }
+            path.writeText(projectConfigText(templateId))
+        }
+        return SetupFileReport(path = path.toString(), action = action.id)
+    }
+
+    private fun setupCiFile(path: Path, configPath: Path, force: Boolean): SetupFileReport {
+        val action = when {
+            path.exists() && force -> SetupFileAction.Overwritten
+            path.exists() -> SetupFileAction.Existing
+            else -> SetupFileAction.Created
+        }
+        if (action != SetupFileAction.Existing) {
+            path.parent?.let { Files.createDirectories(it) }
+            path.writeText(projectCiWorkflowText(configPath))
+        }
+        return SetupFileReport(path = path.toString(), action = action.id)
+    }
+
+    private fun setupNextCommands(
+        validation: ConfigValidationReport,
+        ciFile: SetupFileReport,
+        template: KaiosProjectTemplate,
+    ): List<String> =
+        buildList {
+            add("kaios config validate --config ${displayPath(Paths.get(validation.config))} --json")
+            if (validation.valid) {
+                add("kaios run \"${template.exampleTask}\"")
+                add("kaios ps latest")
+            } else {
+                add("fix ${displayPath(Paths.get(validation.config))} or rerun kaios setup --force")
+            }
+            if (ciFile.path != null) {
+                add("git add ${displayPath(Paths.get(validation.config))} ${displayPath(Paths.get(ciFile.path))}")
+            }
+            add("kaios bug-report")
+        }.distinct()
+
+    private fun renderSetupText(report: SetupReport, out: PrintStream) {
+        out.println("KAI OS setup")
+        out.println("schema: ${report.schema}")
+        out.println("version: ${report.version}")
+        out.println("cwd: ${report.cwd}")
+        out.println("requested_template: ${report.requestedTemplate}")
+        out.println("doctor: ${report.doctor.summary.status}")
+        out.println("config: ${report.config.path}")
+        out.println("config_action: ${report.config.action}")
+        out.println("validation: ${if (report.validation.valid) "valid" else "invalid"}")
+        out.println("workflow: ${report.validation.workflowName ?: "-"}")
+        out.println("agents: ${report.validation.agentCount}")
+        out.println("ci: ${report.ci.action}${report.ci.path?.let { " ($it)" }.orEmpty()}")
+        if (report.validation.errors.isNotEmpty()) {
+            out.println()
+            out.println("errors:")
+            report.validation.errors.forEach { error -> out.println("  - ${singleLine(error)}") }
+        }
+        out.println()
+        out.println("next:")
+        report.next.forEach { command -> out.println("  $command") }
     }
 
     private fun initProject(args: List<String>, out: PrintStream, err: PrintStream): Int {
@@ -1624,10 +1755,14 @@ class KaiosCli(
 
             Quick start (3 steps):
               kaios demo
-              kaios analyze . --out artifacts/analysis.md --force
+              kaios setup --ci
               kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 
             Command groups:
+              Setup:
+                kaios setup [--ci]
+                kaios init [--template default|research|code-review|release] [--ci]
+
               Runtime:
                 kaios demo
                 kaios run "task"
@@ -1639,7 +1774,6 @@ class KaiosCli(
                 kaios context [path ...]
 
               Project config:
-                kaios init [--template default|research|code-review|release] [--ci]
                 kaios config validate [--config kaios.json]
                 kaios config show [--config kaios.json]
                 kaios config templates
@@ -2165,6 +2299,78 @@ class KaiosCli(
             else -> error("Unknown analyze format '$value'. Use markdown or json.")
         }
 
+    private fun parseSetupCommand(args: List<String>): SetupCommand {
+        var configPath = defaultConfigPath()
+        var force = false
+        var templateId = "research"
+        var writeCi = false
+        var format = SetupFormat.Text
+        var index = 0
+
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--force" || arg == "-f" -> {
+                    force = true
+                    index += 1
+                }
+                arg == "--ci" -> {
+                    writeCi = true
+                    index += 1
+                }
+                arg == "--json" -> {
+                    format = SetupFormat.Json
+                    index += 1
+                }
+                arg == "--format" -> {
+                    val value = args.getOrNull(index + 1) ?: error("--format requires text or json.")
+                    format = parseSetupFormat(value)
+                    index += 2
+                }
+                arg.startsWith("--format=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--format requires text or json." }
+                    format = parseSetupFormat(value)
+                    index += 1
+                }
+                arg == "--config" || arg == "-c" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    configPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--config=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--config requires a path." }
+                    configPath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--template" || arg == "-t" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a template id.")
+                    requireProjectTemplate(value)
+                    templateId = value.lowercase().trim()
+                    index += 2
+                }
+                arg.startsWith("--template=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--template requires a template id." }
+                    requireProjectTemplate(value)
+                    templateId = value.lowercase().trim()
+                    index += 1
+                }
+                else -> error("Unknown setup option '$arg'.")
+            }
+        }
+
+        return SetupCommand(configPath, force, templateId, writeCi, format)
+    }
+
+    private fun parseSetupFormat(value: String): SetupFormat =
+        when (value.lowercase().trim()) {
+            "text", "plain" -> SetupFormat.Text
+            "json" -> SetupFormat.Json
+            else -> error("Unknown setup format '$value'. Use text or json.")
+        }
+
     private fun parseInitCommand(args: List<String>): InitCommand {
         var configPath = defaultConfigPath()
         var force = false
@@ -2546,6 +2752,45 @@ private data class RunCommand(
     val forceOutput: Boolean,
     val contextPaths: List<Path>,
     val indexPaths: List<Path>,
+)
+
+private data class SetupCommand(
+    val configPath: Path,
+    val force: Boolean,
+    val templateId: String,
+    val writeCi: Boolean,
+    val format: SetupFormat,
+)
+
+private enum class SetupFormat(val id: String) {
+    Text("text"),
+    Json("json"),
+}
+
+private enum class SetupFileAction(val id: String) {
+    Created("created"),
+    Existing("existing"),
+    Overwritten("overwritten"),
+    Skipped("skipped"),
+}
+
+@Serializable
+private data class SetupReport(
+    val schema: String,
+    val version: String,
+    val cwd: String,
+    val requestedTemplate: String,
+    val config: SetupFileReport,
+    val ci: SetupFileReport,
+    val doctor: DoctorReport,
+    val validation: ConfigValidationReport,
+    val next: List<String>,
+)
+
+@Serializable
+private data class SetupFileReport(
+    val path: String?,
+    val action: String,
 )
 
 private data class InitCommand(

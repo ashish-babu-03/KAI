@@ -4,11 +4,13 @@ KAI OS can run the built-in `planner -> executor -> validator` workflow, or load
 
 ```bash
 kaios config templates
-kaios init --template research --ci
+kaios setup --ci
 kaios config validate
 kaios config show
 kaios run "map the JVM agent runtime"
 ```
+
+`kaios setup` is the recommended first path because it creates a useful workflow, validates it, and can add the GitHub Actions Agent Gate without overwriting existing files.
 
 `kaios init` refuses to overwrite an existing file unless you pass `--force`:
 

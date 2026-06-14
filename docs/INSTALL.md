@@ -17,6 +17,7 @@ Every core command also supports local help with examples and notes:
 
 ```bash
 kaios
+kaios setup --help
 kaios demo --help
 kaios run --help
 kaios help run
@@ -31,7 +32,7 @@ brew tap morning-verlu/tap
 brew install kaios
 
 kaios demo
-kaios analyze . --out artifacts/analysis.md --force
+kaios setup --ci
 kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
@@ -45,7 +46,7 @@ The installer downloads the release ZIP, verifies the published SHA256 checksum,
 curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
 kaios demo
-kaios analyze . --out artifacts/analysis.md --force
+kaios setup --ci
 kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
@@ -58,11 +59,11 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.43.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.43/kaios-0.1.43.zip
-unzip kaios-0.1.43.zip
-./kaios-0.1.43/bin/kaios demo
-./kaios-0.1.43/bin/kaios analyze . --out artifacts/analysis.md --force
-./kaios-0.1.43/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
+curl -L -o kaios-0.1.44.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.44/kaios-0.1.44.zip
+unzip kaios-0.1.44.zip
+./kaios-0.1.44/bin/kaios demo
+./kaios-0.1.44/bin/kaios setup --ci
+./kaios-0.1.44/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
 ## Build From Source
@@ -72,7 +73,7 @@ git clone https://github.com/morning-verlu/KAI.git
 cd KAI
 ./gradlew test installDist
 build/install/kaios-cli/bin/kaios demo
-build/install/kaios-cli/bin/kaios analyze . --out artifacts/analysis.md --force
+build/install/kaios-cli/bin/kaios setup --ci
 build/install/kaios-cli/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
@@ -81,7 +82,7 @@ Useful next commands after the first artifact:
 ```bash
 kaios analyze . --format json --out artifacts/analysis.json --force
 kaios doctor --json
-kaios init --template research --ci
+kaios setup --ci
 kaios config show
 kaios config validate --json
 kaios run --index . --trace-out artifacts/trace.json --force "summarize this project"

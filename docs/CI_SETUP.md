@@ -10,7 +10,7 @@ KAI OS has two CI paths:
 In a project that uses KAI OS, run:
 
 ```bash
-kaios init --template research --ci
+kaios setup --ci
 git add kaios.json .github/workflows/kaios.yml
 ```
 
