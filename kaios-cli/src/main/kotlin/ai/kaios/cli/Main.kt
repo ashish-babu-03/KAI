@@ -35,7 +35,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.59"
+private const val KAIOS_VERSION = "0.1.60"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val RUN_CAPSULE_SCHEMA = "kaios.run-capsule/v1"
 private const val RUN_REPLAY_SCHEMA = "kaios.run-replay/v1"
@@ -794,7 +794,7 @@ class KaiosCli(
             return printCommandUsageError(err, "setup", error.message)
         }
 
-        val template = requireProjectTemplate(command.templateId)
+        requireProjectTemplate(command.templateId)
         val configPath = command.configPath
         val configFile = runCatching {
             setupConfigFile(configPath, command.templateId, command.force)
@@ -823,7 +823,7 @@ class KaiosCli(
             ci = ciFile,
             doctor = doctor,
             validation = validation,
-            next = setupNextCommands(validation, ciFile, template),
+            next = setupNextCommands(validation, ciFile, command),
         )
 
         when (command.format) {
@@ -863,7 +863,7 @@ class KaiosCli(
     private fun setupNextCommands(
         validation: ConfigValidationReport,
         ciFile: SetupFileReport,
-        template: KaiosProjectTemplate,
+        command: SetupCommand,
     ): List<String> =
         buildList {
             add("kaios config validate --config ${displayPath(Paths.get(validation.config))} --json")
@@ -871,7 +871,7 @@ class KaiosCli(
                 add(verifyEvidenceCommand(Paths.get(validation.config)))
                 add("kaios ps latest")
             } else {
-                add("fix ${displayPath(Paths.get(validation.config))} or rerun kaios setup --force")
+                add("fix ${displayPath(Paths.get(validation.config))} or rerun ${setupForceCommand(command)}")
             }
             if (ciFile.path != null) {
                 add("git add ${displayPath(Paths.get(validation.config))} ${displayPath(Paths.get(ciFile.path))}")
@@ -887,6 +887,17 @@ class KaiosCli(
             "kaios setup --ci"
         } else {
             "kaios setup --config ${displayPath(configPath)} --ci"
+        }
+
+    private fun setupForceCommand(command: SetupCommand): String =
+        buildString {
+            append("kaios setup")
+            append(" --template ${command.templateId}")
+            if (command.configPath.toAbsolutePath().normalize() != defaultConfigPath().toAbsolutePath().normalize()) {
+                append(" --config ${displayPath(command.configPath)}")
+            }
+            if (command.writeCi) append(" --ci")
+            append(" --force")
         }
 
     private fun renderSetupText(report: SetupReport, out: PrintStream) {
