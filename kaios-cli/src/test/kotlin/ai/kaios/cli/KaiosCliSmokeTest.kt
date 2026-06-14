@@ -22,6 +22,17 @@ import kotlin.test.assertTrue
 
 class KaiosCliSmokeTest {
     @Test
+    fun `version command prints installed cli version`() {
+        val cli = cliFor(Files.createTempDirectory("kaios-cli-version"))
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+
+        assertEquals(0, code)
+        assertEquals("kaios 0.1.19\n", out.toString())
+    }
+
+    @Test
     fun `help leads with three step quick start`() {
         val cli = cliFor(Files.createTempDirectory("kaios-cli-help"))
         val out = ByteArrayOutputStream()
@@ -34,6 +45,7 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("kaios doctor"))
         assertTrue(text.contains("kaios analyze . --out artifacts/analysis.md --force"))
         assertTrue(text.contains("kaios run --index . --out artifacts/project.md --force \"summarize this project\""))
+        assertTrue(text.contains("kaios --version"))
         assertTrue(text.contains("Command groups:"))
     }
 

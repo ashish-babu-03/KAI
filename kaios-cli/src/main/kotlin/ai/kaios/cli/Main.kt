@@ -29,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.18"
+private const val KAIOS_VERSION = "0.1.19"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -65,6 +65,7 @@ class KaiosCli(
             "report" -> generateReport(args.drop(1), out, err)
             "export" -> exportRun(args.drop(1), out, err)
             "doctor" -> doctor(out)
+            "version", "--version", "-V" -> version(out)
             "help", "--help", "-h" -> {
                 printUsage(out)
                 0
@@ -469,6 +470,11 @@ class KaiosCli(
         return if (failed > 0) 2 else 0
     }
 
+    private fun version(out: PrintStream): Int {
+        out.println("kaios $KAIOS_VERSION")
+        return 0
+    }
+
     private fun javaCheck(): DoctorCheck {
         val version = System.getProperty("java.version").orEmpty()
         val major = javaMajorVersion(version)
@@ -633,6 +639,7 @@ class KaiosCli(
                 kaios report <run-id>
                 kaios export <run-id> [--out artifact.md]
                 kaios doctor
+                kaios --version
             """.trimIndent(),
         )
     }

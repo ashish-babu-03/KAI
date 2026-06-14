@@ -2,6 +2,12 @@
 
 KAI OS is distributed as a JVM CLI. Java 17+ is required.
 
+Check the installed version at any time:
+
+```bash
+kaios --version
+```
+
 ## Homebrew
 
 ```bash
@@ -36,11 +42,11 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.18.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.18/kaios-0.1.18.zip
-unzip kaios-0.1.18.zip
-./kaios-0.1.18/bin/kaios doctor
-./kaios-0.1.18/bin/kaios analyze . --out artifacts/analysis.md --force
-./kaios-0.1.18/bin/kaios run --index . --context README.md --out artifacts/project.md --force "summarize this project"
+curl -L -o kaios-0.1.19.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.19/kaios-0.1.19.zip
+unzip kaios-0.1.19.zip
+./kaios-0.1.19/bin/kaios doctor
+./kaios-0.1.19/bin/kaios analyze . --out artifacts/analysis.md --force
+./kaios-0.1.19/bin/kaios run --index . --context README.md --out artifacts/project.md --force "summarize this project"
 ```
 
 ## Build From Source
