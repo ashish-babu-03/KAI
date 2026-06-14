@@ -354,6 +354,8 @@ For one-command project setup, see [docs/SETUP.md](docs/SETUP.md).
 
 For the no-key readiness gate, see [docs/VERIFY.md](docs/VERIFY.md).
 
+For copyable project examples, including a production-style GitHub Actions Agent Gate, see [examples/README.md](examples/README.md).
+
 For persisted memory, see [docs/MEMORY.md](docs/MEMORY.md).
 
 For Workspace Index and project context, see [docs/INDEX.md](docs/INDEX.md).
@@ -375,6 +377,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Permissioned tools: `echo`, `clock`, `mock-http`, allowlisted `http`, scoped `file`.
 - Project workflow templates, retry policy, config validation, config graph display, and auto-detected `kaios.json` runs.
 - `kaios setup` bootstraps a validated project workflow and can add the CI Agent Gate in one command.
+- Production-style GitHub Actions Agent Gate example with verify JSON, evidence capsule, and failure-time bug report.
 - `kaios verify` emits `kaios.verify/v1`, runs the no-key readiness gate, can write `kaios.evidence/v1`, and saves a normal run snapshot for inspection.
 - `kaios config validate --json` emits `kaios.config-validation/v1` with `next` commands and structured `nextActions` for CI and release gates.
 - `kaios init --ci` writes a GitHub Actions Agent Gate that uses the same local `kaios verify --config kaios.json --evidence --force` contract.

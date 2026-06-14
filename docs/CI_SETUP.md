@@ -22,6 +22,8 @@ kaios verify --config kaios.json --evidence --force
 
 This gives teams a stable gate for environment readiness, editable workflow validation, deterministic runtime execution, process trace contract checks, and portable evidence. The same command runs locally before pushing.
 
+For a copyable production-style workflow that also saves `kaios.verify/v1` JSON and collects `kaios.bug-report/v1` on failure, see [../examples/github-actions-agent-gate.yml](../examples/github-actions-agent-gate.yml).
+
 If the repository keeps a known-good baseline capsule, add a regression diff gate:
 
 ```bash

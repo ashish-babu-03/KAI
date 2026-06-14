@@ -31,6 +31,8 @@ kaios setup --ci
 git add kaios.json .github/workflows/kaios.yml
 ```
 
+For a production-style GitHub Actions example that also stores JSON verification output and a failure-time support report, see [../examples/github-actions-agent-gate.yml](../examples/github-actions-agent-gate.yml).
+
 Use a different template:
 
 ```bash

@@ -1,0 +1,54 @@
+name: KAI OS Agent Gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  kaios:
+    name: Verify agent workflow
+    runs-on: ubuntu-latest
+    env:
+      KAIOS_VERSION: "0.1.67"
+      KAIOS_MODEL_PROVIDER: mock
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.3
+
+      - name: Set up Java
+        uses: actions/setup-java@v5.2.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install KAI OS
+        run: |
+          curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
+          echo "$HOME/.kaios/bin" >> "$GITHUB_PATH"
+
+      - name: Verify KAI OS project
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          kaios verify --config kaios.json --evidence --json --force | tee artifacts/kaios-verify.json
+
+      - name: Collect KAI OS support report
+        if: failure()
+        run: |
+          mkdir -p artifacts
+          kaios bug-report --json --out artifacts/kaios-bug-report.json --force
+
+      - name: Upload KAI OS artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kaios-agent-gate
+          path: |
+            artifacts/kaios-verify.json
+            artifacts/kaios-run.capsule.json
+            artifacts/kaios-bug-report.json
+          if-no-files-found: ignore
