@@ -33,10 +33,10 @@ Use the process table:
 
 ```bash
 kaios run "analyze crypto market"
-kaios ps latest
-kaios trace latest
-kaios evidence latest --out artifacts/run.capsule.json --force
-kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
+kaios ps
+kaios trace
+kaios evidence --out artifacts/run.capsule.json --force
+kaios evidence --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 ```
 
 The process table is the visual proof of the idea. The trace is the durable proof: `kaios.process-trace/v1` turns one agent run into a reusable audit, CI, replay, and future UI asset. The capsule is the moat proof: `kaios.run-capsule/v1` packages the snapshot, trace, provenance hashes, and replay commands as a portable runtime artifact that can be validated from a shared JSON file. Replay is the protocol proof: `kaios.run-replay/v1` rebuilds the trace from the embedded snapshot without API keys or the original run directory. Diff is the regression proof: `kaios.run-diff/v1` compares stable agent behavior across two capsules. Evidence is the product proof: `kaios.evidence/v1` turns packaging, validation, replay, and optional baseline diff into one CI-ready command.

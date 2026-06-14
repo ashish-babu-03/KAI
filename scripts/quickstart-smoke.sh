@@ -107,11 +107,11 @@ assert_contains run.out "success: true"
 assert_file artifacts/project.md
 assert_file artifacts/trace.json
 
-run_step "kaios ps latest" "$KAIOS_BIN" ps latest > ps.out
+run_step "kaios ps" "$KAIOS_BIN" ps > ps.out
 assert_contains ps.out "RUN "
 assert_contains ps.out "PID"
 
-run_step "kaios trace latest --check" "$KAIOS_BIN" trace latest --check > trace-check.out
+run_step "kaios trace --check" "$KAIOS_BIN" trace --check > trace-check.out
 assert_contains trace-check.out "status: valid"
 
 echo "kaios quickstart smoke ok"

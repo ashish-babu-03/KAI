@@ -5,14 +5,14 @@
 The human-readable form is for terminals and screenshots:
 
 ```bash
-kaios trace latest
+kaios trace
 ```
 
 The JSON form is the durable contract for CI, replay, audit logs, visualizers, and future Agent Desktop surfaces:
 
 ```bash
-kaios trace latest --json
-kaios trace latest --json --out artifacts/trace.json --force
+kaios trace --json
+kaios trace --json --out artifacts/trace.json --force
 ```
 
 Existing output files are protected by default. Pass `--force` when you intentionally want to overwrite a trace artifact.
@@ -20,7 +20,7 @@ Existing output files are protected by default. Pass `--force` when you intentio
 Validate the trace contract without writing an artifact:
 
 ```bash
-kaios trace latest --check
+kaios trace --check
 ```
 
 `--check` exits `0` when the generated trace satisfies the contract. It exits non-zero and prints specific contract issues when a saved run snapshot cannot produce a valid trace.
@@ -88,7 +88,7 @@ kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json 
 You can also generate a trace later from any saved run snapshot:
 
 ```bash
-kaios trace latest --json --out artifacts/trace.json --force
+kaios trace --json --out artifacts/trace.json --force
 ```
 
 Downstream checks can inspect `metrics.processCount`, `metrics.syscallCount`, `success`, `eventCounts`, or specific process states without scraping terminal output.
@@ -96,8 +96,8 @@ Downstream checks can inspect `metrics.processCount`, `metrics.syscallCount`, `s
 When you need a full portable evidence package, use the one-command evidence gate. It writes a run capsule, validates it, replays it offline, and can compare it with a baseline:
 
 ```bash
-kaios evidence latest --out artifacts/run.capsule.json --force
-kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
+kaios evidence --out artifacts/run.capsule.json --force
+kaios evidence --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 ```
 
 Evidence JSON uses schema `kaios.evidence/v1`. The embedded capsule still uses schema `kaios.run-capsule/v1`; offline replay uses `kaios.run-replay/v1`, and offline capsule diff uses `kaios.run-diff/v1`; see [CAPSULE.md](CAPSULE.md).
@@ -107,7 +107,7 @@ For the full JSON command matrix and shared `nextActions` rules, see [JSON_CONTR
 For a simple gate, validate the contract directly:
 
 ```bash
-kaios trace latest --check
+kaios trace --check
 ```
 
 Successful output is intentionally short:

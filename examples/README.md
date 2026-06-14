@@ -169,12 +169,12 @@ Add `retries` to an agent when model/provider/tool failures are expected to be t
 }
 ```
 
-Each retry is observable as a new agent process. Use `kaios ps latest` to see failed attempts and `kaios inspect latest` to see `RETRYING` events.
+Each retry is observable as a new agent process. Use `kaios ps` to see failed attempts and `kaios inspect` to see `RETRYING` events.
 
 ## Inspect Processes
 
 ```bash
-build/install/kaios-cli/bin/kaios ps latest
+build/install/kaios-cli/bin/kaios ps
 ```
 
 The process table shows:
@@ -190,7 +190,7 @@ The process table shows:
 ## Inspect Events
 
 ```bash
-build/install/kaios-cli/bin/kaios inspect latest
+build/install/kaios-cli/bin/kaios inspect
 ```
 
 The event log shows process lifecycle transitions and syscall activity.
@@ -198,7 +198,7 @@ The event log shows process lifecycle transitions and syscall activity.
 ## Generate a Process Manager Report
 
 ```bash
-build/install/kaios-cli/bin/kaios report latest
+build/install/kaios-cli/bin/kaios report
 ```
 
 The report is a standalone HTML file under `.kaios/reports/` with a run list, process table, workflow graph, lifecycle timeline, and final output. It is intended for screenshots and quick visual debugging.
@@ -206,8 +206,8 @@ The report is a standalone HTML file under `.kaios/reports/` with a run list, pr
 ## Export a Markdown Artifact
 
 ```bash
-build/install/kaios-cli/bin/kaios export latest
-build/install/kaios-cli/bin/kaios export latest --out artifacts/run.md
+build/install/kaios-cli/bin/kaios export
+build/install/kaios-cli/bin/kaios export --out artifacts/run.md
 ```
 
 Artifacts are Markdown files with the task, final output, process table, and lifecycle events. The default location is `.kaios/artifacts/<run-id>.md`. Existing files are protected; use `--force-output` with `run --out` and `--force` with `export`.

@@ -53,8 +53,8 @@ These schemas include both `next` and `nextActions`:
 ```json
 {
   "next": [
-    "kaios ps latest",
-    "kaios evidence latest",
+    "kaios ps",
+    "kaios evidence",
     "kaios bug-report"
   ]
 }
@@ -67,7 +67,7 @@ These schemas include both `next` and `nextActions`:
   "nextActions": [
     {
       "id": "package-evidence",
-      "command": "kaios evidence latest",
+      "command": "kaios evidence",
       "reason": "Package, validate, replay, and optionally diff run evidence."
     }
   ]

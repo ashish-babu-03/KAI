@@ -97,7 +97,8 @@ kaios help config
 kaios help config show
 ```
 
-Common aliases also work directly: `kaios start --no-ci` for local quickstart, `kaios status` for doctor, `kaios ls` for saved runs, `kaios proc latest` for the process table, and `kaios audit latest` for evidence packaging. If you truly mistype a command, KAI OS suggests the closest safe next command instead of guessing.
+Common aliases also work directly: `kaios start --no-ci` for local quickstart, `kaios status` for doctor, `kaios ls` for saved runs, `kaios proc` for the process table, and `kaios audit` for evidence packaging. If you truly mistype a command, KAI OS suggests the closest safe next command instead of guessing.
+After a saved run exists, inspection commands default to the newest run: `kaios ps`, `kaios inspect`, `kaios trace --check`, `kaios evidence --out artifacts/run.capsule.json --force`, `kaios report`, and `kaios export` all work without typing `latest`.
 
 Need a support-friendly environment check?
 
@@ -136,8 +137,8 @@ kaios verify --config kaios.json --evidence --baseline artifacts/baseline.capsul
 Need to package the latest non-verify run instead?
 
 ```bash
-kaios evidence latest --out artifacts/run.capsule.json --force
-kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
+kaios evidence --out artifacts/run.capsule.json --force
+kaios evidence --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 ```
 
 The evidence gate writes a portable capsule, validates its contract, replays it offline, and can add a stable baseline diff that exits non-zero when behavior changes.
@@ -145,7 +146,7 @@ The evidence gate writes a portable capsule, validates its contract, replays it 
 The lower-level capsule tools remain available when you need each step separately:
 
 ```bash
-kaios capsule latest --check
+kaios capsule --check
 kaios replay --file artifacts/run.capsule.json
 kaios diff artifacts/baseline.capsule.json artifacts/run.capsule.json --check
 ```
@@ -193,7 +194,7 @@ syscall echo: validated:350c4677
 Inspect the agent process table:
 
 ```bash
-kaios ps latest
+kaios ps
 ```
 
 ```text
@@ -207,16 +208,16 @@ PID     AGENT         STATE       TOKENS    MEMORY    SYSCALLS  DURATION
 Inspect lifecycle events:
 
 ```bash
-kaios inspect latest
+kaios inspect
 ```
 
 Print the KAI Process Trace:
 
 ```bash
-kaios trace latest
-kaios trace latest --json
-kaios trace latest --check
-kaios trace latest --json --out artifacts/trace.json --force
+kaios trace
+kaios trace --json
+kaios trace --check
+kaios trace --json --out artifacts/trace.json --force
 ```
 
 ```text
@@ -233,23 +234,23 @@ path:
 Generate a standalone Agent Process Manager report:
 
 ```bash
-kaios report latest
+kaios report
 ```
 
 Package the run as a portable KAI Run Capsule:
 
 ```bash
-kaios evidence latest --out artifacts/run.capsule.json --force
-kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
+kaios evidence --out artifacts/run.capsule.json --force
+kaios evidence --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 ```
 
 Export a Markdown artifact:
 
 ```bash
-kaios export latest
+kaios export
 ```
 
-Use the literal run id when you need to pin an audit trail; use `latest` when you are iterating on the newest local run.
+Use the literal run id when you need to pin an audit trail; omit it when you are iterating on the newest local run.
 
 Attach local context files or directories:
 

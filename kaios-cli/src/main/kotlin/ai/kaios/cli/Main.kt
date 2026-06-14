@@ -35,7 +35,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.72"
+private const val KAIOS_VERSION = "0.1.73"
 private const val CI_AGENT_GATE_ARTIFACT_NAME = "kaios-agent-gate"
 private const val CI_WORKFLOW_PUSH_NOTE = "Pushing .github/workflows/kaios.yml may require GitHub workflow permission/scope."
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
@@ -230,15 +230,17 @@ class KaiosCli(
             command.startsWith("kaios demo") -> "run-demo"
             command.startsWith("kaios run ") -> "run-workflow"
             command.startsWith("kaios analyze ") -> "analyze-workspace"
-            command.startsWith("kaios ps ") -> "show-processes"
-            command.startsWith("kaios inspect ") -> "inspect-run"
-            command.startsWith("kaios trace ") && command.contains(" --check") -> "check-trace"
-            command.startsWith("kaios trace ") -> "view-trace"
-            command.startsWith("kaios evidence ") && command.contains(" --baseline ") -> "compare-evidence"
-            command.startsWith("kaios evidence ") -> "package-evidence"
-            command.startsWith("kaios capsule ") -> "validate-capsule"
+            command == "kaios ps" || command.startsWith("kaios ps ") -> "show-processes"
+            command == "kaios inspect" || command.startsWith("kaios inspect ") -> "inspect-run"
+            command.startsWith("kaios trace") && command.contains(" --check") -> "check-trace"
+            command == "kaios trace" || command.startsWith("kaios trace ") -> "view-trace"
+            command.startsWith("kaios evidence") && command.contains(" --baseline ") -> "compare-evidence"
+            command == "kaios evidence" || command.startsWith("kaios evidence ") -> "package-evidence"
+            command == "kaios capsule" || command.startsWith("kaios capsule ") -> "validate-capsule"
             command.startsWith("kaios replay ") -> "replay-capsule"
             command.startsWith("kaios diff ") -> "diff-capsules"
+            command == "kaios report" || command.startsWith("kaios report ") -> "open-report"
+            command == "kaios export" || command.startsWith("kaios export ") -> "export-artifact"
             command.startsWith("kaios bug-report") -> "collect-support-report"
             command.startsWith("kaios doctor") -> "run-diagnostics"
             else -> "next"
@@ -266,6 +268,8 @@ class KaiosCli(
             "validate-capsule" -> "Validate a portable run capsule."
             "replay-capsule" -> "Replay the capsule offline to confirm determinism."
             "diff-capsules" -> "Compare two capsules using stable runtime signatures."
+            "open-report" -> "Open the saved Agent Process Manager report."
+            "export-artifact" -> "Export the saved run as a Markdown artifact."
             "collect-support-report" -> "Generate a safe support bundle for issues or handoff."
             "run-diagnostics" -> "Run machine-readable local diagnostics."
             else -> "Continue with the next recommended command."
@@ -471,7 +475,7 @@ class KaiosCli(
                     "No API key is required by default; the mock provider is deterministic.",
                     "Use --trace-out to write kaios.process-trace/v1 JSON during the run.",
                     "Use -- before a task that starts with '-'.",
-                    "After a run, use 'kaios ps latest', 'kaios inspect latest', 'kaios trace latest', and 'kaios evidence latest'.",
+                    "After a run, use 'kaios ps', 'kaios inspect', 'kaios trace', and 'kaios evidence'.",
                 ),
             )
             "context" -> CommandHelp(
@@ -538,34 +542,34 @@ class KaiosCli(
                     "kaios runs --json",
                 ),
                 notes = listOf(
-                    "Use a listed run id, or 'latest', with ps, inspect, trace, capsule, report, or export.",
+                    "Omit the run id on ps, inspect, trace, capsule, evidence, report, or export to use the latest saved run.",
                     "JSON output uses schema $RUNS_SCHEMA for Agent Desktop, CI, and local tooling.",
                 ),
             )
             "ps" -> CommandHelp(
-                usage = "kaios ps <run-id|latest>",
+                usage = "kaios ps [run-id|latest]",
                 summary = "Print the agent process table for a saved run.",
                 examples = listOf(
-                    "kaios ps latest",
+                    "kaios ps",
                     "kaios ps run-97381ae9",
                 ),
                 notes = listOf("Tokens behave like CPU, context size like memory, and tool calls like syscalls."),
             )
             "inspect" -> CommandHelp(
-                usage = "kaios inspect <run-id|latest>",
+                usage = "kaios inspect [run-id|latest]",
                 summary = "Print final output and lifecycle events for a saved run.",
                 examples = listOf(
-                    "kaios inspect latest",
+                    "kaios inspect",
                     "kaios inspect run-97381ae9",
                 ),
             )
             "trace" -> CommandHelp(
-                usage = "kaios trace <run-id|latest> [--format text|json] [--out trace.json] [--force] [--check]",
+                usage = "kaios trace [run-id|latest] [--format text|json] [--out trace.json] [--force] [--check]",
                 summary = "Print a KAI Process Trace with process metrics, execution path, event counts, and timeline.",
                 examples = listOf(
-                    "kaios trace latest",
-                    "kaios trace latest --json",
-                    "kaios trace latest --check",
+                    "kaios trace",
+                    "kaios trace --json",
+                    "kaios trace --check",
                     "kaios trace run-97381ae9",
                     "kaios trace run-97381ae9 --json",
                     "kaios trace run-97381ae9 --json --out artifacts/trace.json --force",
@@ -577,12 +581,12 @@ class KaiosCli(
                 ),
             )
             "capsule" -> CommandHelp(
-                usage = "kaios capsule <run-id|latest>|--file capsule.json [--json] [--out capsule.json] [--force] [--check]",
+                usage = "kaios capsule [run-id|latest]|--file capsule.json [--json] [--out capsule.json] [--force] [--check]",
                 summary = "Build a portable run capsule with snapshot, trace, provenance hashes, and replay commands.",
                 examples = listOf(
-                    "kaios capsule latest",
-                    "kaios capsule latest --check",
-                    "kaios capsule latest --json",
+                    "kaios capsule",
+                    "kaios capsule --check",
+                    "kaios capsule --json",
                     "kaios capsule --file artifacts/run.capsule.json --check",
                     "kaios capsule run-97381ae9 --out artifacts/run.capsule.json --force",
                 ),
@@ -622,12 +626,12 @@ class KaiosCli(
                 ),
             )
             "evidence" -> CommandHelp(
-                usage = "kaios evidence <run-id|latest> [--out capsule.json] [--baseline capsule.json] [--json|--format json] [--check] [--force]",
+                usage = "kaios evidence [run-id|latest] [--out capsule.json] [--baseline capsule.json] [--json|--format json] [--check] [--force]",
                 summary = "Create a CI-ready evidence bundle by packaging, validating, replaying, and optionally diffing a run capsule.",
                 examples = listOf(
-                    "kaios evidence latest",
-                    "kaios evidence latest --out artifacts/run.capsule.json --force",
-                    "kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force",
+                    "kaios evidence",
+                    "kaios evidence --out artifacts/run.capsule.json --force",
+                    "kaios evidence --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force",
                     "kaios evidence run-97381ae9 --json --out artifacts/run.capsule.json --force",
                 ),
                 notes = listOf(
@@ -638,19 +642,19 @@ class KaiosCli(
                 ),
             )
             "report" -> CommandHelp(
-                usage = "kaios report <run-id|latest>",
+                usage = "kaios report [run-id|latest]",
                 summary = "Generate a standalone HTML Agent Process Manager report.",
                 examples = listOf(
-                    "kaios report latest",
+                    "kaios report",
                     "kaios report run-97381ae9",
                 ),
                 notes = listOf("Reports are written under .kaios/reports/ by default."),
             )
             "export" -> CommandHelp(
-                usage = "kaios export <run-id|latest> [--out artifact.md] [--force]",
+                usage = "kaios export [run-id|latest] [--out artifact.md] [--force]",
                 summary = "Export a saved run snapshot as a Markdown artifact.",
                 examples = listOf(
-                    "kaios export latest",
+                    "kaios export",
                     "kaios export run-97381ae9",
                     "kaios export run-97381ae9 --out artifacts/run.md --force",
                 ),
@@ -770,9 +774,9 @@ class KaiosCli(
     ): List<String> =
         buildList {
             if (status == "ready") {
-                add("kaios ps latest")
-                add("kaios inspect latest")
-                add("kaios trace latest --check")
+                add("kaios ps")
+                add("kaios inspect")
+                add("kaios trace --check")
                 add(firstProjectRunCommand())
                 quickstartStageCommand(setup)?.let(::add)
             } else {
@@ -908,10 +912,10 @@ class KaiosCli(
         out.println(demo.output)
         out.println()
         out.println("next:")
-        out.println("  kaios ps latest")
-        out.println("  kaios inspect latest")
-        out.println("  kaios trace latest --json")
-        out.println("  kaios evidence latest")
+        out.println("  kaios ps")
+        out.println("  kaios inspect")
+        out.println("  kaios trace --json")
+        out.println("  kaios evidence")
         out.println("  kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\"")
     }
 
@@ -994,12 +998,12 @@ class KaiosCli(
         out.println(result.finalOutput)
         out.println()
         out.println("next:")
-        out.println("  kaios ps latest")
-        out.println("  kaios inspect latest")
-        out.println("  kaios trace latest")
-        out.println("  kaios evidence latest")
-        out.println("  kaios report latest")
-        out.println("  kaios export latest")
+        out.println("  kaios ps")
+        out.println("  kaios inspect")
+        out.println("  kaios trace")
+        out.println("  kaios evidence")
+        out.println("  kaios report")
+        out.println("  kaios export")
         return if (result.success) 0 else 2
     }
 
@@ -1156,7 +1160,7 @@ class KaiosCli(
             add("kaios config validate --config ${displayPath(Paths.get(validation.config))} --json")
             if (validation.valid) {
                 add(verifyEvidenceCommand(Paths.get(validation.config)))
-                add("kaios ps latest")
+                add("kaios ps")
             } else {
                 add("fix ${displayPath(Paths.get(validation.config))} or rerun ${setupForceCommand(command)}")
             }
@@ -1382,14 +1386,14 @@ class KaiosCli(
                 addAll(configRecoveryCommands(configPath))
             }
             if (run != null) {
-                add("kaios ps latest")
-                add("kaios inspect latest")
+                add("kaios ps")
+                add("kaios inspect")
             }
             if (trace != null) {
-                add(if (trace.valid) "kaios trace latest --check" else "kaios trace latest")
+                add(if (trace.valid) "kaios trace --check" else "kaios trace")
             }
             if (run != null) {
-                if (evidence == null) add("kaios evidence latest")
+                if (evidence == null) add("kaios evidence")
             }
             add(bugReportCommand(configPath))
         }.distinct()
@@ -1492,7 +1496,7 @@ class KaiosCli(
         out.println("  ${verifyEvidenceCommand(path)}")
         out.println("  kaios run \"${template.exampleTask}\"")
         ciPath?.let { out.println("  git add ${displayPath(path)} ${displayPath(it)}") }
-        out.println("  kaios ps latest")
+        out.println("  kaios ps")
         return 0
     }
 
@@ -1730,10 +1734,7 @@ class KaiosCli(
         value.replace(Regex("\\s+"), " ").trim()
 
     private fun printProcessTable(args: List<String>, out: PrintStream, err: PrintStream): Int {
-        val runIdText = args.firstOrNull()
-        if (runIdText == null) {
-            return printCommandUsageError(err, "ps", "Run id is required.")
-        }
+        val runIdText = args.firstOrNull() ?: "latest"
         if (args.size > 1) {
             return printCommandUsageError(err, "ps", "Unexpected ps argument '${args[1]}'.")
         }
@@ -1752,10 +1753,7 @@ class KaiosCli(
     }
 
     private fun generateReport(args: List<String>, out: PrintStream, err: PrintStream): Int {
-        val runIdText = args.firstOrNull()
-        if (runIdText == null) {
-            return printCommandUsageError(err, "report", "Run id is required.")
-        }
+        val runIdText = args.firstOrNull() ?: "latest"
         if (args.size > 1) {
             return printCommandUsageError(err, "report", "Unexpected report argument '${args[1]}'.")
         }
@@ -1915,10 +1913,10 @@ class KaiosCli(
             if (latestRun == null) {
                 add("kaios demo")
             } else {
-                add("kaios ps latest")
-                add("kaios trace latest --check")
-                add("kaios evidence latest")
-                add("kaios inspect latest")
+                add("kaios ps")
+                add("kaios trace --check")
+                add("kaios evidence")
+                add("kaios inspect")
             }
             add(doctorJsonCommand(configPath))
         }.distinct()
@@ -2210,10 +2208,7 @@ class KaiosCli(
     }
 
     private fun inspectRun(args: List<String>, out: PrintStream, err: PrintStream): Int {
-        val runIdText = args.firstOrNull()
-        if (runIdText == null) {
-            return printCommandUsageError(err, "inspect", "Run id is required.")
-        }
+        val runIdText = args.firstOrNull() ?: "latest"
         if (args.size > 1) {
             return printCommandUsageError(err, "inspect", "Unexpected inspect argument '${args[1]}'.")
         }
@@ -3155,15 +3150,15 @@ class KaiosCli(
 
               Observability:
                 kaios runs
-                kaios ps latest
-                kaios inspect latest
-                kaios trace latest [--format text|json] [--out trace.json] [--check]
-                kaios capsule latest [--json] [--out capsule.json] [--check]
+                kaios ps [latest]
+                kaios inspect [latest]
+                kaios trace [latest] [--format text|json] [--out trace.json] [--check]
+                kaios capsule [latest] [--json] [--out capsule.json] [--check]
                 kaios replay --file capsule.json [--json]
                 kaios diff baseline.capsule.json current.capsule.json [--check]
-                kaios evidence latest [--out capsule.json] [--baseline baseline.capsule.json] [--check]
-                kaios report latest
-                kaios export latest [--out artifact.md]
+                kaios evidence [latest] [--out capsule.json] [--baseline baseline.capsule.json] [--check]
+                kaios report [latest]
+                kaios export [latest] [--out artifact.md]
                 kaios doctor [--config kaios.json]
                 kaios bug-report [--config kaios.json] [--out report.md]
                 kaios --version
@@ -3173,8 +3168,8 @@ class KaiosCli(
                 kaios start [--no-ci]  -> kaios quickstart
                 kaios status           -> kaios doctor
                 kaios ls               -> kaios runs
-                kaios proc latest      -> kaios ps latest
-                kaios audit latest     -> kaios evidence latest
+                kaios proc             -> kaios ps
+                kaios audit            -> kaios evidence
             """.trimIndent(),
         )
     }
@@ -4056,10 +4051,10 @@ class KaiosCli(
         }
 
     private fun parseExportCommand(args: List<String>): ExportCommand {
-        val runIdText = args.firstOrNull() ?: error("Run id is required.")
+        var runIdText: String? = null
         var outputPath: Path? = null
         var force = false
-        var index = 1
+        var index = 0
 
         while (index < args.size) {
             val arg = args[index]
@@ -4079,11 +4074,16 @@ class KaiosCli(
                     force = true
                     index += 1
                 }
-                else -> error("Unknown export option '$arg'.")
+                arg.startsWith("-") -> error("Unknown export option '$arg'.")
+                runIdText == null -> {
+                    runIdText = arg
+                    index += 1
+                }
+                else -> error("Unexpected export argument '$arg'.")
             }
         }
 
-        return ExportCommand(runIdText, outputPath, force)
+        return ExportCommand(runIdText ?: "latest", outputPath, force)
     }
 
     private fun parseTraceCommand(args: List<String>): TraceCommand {
@@ -4147,7 +4147,7 @@ class KaiosCli(
             error("--check does not write output; omit --force.")
         }
 
-        return TraceCommand(runIdText ?: error("Run id is required."), format, outputPath, forceOutput, check)
+        return TraceCommand(runIdText ?: "latest", format, outputPath, forceOutput, check)
     }
 
     private fun parseTraceFormat(value: String): TraceFormat =
@@ -4239,7 +4239,7 @@ class KaiosCli(
         }
 
         return CapsuleCommand(
-            runIdText = runIdText,
+            runIdText = runIdText ?: if (inputPath == null) "latest" else null,
             inputPath = inputPath,
             outputPath = outputPath,
             forceOutput = forceOutput,
@@ -4460,7 +4460,7 @@ class KaiosCli(
         }
 
         return EvidenceCommand(
-            runIdText = runIdText ?: error("Run id is required."),
+            runIdText = runIdText ?: "latest",
             outputPath = outputPath,
             baselinePath = baselinePath,
             format = format,

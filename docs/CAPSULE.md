@@ -5,8 +5,8 @@
 For the product-level audit gate, start with `kaios evidence`. It packages the capsule, validates the capsule contract, replays it offline, and optionally compares it with a baseline in one command:
 
 ```bash
-kaios evidence latest --out artifacts/run.capsule.json --force
-kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
+kaios evidence --out artifacts/run.capsule.json --force
+kaios evidence --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 ```
 
 It is the audit layer above snapshots and traces:
@@ -18,7 +18,7 @@ snapshot + process trace + provenance hashes + replay commands = run capsule
 Create a capsule from the newest local run:
 
 ```bash
-kaios capsule latest
+kaios capsule
 ```
 
 By default, KAI OS writes:
@@ -30,19 +30,19 @@ By default, KAI OS writes:
 Print JSON to stdout instead:
 
 ```bash
-kaios capsule latest --json
+kaios capsule --json
 ```
 
 Write to an explicit artifact path:
 
 ```bash
-kaios capsule latest --out artifacts/run.capsule.json --force
+kaios capsule --out artifacts/run.capsule.json --force
 ```
 
 Validate the capsule contract without writing a file:
 
 ```bash
-kaios capsule latest --check
+kaios capsule --check
 ```
 
 Validate a shared capsule file without the original `.kaios/runs/` snapshot:

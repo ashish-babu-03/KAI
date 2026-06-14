@@ -76,8 +76,8 @@ Run the readiness gate:
 
 ```bash
 kaios verify --evidence --force
-kaios ps latest
-kaios trace latest --check
+kaios ps
+kaios trace --check
 ```
 
 `kaios verify --evidence --force` checks the local runtime, validates the project workflow, runs a deterministic mock smoke workflow, validates the process trace contract, saves a normal run snapshot, and confirms the same smoke run can become a portable audit package. Use `--evidence-out artifacts/run.capsule.json` when you need a custom capsule path, or add `--baseline ... --check` when CI should compare against a known-good capsule.

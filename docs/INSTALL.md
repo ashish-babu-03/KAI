@@ -9,9 +9,9 @@ kaios --version
 ```
 
 Running `kaios` with no arguments prints the quick start and exits successfully, so it is safe to use as a first smoke test.
-Common aliases execute directly: `kaios start --no-ci`, `kaios status`, `kaios ls`, `kaios proc latest`, and `kaios audit latest`.
+Common aliases execute directly: `kaios start --no-ci`, `kaios status`, `kaios ls`, `kaios proc`, and `kaios audit`.
 Mistyped commands still show a suggestion when there is a clear match.
-If a run id is missing, `kaios ps`, `kaios inspect`, `kaios trace`, `kaios capsule`, `kaios report`, and `kaios export` point back to `kaios runs`; when no snapshots exist yet, the CLI points back to `kaios quickstart`, `kaios demo`, `kaios setup --ci`, and `kaios verify --evidence --force`.
+After a saved run exists, `kaios ps`, `kaios inspect`, `kaios trace`, `kaios capsule`, `kaios evidence`, `kaios report`, and `kaios export` default to the newest run. When no snapshots exist yet, the CLI points back to `kaios quickstart`, `kaios demo`, `kaios setup --ci`, and `kaios verify --evidence --force`.
 If `kaios.json` is missing, `kaios config show` and `kaios config validate` point back to `kaios setup --ci`; use `kaios config templates` when you want to choose a different workflow template before setup.
 
 Every core command also supports local help with examples and notes:
@@ -74,9 +74,9 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.72.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.72/kaios-0.1.72.zip
-unzip kaios-0.1.72.zip
-./kaios-0.1.72/bin/kaios quickstart
+curl -L -o kaios-0.1.73.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.73/kaios-0.1.73.zip
+unzip kaios-0.1.73.zip
+./kaios-0.1.73/bin/kaios quickstart
 ```
 
 ## Build From Source
@@ -101,11 +101,11 @@ kaios config show
 kaios config validate --json
 kaios run --index . --trace-out artifacts/trace.json --force "summarize this project"
 kaios runs --json
-kaios ps latest
-kaios inspect latest
-kaios trace latest
-kaios trace latest --json
-kaios trace latest --json --out artifacts/trace.json --force
+kaios ps
+kaios inspect
+kaios trace
+kaios trace --json
+kaios trace --json --out artifacts/trace.json --force
 kaios verify --evidence --baseline artifacts/baseline.capsule.json --check --force
 kaios bug-report --out artifacts/kaios-bug-report.md --force
 kaios bug-report --config workflows/research.json --out artifacts/kaios-bug-report.md --force
