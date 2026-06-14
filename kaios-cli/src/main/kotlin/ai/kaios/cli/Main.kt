@@ -35,7 +35,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.63"
+private const val KAIOS_VERSION = "0.1.64"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val RUN_CAPSULE_SCHEMA = "kaios.run-capsule/v1"
 private const val RUN_REPLAY_SCHEMA = "kaios.run-replay/v1"
@@ -1292,8 +1292,8 @@ class KaiosCli(
     private fun printConfigLoadError(err: PrintStream, path: Path, error: Throwable): Int {
         err.println(error.message)
         if (!path.exists()) {
-            err.println("Run 'kaios init --template default' to create a local workflow config.")
-            err.println("Run 'kaios config templates' to list available templates.")
+            err.println("Run '${setupCommand(path)}' to create a validated project workflow and CI gate.")
+            err.println("Run 'kaios config templates' to choose a different template before setup.")
             err.println("Use '--config path/to/kaios.json' to inspect another config file.")
         }
         return 1

@@ -11,9 +11,9 @@ kaios config show
 kaios run "map the JVM agent runtime"
 ```
 
-`kaios setup` is the recommended first path because it creates a useful workflow, validates it, and can add the GitHub Actions Agent Gate without overwriting existing files.
+`kaios setup --ci` is the recommended first path because it creates a useful workflow, validates it, and can add the GitHub Actions Agent Gate without overwriting existing files. If `kaios config show` or `kaios config validate` cannot find a config, they point back to the same setup path.
 
-`kaios init` refuses to overwrite an existing file unless you pass `--force`:
+`kaios init` remains available as a lower-level config writer and refuses to overwrite an existing file unless you pass `--force`:
 
 ```bash
 kaios init --force
