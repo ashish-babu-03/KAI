@@ -29,7 +29,7 @@ class KaiosCliSmokeTest {
         val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
 
         assertEquals(0, code)
-        assertEquals("kaios 0.1.26\n", out.toString())
+        assertEquals("kaios 0.1.27\n", out.toString())
     }
 
     @Test
@@ -210,6 +210,72 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("Run id is required."))
         assertTrue(text.contains("Usage: kaios ps <run-id>"))
         assertTrue(text.contains("Run 'kaios help ps' for examples."))
+    }
+
+    @Test
+    fun `missing run snapshot points to runs and recent ids`() {
+        val root = Files.createTempDirectory("kaios-cli-missing-snapshot")
+        val reportRoot = Files.createTempDirectory("kaios-cli-missing-snapshot-reports")
+        val artifactRoot = Files.createTempDirectory("kaios-cli-missing-snapshot-artifacts")
+        val cli = KaiosCli(FileRunSnapshotStore(root), reportRoot, artifactRoot = artifactRoot, snapshotRoot = root)
+        val emptyErr = ByteArrayOutputStream()
+
+        val emptyCode = cli.run(arrayOf("ps", "run-missing"), PrintStream(ByteArrayOutputStream()), PrintStream(emptyErr))
+        val emptyText = emptyErr.toString()
+
+        assertEquals(1, emptyCode)
+        assertTrue(emptyText.contains("Run snapshot 'run-missing' was not found"))
+        assertTrue(emptyText.contains("No run snapshots are available yet."))
+        assertTrue(emptyText.contains("Run 'kaios run \"task\"' to create one."))
+
+        val runOut = ByteArrayOutputStream()
+        val runCode = cli.run(
+            arrayOf("run", "summarize", "runtime", "state"),
+            PrintStream(runOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val runText = runOut.toString()
+        val runId = Regex("run_id: (\\S+)").find(runText)?.groupValues?.get(1)
+        assertEquals(0, runCode)
+        assertTrue(runId != null)
+
+        val missingErr = ByteArrayOutputStream()
+        val missingCode = cli.run(arrayOf("inspect", "run-unknown"), PrintStream(ByteArrayOutputStream()), PrintStream(missingErr))
+        val missingText = missingErr.toString()
+
+        assertEquals(1, missingCode)
+        assertTrue(missingText.contains("Run snapshot 'run-unknown' was not found"))
+        assertTrue(missingText.contains("Run 'kaios runs' to list saved run ids."))
+        assertTrue(missingText.contains("Saved runs:"))
+        assertTrue(missingText.contains(runId))
+        assertTrue(missingText.contains("summarize runtime state"))
+    }
+
+    @Test
+    fun `missing run snapshot prints multiline task summaries as one line`() {
+        val workspace = Files.createTempDirectory("kaios-cli-missing-snapshot-index")
+        Files.writeString(workspace.resolve("README.md"), "# Indexed Project\nUseful public overview.\n")
+        val cli = cliFor(workspace)
+        val runOut = ByteArrayOutputStream()
+
+        val runCode = cli.run(
+            arrayOf("run", "--index", ".", "summarize", "indexed", "project"),
+            PrintStream(runOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val runText = runOut.toString()
+        val runId = Regex("run_id: (\\S+)").find(runText)?.groupValues?.get(1)
+        assertEquals(0, runCode)
+        assertTrue(runId != null)
+
+        val missingErr = ByteArrayOutputStream()
+        val missingCode = cli.run(arrayOf("ps", "run-unknown"), PrintStream(ByteArrayOutputStream()), PrintStream(missingErr))
+        val missingText = missingErr.toString()
+
+        assertEquals(1, missingCode)
+        assertTrue(missingText.contains(runId))
+        assertTrue(missingText.contains("Workspace Index:"))
+        assertTrue(!missingText.contains("\nWorkspace Index:"))
     }
 
     @Test

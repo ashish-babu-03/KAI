@@ -29,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.26"
+private const val KAIOS_VERSION = "0.1.27"
 
 private val TOP_LEVEL_COMMANDS = listOf(
     "init",
@@ -622,6 +622,7 @@ class KaiosCli(
         val snapshots = snapshotStore.list()
         if (snapshots.isEmpty()) {
             out.println("No run snapshots found.")
+            out.println("Run 'kaios run \"task\"' to create one.")
             return 0
         }
 
@@ -644,6 +645,32 @@ class KaiosCli(
         return 0
     }
 
+    private fun printSnapshotLoadError(
+        err: PrintStream,
+        error: Throwable,
+        knownSnapshots: List<StoredRunSnapshot>? = null,
+    ): Int {
+        err.println(error.message)
+
+        val snapshots = knownSnapshots ?: runCatching { snapshotStore.list() }.getOrDefault(emptyList())
+        if (snapshots.isEmpty()) {
+            err.println("No run snapshots are available yet.")
+            err.println("Run 'kaios run \"task\"' to create one.")
+            return 1
+        }
+
+        err.println("Run 'kaios runs' to list saved run ids.")
+        err.println("Saved runs:")
+        snapshots.take(3).forEach { snapshot ->
+            val status = if (snapshot.success) "success" else "failed"
+            err.println("  ${snapshot.runId}  $status  ${abbreviate(singleLine(snapshot.task), 80)}")
+        }
+        return 1
+    }
+
+    private fun singleLine(value: String): String =
+        value.replace(Regex("\\s+"), " ").trim()
+
     private fun printProcessTable(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val runId = args.firstOrNull()?.let(::RunId)
         if (runId == null) {
@@ -651,8 +678,7 @@ class KaiosCli(
         }
 
         val snapshot = runCatching { snapshotStore.load(runId) }.getOrElse {
-            err.println(it.message)
-            return 1
+            return printSnapshotLoadError(err, it)
         }
 
         out.println("RUN ${snapshot.runId}  workflow=${snapshot.workflowName}  success=${snapshot.success}")
@@ -669,8 +695,7 @@ class KaiosCli(
 
         val snapshots = snapshotStore.list()
         val snapshot = runCatching { snapshotStore.load(runId) }.getOrElse {
-            err.println(it.message)
-            return 1
+            return printSnapshotLoadError(err, it, snapshots)
         }
         val allRuns = if (snapshots.any { it.runId == snapshot.runId }) snapshots else listOf(snapshot) + snapshots
 
@@ -691,8 +716,7 @@ class KaiosCli(
         }
 
         val snapshot = runCatching { snapshotStore.load(command.runId) }.getOrElse { error ->
-            err.println(error.message)
-            return 1
+            return printSnapshotLoadError(err, error)
         }
 
         val path = runCatching { writeArtifact(snapshot, command.outputPath, command.force) }.getOrElse { error ->
@@ -860,8 +884,7 @@ class KaiosCli(
         }
 
         val snapshot = runCatching { snapshotStore.load(runId) }.getOrElse {
-            err.println(it.message)
-            return 1
+            return printSnapshotLoadError(err, it)
         }
 
         out.println("RUN ${snapshot.runId}")
