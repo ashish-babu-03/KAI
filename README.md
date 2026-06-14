@@ -22,6 +22,15 @@ Tool     = Syscall
 Memory   = Process state
 ```
 
+## Use KAI OS When
+
+- You want a no-key Agent Gate for CI before wiring real model providers.
+- You need process-style observability for multi-agent work: PID, state, tokens, context, syscalls, duration, and lifecycle events.
+- You want portable evidence artifacts for reviews and support: verify JSON, process traces, run capsules, offline replay, baseline diffs, and safe bug reports.
+- You are building JVM/Kotlin agent infrastructure and want runtime boundaries before adding a UI, plugin system, or real provider.
+
+KAI OS is intentionally small in v0.1. If you only need a chatbot UI or a thin prompt wrapper, this project is probably lower-level than you need.
+
 ## Why This Exists
 
 Most agent frameworks model AI work as chains, prompts, or chat sessions. KAI OS models AI work as runtime infrastructure:
