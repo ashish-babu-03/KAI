@@ -101,6 +101,32 @@ Force the built-in default workflow even when `kaios.json` exists:
 build/install/kaios-cli/bin/kaios run --default "quick smoke test"
 ```
 
+## Retry Transient Failures
+
+Add `retries` to an agent when model/provider/tool failures are expected to be transient:
+
+```json
+{
+  "name": "resilient-research",
+  "agents": [
+    {
+      "id": "researcher",
+      "instruction": "Gather allowlisted evidence.",
+      "tools": ["http", "echo"],
+      "retries": 2
+    },
+    {
+      "id": "writer",
+      "instruction": "Summarize the result.",
+      "tools": ["echo"],
+      "dependsOn": ["researcher"]
+    }
+  ]
+}
+```
+
+Each retry is observable as a new agent process. Use `kaios ps <run-id>` to see failed attempts and `kaios inspect <run-id>` to see `RETRYING` events.
+
 ## Inspect Processes
 
 ```bash

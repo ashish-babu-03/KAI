@@ -85,6 +85,12 @@ class AgentRuntime(
         updated
     }
 
+    fun recordRetry(pid: ProcessId, nextAttempt: Int, maxAttempts: Int, error: String): AgentProcess = synchronized(lock) {
+        val process = requireProcess(pid)
+        emit(process, RuntimeEventType.RETRYING, "retrying attempt $nextAttempt/$maxAttempts after: $error")
+        process
+    }
+
     fun succeed(pid: ProcessId, tokenUsage: TokenUsage, contextSize: Int): AgentProcess = transition(
         pid = pid,
         allowed = setOf(ProcessState.RUNNING),

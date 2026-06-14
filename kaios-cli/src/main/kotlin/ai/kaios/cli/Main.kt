@@ -29,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.12"
+private const val KAIOS_VERSION = "0.1.13"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -264,7 +264,8 @@ class KaiosCli(
             val dependencies = node.dependencies.sorted().ifEmpty { listOf("-") }.joinToString(",")
             val fallback = node.fallback?.let { " fallback=$it" }.orEmpty()
             val fallbackOnly = if (node.fallbackOnly) " fallbackOnly=true" else ""
-            out.println("  ${node.id} tools=$tools dependsOn=$dependencies$fallback$fallbackOnly")
+            val retries = if (node.maxAttempts > 1) " retries=${node.maxAttempts - 1}" else ""
+            out.println("  ${node.id} tools=$tools dependsOn=$dependencies$fallback$fallbackOnly$retries")
         }
         out.println("graph:")
         workflow.nodes.forEach { node ->

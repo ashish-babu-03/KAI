@@ -6,6 +6,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.supervisorScope
@@ -37,7 +38,14 @@ data class WorkflowNode(
     val dependencies: Set<String> = emptySet(),
     val fallback: String? = null,
     val fallbackOnly: Boolean = false,
-)
+    val maxAttempts: Int = 1,
+    val retryBackoff: Duration = Duration.ZERO,
+) {
+    init {
+        require(maxAttempts >= 1) { "Workflow node '$id' must have at least one attempt." }
+        require(!retryBackoff.isNegative) { "Workflow node '$id' retry backoff cannot be negative." }
+    }
+}
 
 data class NodeResult(
     val nodeId: String,
@@ -178,17 +186,32 @@ class WorkflowScheduler(
         completed: Map<String, NodeResult>,
         runId: RunId,
     ): NodeResult {
-        val block: suspend () -> NodeResult = {
-            runInterruptible(dispatcher) {
-                executeNode(node, input, completed, runId)
+        var attempt = 1
+        while (true) {
+            val block: suspend () -> NodeResult = {
+                runInterruptible(dispatcher) {
+                    executeNode(node, input, completed, runId)
+                }
             }
-        }
 
-        return if (nodeTimeout == null) {
-            block()
-        } else {
-            withTimeout(nodeTimeout.toMillis()) {
-                block()
+            try {
+                return if (nodeTimeout == null) {
+                    block()
+                } else {
+                    withTimeout(nodeTimeout.toMillis()) {
+                        block()
+                    }
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: NodeExecutionException) {
+                if (attempt >= node.maxAttempts) throw error
+                val nextAttempt = attempt + 1
+                runtime.recordRetry(error.pid, nextAttempt, node.maxAttempts, error.message ?: "node failed")
+                if (!node.retryBackoff.isZero) {
+                    delay(node.retryBackoff.toMillis())
+                }
+                attempt = nextAttempt
             }
         }
     }
@@ -267,8 +290,9 @@ class WorkflowScheduler(
             runtime.cancel(process.pid)
             throw error
         } catch (error: Throwable) {
-            runtime.fail(process.pid, error.message ?: "Node '${node.id}' failed.")
-            throw error
+            val message = error.message ?: "Node '${node.id}' failed."
+            runtime.fail(process.pid, message)
+            throw NodeExecutionException(process.pid, message, error)
         }
     }
 
@@ -286,3 +310,9 @@ class WorkflowScheduler(
         runtime.recordMemory(pid, entry)
     }
 }
+
+private class NodeExecutionException(
+    val pid: ProcessId,
+    message: String,
+    cause: Throwable,
+) : RuntimeException(message, cause)

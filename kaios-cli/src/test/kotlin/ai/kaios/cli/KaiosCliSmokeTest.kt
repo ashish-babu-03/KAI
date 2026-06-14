@@ -444,6 +444,77 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `config show includes retry policy`() {
+        val workspace = Files.createTempDirectory("kaios-cli-retry-config")
+        val cli = cliFor(workspace)
+        val config = workspace.resolve("retry.json")
+        Files.writeString(
+            config,
+            """
+            {
+              "name": "retry-workflow",
+              "agents": [
+                {
+                  "id": "worker",
+                  "instruction": "Retry transient failures.",
+                  "tools": ["echo"],
+                  "retries": 2
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+        val validateOut = ByteArrayOutputStream()
+        val validateCode = cli.run(
+            arrayOf("config", "validate", "--config", config.toString()),
+            PrintStream(validateOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val showOut = ByteArrayOutputStream()
+        val showCode = cli.run(
+            arrayOf("config", "show", "--config", config.toString()),
+            PrintStream(showOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+
+        assertEquals(0, validateCode)
+        assertEquals(0, showCode)
+        assertTrue(showOut.toString().contains("worker tools=echo dependsOn=- retries=2"))
+    }
+
+    @Test
+    fun `config validation rejects invalid retry policy`() {
+        val workspace = Files.createTempDirectory("kaios-cli-bad-retry-config")
+        val cli = cliFor(workspace)
+        val config = workspace.resolve("retry.json")
+        Files.writeString(
+            config,
+            """
+            {
+              "name": "bad-retry",
+              "agents": [
+                {
+                  "id": "worker",
+                  "tools": ["echo"],
+                  "retries": 11
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+        val err = ByteArrayOutputStream()
+
+        val code = cli.run(
+            arrayOf("config", "validate", "--config", config.toString()),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(err),
+        )
+
+        assertEquals(1, code)
+        assertTrue(err.toString().contains("retries must be between 0 and 10"))
+    }
+
+    @Test
     fun `run with config executes configured workflow agents`() {
         val workspace = Files.createTempDirectory("kaios-cli-config-run")
         val cli = cliFor(workspace)

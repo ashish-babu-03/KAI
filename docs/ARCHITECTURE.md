@@ -36,7 +36,7 @@ Runtime events create an inspectable trace for every run.
 - `OpenAiCompatibleModelProvider` and `OllamaModelProvider` connect the same runtime boundary to real model APIs.
 - `ToolRegistry` enforces syscall registration and agent permissions.
 
-The scheduler runs ready nodes in coroutine batches, records failure and cancellation state, can route a failed node to a declared fallback node, and can enforce per-node timeouts.
+The scheduler runs ready nodes in coroutine batches, records failure and cancellation state, retries nodes with an observable retry policy, can route a failed node to a declared fallback node, and can enforce per-node timeouts.
 
 ## Tools as Syscalls
 

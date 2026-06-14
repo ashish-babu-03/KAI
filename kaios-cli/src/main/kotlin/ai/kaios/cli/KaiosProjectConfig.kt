@@ -28,6 +28,7 @@ internal data class KaiosAgentConfig(
     val dependsOn: List<String> = emptyList(),
     val fallback: String? = null,
     val fallbackOnly: Boolean = false,
+    val retries: Int = 0,
     val memory: Boolean = true,
 )
 
@@ -204,6 +205,7 @@ internal fun KaiosProjectConfig.toWorkflow(memory: MemoryStore, knownTools: Set<
                 }
                 configuredAgent.fallback?.let { fallbackTo(it) }
                 if (configuredAgent.fallbackOnly) fallbackOnly()
+                retries(configuredAgent.retries)
             }
         }
     }
@@ -222,6 +224,10 @@ private fun KaiosProjectConfig.validate(knownTools: Set<String>) {
 
     val knownIds = ids.toSet()
     agents.forEach { configuredAgent ->
+        require(configuredAgent.retries in 0..10) {
+            "Agent '${configuredAgent.id}' retries must be between 0 and 10."
+        }
+
         val unknownTools = configuredAgent.tools.filterNot { it in knownTools }.toSortedSet()
         require(unknownTools.isEmpty()) {
             "Agent '${configuredAgent.id}' references unknown tool(s): ${unknownTools.joinToString(", ")}."

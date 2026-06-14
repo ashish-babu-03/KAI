@@ -238,9 +238,9 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Real providers can request tools through `KAIOS_SYSCALL` directives.
 - Agent lifecycle: spawn, start, suspend, resume, cancel, succeed, fail.
 - Process metrics: PID, state, token usage, context size, syscall count, duration.
-- Coroutine-based DAG scheduler with parallel-ready nodes, fallback routing, timeout policy, and sibling cancellation.
+- Coroutine-based DAG scheduler with parallel-ready nodes, observable retry policy, fallback routing, timeout policy, and sibling cancellation.
 - Permissioned tools: `echo`, `clock`, `mock-http`, allowlisted `http`, scoped `file`.
-- Project workflow templates, config validation, config graph display, and auto-detected `kaios.json` runs.
+- Project workflow templates, retry policy, config validation, config graph display, and auto-detected `kaios.json` runs.
 - Project-aware runs with `kaios context`, `.kaiosignore`, and bounded `kaios run --context <file-or-dir>` ingestion.
 - Session memory and JSON snapshots under `.kaios/runs/`.
 - SQLite memory adapter for persisted agent process memory.

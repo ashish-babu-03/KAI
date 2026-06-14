@@ -103,6 +103,7 @@ kaios init --template code-review
       "instruction": "Gather useful context for the task.",
       "tools": ["echo", "clock"],
       "dependsOn": [],
+      "retries": 1,
       "memory": true
     },
     {
@@ -131,9 +132,12 @@ Fields:
 - `instruction`: system-style guidance passed to the configured model provider.
 - `tools`: syscall tools the agent may call.
 - `dependsOn`: upstream agent ids that must complete before this agent is scheduled.
+- `retries`: additional attempts for transient node failures. Defaults to `0`, maximum `10`.
 - `memory`: enables the configured memory store for that agent. Defaults to `true`.
 - `fallback`: optional fallback agent id to run when this node fails.
 - `fallbackOnly`: keeps a node out of the normal DAG and reserves it for fallback routing.
+
+Retries are observable. Every attempt spawns its own agent process, failed attempts remain visible in `kaios ps`, and the event log records `RETRYING` before the next attempt starts.
 
 ## Built-In Tools
 
@@ -166,6 +170,7 @@ Validation checks:
 - every tool exists in the built-in registry.
 - every dependency points to a known agent.
 - every fallback points to a known agent and does not point to itself.
+- every retry count is between `0` and `10`.
 - dependency edges do not contain cycles.
 
 ## Show the DAG
@@ -180,15 +185,15 @@ Example output:
 
 ```text
 config: /path/to/kaios.json
-workflow: research
+workflow: custom-research
 agents:
-  researcher tools=clock,echo,mock-http dependsOn=-
-  synthesizer tools=echo dependsOn=researcher
-  validator tools=echo dependsOn=synthesizer
+  researcher tools=clock,echo dependsOn=- retries=1
+  writer tools=echo dependsOn=researcher
+  validator tools=echo dependsOn=writer
 graph:
   <input> -> researcher
-  researcher -> synthesizer
-  synthesizer -> validator
+  researcher -> writer
+  writer -> validator
 ```
 
 ## Observability

@@ -97,6 +97,64 @@ class WorkflowSchedulerTest {
     }
 
     @Test
+    fun `node retry records failed attempt and succeeds on later attempt`() {
+        val provider = FlakyModelProvider("worker", failuresBeforeSuccess = 1)
+        val scheduler = WorkflowScheduler(
+            runtime = AgentRuntime(),
+            modelProvider = provider,
+        )
+
+        val result = scheduler.run(
+            Workflow(
+                name = "retry",
+                nodes = listOf(
+                    WorkflowNode(
+                        id = "worker",
+                        agent = AgentSpec(AgentId("worker")),
+                        maxAttempts = 2,
+                    ),
+                ),
+            ),
+            input = "retry transient work",
+            runId = RunId("run-retry"),
+        )
+
+        assertTrue(result.success)
+        assertEquals(2, provider.calls)
+        assertEquals(listOf(ProcessState.FAILED, ProcessState.SUCCEEDED), result.processes.map { it.state })
+        assertTrue(result.events.any { it.type == RuntimeEventType.RETRYING && it.message.contains("2/2") })
+    }
+
+    @Test
+    fun `node retry exhausts attempts and reports final failure`() {
+        val provider = FlakyModelProvider("worker", failuresBeforeSuccess = 3)
+        val scheduler = WorkflowScheduler(
+            runtime = AgentRuntime(),
+            modelProvider = provider,
+        )
+
+        val result = scheduler.run(
+            Workflow(
+                name = "retry-failure",
+                nodes = listOf(
+                    WorkflowNode(
+                        id = "worker",
+                        agent = AgentSpec(AgentId("worker")),
+                        maxAttempts = 2,
+                    ),
+                ),
+            ),
+            input = "retry transient work",
+            runId = RunId("run-retry-failure"),
+        )
+
+        assertFalse(result.success)
+        assertEquals(2, provider.calls)
+        assertEquals(listOf(ProcessState.FAILED, ProcessState.FAILED), result.processes.map { it.state })
+        assertTrue(result.finalOutput.contains("transient failure 2"))
+    }
+
+    @Test
     fun `node timeout is recorded as a cancelled process`() {
         val scheduler = WorkflowScheduler(
             runtime = AgentRuntime(),
@@ -163,6 +221,23 @@ class WorkflowSchedulerTest {
                 throw CancellationException("sleeping model cancelled")
             }
             return ModelResponse("slow output", TokenUsage(input = 1, output = 1))
+        }
+    }
+
+    private class FlakyModelProvider(
+        private val flakyAgent: String,
+        private val failuresBeforeSuccess: Int,
+    ) : ModelProvider {
+        var calls: Int = 0
+
+        override fun complete(request: ModelRequest): ModelResponse {
+            if (request.agent.id.value == flakyAgent) {
+                calls += 1
+                if (calls <= failuresBeforeSuccess) {
+                    error("transient failure $calls")
+                }
+            }
+            return ModelResponse("recovered on attempt $calls", TokenUsage(input = 1, output = 1))
         }
     }
 

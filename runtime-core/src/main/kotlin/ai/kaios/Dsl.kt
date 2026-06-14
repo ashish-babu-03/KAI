@@ -67,6 +67,7 @@ class WorkflowNodeBuilder(
     private val dependencies = linkedSetOf<String>()
     private var fallback: String? = null
     private var fallbackOnly: Boolean = false
+    private var maxAttempts: Int = 1
 
     fun dependsOn(vararg ids: String): WorkflowNodeBuilder = apply {
         dependencies += ids
@@ -80,11 +81,17 @@ class WorkflowNodeBuilder(
         fallbackOnly = true
     }
 
+    fun retries(count: Int): WorkflowNodeBuilder = apply {
+        require(count >= 0) { "Retry count cannot be negative." }
+        maxAttempts = count + 1
+    }
+
     fun build(): WorkflowNode = WorkflowNode(
         id = id,
         agent = agent,
         dependencies = dependencies.toSet(),
         fallback = fallback,
         fallbackOnly = fallbackOnly,
+        maxAttempts = maxAttempts,
     )
 }

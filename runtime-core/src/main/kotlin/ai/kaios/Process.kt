@@ -62,6 +62,7 @@ enum class RuntimeEventType {
     RESUMED,
     TOOL_CALLED,
     MEMORY_APPENDED,
+    RETRYING,
     SUCCEEDED,
     FAILED,
     CANCELLED,

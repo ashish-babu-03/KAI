@@ -24,7 +24,8 @@ KAI OS is starting with a small, inspectable runtime. The goal is to grow into a
 - coroutine scheduler foundations, shipped in v0.1.5
 - structured tool argument schemas
 - HTTP tool with allowlist policy, shipped in v0.1.12
-- better error surfaces and retry policy
+- observable scheduler retry policy, shipped in v0.1.13
+- better error surfaces
 
 ## v0.3 - Scheduler Kernel
 

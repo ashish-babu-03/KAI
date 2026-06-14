@@ -51,6 +51,7 @@ The v0.1 release is a runnable Kotlin/JVM seed:
 
 - agent lifecycle
 - coroutine DAG workflow scheduler
+- observable scheduler retry policy
 - permissioned syscall tools
 - deterministic mock model provider
 - OpenAI-compatible and Ollama providers
@@ -85,7 +86,7 @@ kaios export <run-id>
 Repo: https://github.com/morning-verlu/KAI
 Site: https://morning-verlu.github.io/KAI/
 GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
-Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.12/kaios-0.1.12.zip
+Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.13/kaios-0.1.13.zip
 Installer: curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 ```
 
@@ -103,7 +104,7 @@ The core metaphor:
 - Tool = Syscall
 - Memory = Process state
 
-The current v0.1 demo runs a planner -> executor -> validator workflow and lets you inspect each agent process with PID, token usage, context size, syscall count, duration, lifecycle events, and optional project context sources. You can preview context with `kaios context`, exclude local noise with `.kaiosignore`, opt into real HTTP syscalls with `KAIOS_HTTP_ALLOWLIST`, and let real providers request tools through `KAIOS_SYSCALL` directives.
+The current v0.1 demo runs a planner -> executor -> validator workflow and lets you inspect each agent process with PID, token usage, context size, syscall count, duration, lifecycle events, optional project context sources, and retry attempts. You can preview context with `kaios context`, exclude local noise with `.kaiosignore`, opt into real HTTP syscalls with `KAIOS_HTTP_ALLOWLIST`, and let real providers request tools through `KAIOS_SYSCALL` directives.
 
 It uses a deterministic mock model provider, so no API key is needed.
 
@@ -122,7 +123,7 @@ Agent = Process
 Workflow = Scheduler
 Tool = Syscall
 
-The first version is intentionally small but runnable: a default planner -> executor -> validator workflow, process metrics, lifecycle events, permissioned tools, previewable bounded project context, allowlisted HTTP, and JSON run snapshots.
+The first version is intentionally small but runnable: a default planner -> executor -> validator workflow, process metrics, lifecycle events, observable retries, permissioned tools, previewable bounded project context, allowlisted HTTP, and JSON run snapshots.
 
 I would love feedback on the Kotlin API/DSL and runtime model.
 
@@ -163,15 +164,15 @@ kaios report <run-id>
 Download ZIP:
 
 ```bash
-curl -L -o kaios-0.1.12.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.12/kaios-0.1.12.zip
-unzip kaios-0.1.12.zip
-./kaios-0.1.12/bin/kaios doctor
-./kaios-0.1.12/bin/kaios run "analyze crypto market"
-./kaios-0.1.12/bin/kaios init --template research
-./kaios-0.1.12/bin/kaios config show
-./kaios-0.1.12/bin/kaios run --out artifacts/runtime.md "map the JVM agent runtime"
-./kaios-0.1.12/bin/kaios context .
-./kaios-0.1.12/bin/kaios run --context README.md --out artifacts/project.md "summarize this project"
+curl -L -o kaios-0.1.13.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.13/kaios-0.1.13.zip
+unzip kaios-0.1.13.zip
+./kaios-0.1.13/bin/kaios doctor
+./kaios-0.1.13/bin/kaios run "analyze crypto market"
+./kaios-0.1.13/bin/kaios init --template research
+./kaios-0.1.13/bin/kaios config show
+./kaios-0.1.13/bin/kaios run --out artifacts/runtime.md "map the JVM agent runtime"
+./kaios-0.1.13/bin/kaios context .
+./kaios-0.1.13/bin/kaios run --context README.md --out artifacts/project.md "summarize this project"
 ```
 
 Build from source:
