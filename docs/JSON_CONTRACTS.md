@@ -154,10 +154,19 @@ kaios verify --json
 Gate on:
 
 - `status == "ready"`
+- `diagnosis.status == "ready"`
 - `config.valid == true`
 - `run.success == true`
 - `trace.valid == true`
 - `errors` is empty
+
+Read `diagnosis` before drilling into nested artifacts. It gives people, CI bots, and future Agent Desktop views the same Agent Gate summary:
+
+- `diagnosis.status`: `ready`, `failed`, or `different`.
+- `diagnosis.verdict`: one short user-facing sentence.
+- `diagnosis.reasons`: stable failure or drift reasons suitable for CI annotations.
+- `diagnosis.fixFirst`: the first `nextActions`-style command to run, or `null`.
+- `diagnosis.diffChanges`: the first stable baseline differences when `--baseline ... --check` finds drift.
 
 ### Evidence Gate
 

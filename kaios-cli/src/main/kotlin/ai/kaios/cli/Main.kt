@@ -36,7 +36,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.77"
+private const val KAIOS_VERSION = "0.1.78"
 private const val CI_AGENT_GATE_ARTIFACT_NAME = "kaios-agent-gate"
 private const val CI_WORKFLOW_PUSH_NOTE = "Pushing .github/workflows/kaios.yml may require GitHub workflow permission/scope."
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
@@ -1418,7 +1418,7 @@ class KaiosCli(
 
         val status = if (errors.isEmpty() && run?.success == true && trace?.valid == true) "ready" else "failed"
         val next = verifyNextCommands(config, run, trace, evidence)
-        return VerifyReport(
+        val report = VerifyReport(
             schema = VERIFY_SCHEMA,
             version = KAIOS_VERSION,
             cwd = workingDir.toString(),
@@ -1431,7 +1431,15 @@ class KaiosCli(
             errors = errors.distinct(),
             next = next,
             nextActions = nextActions(next),
+            diagnosis = VerifyDiagnosis(
+                status = status,
+                verdict = "",
+                reasons = emptyList(),
+                fixFirst = null,
+                diffChanges = emptyList(),
+            ),
         )
+        return report.copy(diagnosis = verifyDiagnosis(report, command))
     }
 
     private fun verifyNextCommands(
@@ -1469,6 +1477,7 @@ class KaiosCli(
         out.println("version: ${report.version}")
         out.println("cwd: ${report.cwd}")
         out.println("status: ${report.status}")
+        out.println("gate_status: ${report.diagnosis.status}")
         out.println("doctor: ${doctorSummaryText(report.doctor.summary)}")
         out.println("config: ${if (report.config.valid) "valid" else "invalid"} (${report.config.config})")
         out.println("workflow: ${report.config.workflowName ?: "-"}")
@@ -1502,6 +1511,15 @@ class KaiosCli(
             out.println("diff: ${evidence.diff.status}")
         }
         summaryPath?.let { out.println("summary: $it") }
+        if (report.diagnosis.reasons.isNotEmpty()) {
+            out.println()
+            out.println("why:")
+            report.diagnosis.reasons.forEach { reason -> out.println("  - ${singleLine(reason)}") }
+        }
+        report.diagnosis.fixFirst?.let { action ->
+            out.println()
+            out.println("fix_first: ${action.command}")
+        }
         val warnings = doctorWarnings(report.doctor)
         if (warnings.isNotEmpty()) {
             out.println()
@@ -3449,15 +3467,16 @@ class KaiosCli(
     }
 
     private fun renderVerifySummaryMarkdown(report: VerifyReport, title: String, command: VerifyCommand): String = buildString {
-        val summaryStatus = verifySummaryStatus(report, command)
-        val fixFirst = verifySummaryFixCommand(report, command)
+        val diagnosis = report.diagnosis
+        val summaryStatus = diagnosis.status
+        val fixFirst = diagnosis.fixFirst?.command
         appendLine("## $title")
         appendLine()
         appendLine("### Verdict")
         appendLine()
-        appendLine(verifySummaryVerdict(summaryStatus))
+        appendLine(diagnosis.verdict)
         if (summaryStatus != "ready") {
-            val reasons = verifySummaryFailureReasons(report, command)
+            val reasons = diagnosis.reasons
             if (reasons.isNotEmpty()) {
                 appendLine()
                 appendLine("### Why It Failed")
@@ -3475,7 +3494,7 @@ class KaiosCli(
                 appendLine()
                 appendLine(nextActionReason(nextActionId(fixFirst)))
             }
-            val changes = verifySummaryDiffChanges(report)
+            val changes = diagnosis.diffChanges
             if (changes.isNotEmpty()) {
                 appendLine()
                 appendLine("### What Changed")
@@ -3539,6 +3558,18 @@ class KaiosCli(
             report.next.forEach { command -> appendLine("- `$command`") }
         }
     }.trimEnd()
+
+    private fun verifyDiagnosis(report: VerifyReport, command: VerifyCommand): VerifyDiagnosis {
+        val status = verifySummaryStatus(report, command)
+        val fixFirst = if (status == "ready") null else verifySummaryFixCommand(report, command)?.let(::nextAction)
+        return VerifyDiagnosis(
+            status = status,
+            verdict = verifySummaryVerdict(status),
+            reasons = verifySummaryFailureReasons(report, command),
+            fixFirst = fixFirst,
+            diffChanges = verifySummaryDiffChanges(report),
+        )
+    }
 
     private fun verifySummaryStatus(report: VerifyReport, command: VerifyCommand): String =
         when {
@@ -5030,6 +5061,16 @@ private data class VerifyReport(
     val errors: List<String>,
     val next: List<String>,
     val nextActions: List<NextAction>,
+    val diagnosis: VerifyDiagnosis,
+)
+
+@Serializable
+private data class VerifyDiagnosis(
+    val status: String,
+    val verdict: String,
+    val reasons: List<String>,
+    val fixFirst: NextAction?,
+    val diffChanges: List<RunDiffDifference>,
 )
 
 @Serializable
