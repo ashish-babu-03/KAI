@@ -34,16 +34,18 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.44"
+private const val KAIOS_VERSION = "0.1.45"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val DOCTOR_SCHEMA = "kaios.doctor/v1"
 private const val RUNS_SCHEMA = "kaios.runs/v1"
 private const val CONFIG_VALIDATION_SCHEMA = "kaios.config-validation/v1"
 private const val BUG_REPORT_SCHEMA = "kaios.bug-report/v1"
 private const val SETUP_SCHEMA = "kaios.setup/v1"
+private const val VERIFY_SCHEMA = "kaios.verify/v1"
 
 private val TOP_LEVEL_COMMANDS = listOf(
     "setup",
+    "verify",
     "init",
     "demo",
     "run",
@@ -102,6 +104,7 @@ class KaiosCli(
         val commandArgs = args.drop(1)
         return when (args.first()) {
             "setup" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("setup")) else setupProject(commandArgs, out, err)
+            "verify" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("verify")) else verifyProject(commandArgs, out, err)
             "init" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("init")) else initProject(commandArgs, out, err)
             "demo" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("demo")) else runDemo(commandArgs, out, err)
             "run" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("run")) else runWorkflow(commandArgs, out, err)
@@ -283,6 +286,20 @@ class KaiosCli(
                     "JSON output uses schema $SETUP_SCHEMA for automation.",
                 ),
             )
+            "verify" -> CommandHelp(
+                usage = "kaios verify [--config kaios.json] [--json|--format json]",
+                summary = "Run the one-command readiness gate for local projects and CI.",
+                examples = listOf(
+                    "kaios verify",
+                    "kaios verify --config kaios.json",
+                    "kaios verify --json",
+                ),
+                notes = listOf(
+                    "The gate checks doctor diagnostics, validates project config, runs a deterministic mock smoke workflow, and validates the process trace contract.",
+                    "It writes a normal run snapshot under .kaios/runs/ so ps, inspect, trace, and bug-report keep working.",
+                    "JSON output uses schema $VERIFY_SCHEMA for CI and release gates.",
+                ),
+            )
             "init" -> CommandHelp(
                 usage = "kaios init [--template default|research|code-review|release] [--config kaios.json] [--ci] [--force]",
                 summary = "Create a local kaios.json workflow so runs use your own agent process graph.",
@@ -294,7 +311,7 @@ class KaiosCli(
                 ),
                 notes = listOf(
                     "Run 'kaios config templates' to see built-in workflow templates.",
-                    "--ci also writes .github/workflows/kaios.yml with doctor, config validation, smoke run, and trace checks.",
+                    "--ci also writes .github/workflows/kaios.yml with the one-command verify gate.",
                 ),
             )
             "demo" -> CommandHelp(
@@ -761,7 +778,7 @@ class KaiosCli(
         buildList {
             add("kaios config validate --config ${displayPath(Paths.get(validation.config))} --json")
             if (validation.valid) {
-                add("kaios run \"${template.exampleTask}\"")
+                add("kaios verify --config ${displayPath(Paths.get(validation.config))}")
                 add("kaios ps latest")
             } else {
                 add("fix ${displayPath(Paths.get(validation.config))} or rerun kaios setup --force")
@@ -789,6 +806,154 @@ class KaiosCli(
             out.println()
             out.println("errors:")
             report.validation.errors.forEach { error -> out.println("  - ${singleLine(error)}") }
+        }
+        out.println()
+        out.println("next:")
+        report.next.forEach { command -> out.println("  $command") }
+    }
+
+    private fun verifyProject(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val command = runCatching { parseVerifyCommand(args) }.getOrElse { error ->
+            return printCommandUsageError(err, "verify", error.message)
+        }
+        val report = buildVerifyReport(command.configPath)
+
+        when (command.format) {
+            VerifyFormat.Text -> renderVerifyText(report, out)
+            VerifyFormat.Json -> out.println(TRACE_JSON.encodeToString(report))
+        }
+
+        return if (report.status == "ready") 0 else 2
+    }
+
+    private fun buildVerifyReport(configPath: Path): VerifyReport {
+        val doctor = buildDoctorReport()
+        val config = buildConfigValidationReport(configPath)
+        val errors = mutableListOf<String>()
+        var run: VerifyRun? = null
+        var trace: VerifyTrace? = null
+
+        if (doctor.summary.failed > 0) {
+            errors += "doctor failed with ${doctor.summary.failed} failed check(s)."
+        }
+        if (!config.valid) {
+            errors += config.errors.ifEmpty { listOf("project config is invalid.") }
+        }
+
+        if (errors.isEmpty()) {
+            val task = "verify KAI OS project workflow"
+            runCatching {
+                val memory = SessionMemoryStore()
+                val tools = toolRegistry()
+                val workflow = loadProjectWorkflow(configPath, memory, tools)
+                val scheduler = WorkflowScheduler(
+                    runtime = AgentRuntime(),
+                    modelProvider = MockModelProvider(),
+                    tools = tools,
+                    memory = memory,
+                )
+                val result = scheduler.run(workflow, task)
+                val snapshotPath = snapshotStore.save(task, result)
+                val snapshot = snapshotStore.load(result.runId)
+                val processTrace = buildProcessTrace(snapshot)
+                val traceIssues = validateProcessTrace(processTrace)
+
+                run = VerifyRun(
+                    runId = snapshot.runId,
+                    workflowName = snapshot.workflowName,
+                    success = snapshot.success,
+                    task = snapshot.task,
+                    snapshot = snapshotPath.toString(),
+                    processCount = snapshot.processes.size,
+                    tokenTotal = snapshot.processes.sumOf { it.tokens },
+                    syscallCount = snapshot.processes.sumOf { it.syscallCount },
+                    contextBytes = snapshot.processes.sumOf { it.contextSize },
+                    durationMillis = snapshot.processes.sumOf { it.durationMillis },
+                )
+                trace = VerifyTrace(
+                    runId = processTrace.runId,
+                    schema = processTrace.schema,
+                    valid = traceIssues.isEmpty(),
+                    processCount = processTrace.metrics.processCount,
+                    eventCount = processTrace.metrics.eventCount,
+                    issues = traceIssues,
+                )
+                if (!result.success) {
+                    errors += "verify smoke workflow failed."
+                }
+                if (traceIssues.isNotEmpty()) {
+                    errors += "process trace contract failed."
+                }
+            }.onFailure { error ->
+                errors += error.message ?: "verify smoke workflow failed."
+            }
+        }
+
+        val status = if (errors.isEmpty() && run?.success == true && trace?.valid == true) "ready" else "failed"
+        return VerifyReport(
+            schema = VERIFY_SCHEMA,
+            version = KAIOS_VERSION,
+            cwd = workingDir.toString(),
+            status = status,
+            doctor = doctor,
+            config = config,
+            run = run,
+            trace = trace,
+            errors = errors.distinct(),
+            next = verifyNextCommands(config, run, trace),
+        )
+    }
+
+    private fun verifyNextCommands(
+        config: ConfigValidationReport,
+        run: VerifyRun?,
+        trace: VerifyTrace?,
+    ): List<String> =
+        buildList {
+            if (!config.valid) add("kaios setup --ci")
+            if (run != null) {
+                add("kaios ps latest")
+                add("kaios inspect latest")
+            }
+            if (trace != null) {
+                add(if (trace.valid) "kaios trace latest --check" else "kaios trace latest")
+            }
+            add("kaios bug-report")
+        }.distinct()
+
+    private fun renderVerifyText(report: VerifyReport, out: PrintStream) {
+        out.println("KAI OS verify")
+        out.println("schema: ${report.schema}")
+        out.println("version: ${report.version}")
+        out.println("cwd: ${report.cwd}")
+        out.println("status: ${report.status}")
+        out.println("doctor: ${report.doctor.summary.status}")
+        out.println("config: ${if (report.config.valid) "valid" else "invalid"} (${report.config.config})")
+        out.println("workflow: ${report.config.workflowName ?: "-"}")
+        out.println("agents: ${report.config.agentCount}")
+        val run = report.run
+        if (run == null) {
+            out.println("run: skipped")
+        } else {
+            out.println("run: ${run.runId} success=${run.success}")
+            out.println("snapshot: ${run.snapshot}")
+            out.println("tokens: ${run.tokenTotal}")
+            out.println("syscalls: ${run.syscallCount}")
+            out.println("memory: ${run.contextBytes}b")
+            out.println("duration: ${run.durationMillis}ms")
+        }
+        val trace = report.trace
+        if (trace == null) {
+            out.println("trace: skipped")
+        } else {
+            out.println("trace: ${if (trace.valid) "valid" else "invalid"} (${trace.schema})")
+            out.println("processes: ${trace.processCount}")
+            out.println("events: ${trace.eventCount}")
+        }
+        if (report.errors.isNotEmpty()) {
+            out.println()
+            out.println("errors:")
+            report.errors.forEach { error -> out.println("  - ${singleLine(error)}") }
         }
         out.println()
         out.println("next:")
@@ -831,6 +996,7 @@ class KaiosCli(
         out.println("next:")
         out.println("  kaios config validate --config ${displayPath(path)} --json")
         out.println("  kaios config show --config ${displayPath(path)}")
+        out.println("  kaios verify --config ${displayPath(path)}")
         out.println("  kaios run \"${template.exampleTask}\"")
         ciPath?.let { out.println("  git add ${displayPath(path)} ${displayPath(it)}") }
         out.println("  kaios ps latest")
@@ -1756,11 +1922,12 @@ class KaiosCli(
             Quick start (3 steps):
               kaios demo
               kaios setup --ci
-              kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
+              kaios verify
 
             Command groups:
               Setup:
                 kaios setup [--ci]
+                kaios verify [--config kaios.json]
                 kaios init [--template default|research|code-review|release] [--ci]
 
               Runtime:
@@ -2080,17 +2247,8 @@ class KaiosCli(
                       curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
                       echo "${'$'}HOME/.kaios/bin" >> "${'$'}GITHUB_PATH"
 
-                  - name: Check runtime
-                    run: kaios doctor --json
-
-                  - name: Validate agent workflow
-                    run: kaios config validate --config $config --json
-
-                  - name: Run deterministic smoke workflow
-                    run: kaios run --config $config --trace-out .kaios/artifacts/ci-trace.json --force "ci smoke: validate the agent workflow"
-
-                  - name: Check process trace contract
-                    run: kaios trace latest --check
+                  - name: Verify KAI OS project
+                    run: kaios verify --config $config
         """.trimIndent() + "\n"
     }
 
@@ -2369,6 +2527,55 @@ class KaiosCli(
             "text", "plain" -> SetupFormat.Text
             "json" -> SetupFormat.Json
             else -> error("Unknown setup format '$value'. Use text or json.")
+        }
+
+    private fun parseVerifyCommand(args: List<String>): VerifyCommand {
+        var configPath = defaultConfigPath()
+        var format = VerifyFormat.Text
+        var index = 0
+
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--config" || arg == "-c" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    configPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--config=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--config requires a path." }
+                    configPath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--json" -> {
+                    format = VerifyFormat.Json
+                    index += 1
+                }
+                arg == "--format" -> {
+                    val value = args.getOrNull(index + 1) ?: error("--format requires text or json.")
+                    format = parseVerifyFormat(value)
+                    index += 2
+                }
+                arg.startsWith("--format=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--format requires text or json." }
+                    format = parseVerifyFormat(value)
+                    index += 1
+                }
+                arg.startsWith("-") -> error("Unknown verify option '$arg'.")
+                else -> error("Unexpected verify argument '$arg'.")
+            }
+        }
+
+        return VerifyCommand(configPath, format)
+    }
+
+    private fun parseVerifyFormat(value: String): VerifyFormat =
+        when (value.lowercase().trim()) {
+            "text", "plain" -> VerifyFormat.Text
+            "json" -> VerifyFormat.Json
+            else -> error("Unknown verify format '$value'. Use text or json.")
         }
 
     private fun parseInitCommand(args: List<String>): InitCommand {
@@ -2791,6 +2998,54 @@ private data class SetupReport(
 private data class SetupFileReport(
     val path: String?,
     val action: String,
+)
+
+private data class VerifyCommand(
+    val configPath: Path,
+    val format: VerifyFormat,
+)
+
+private enum class VerifyFormat(val id: String) {
+    Text("text"),
+    Json("json"),
+}
+
+@Serializable
+private data class VerifyReport(
+    val schema: String,
+    val version: String,
+    val cwd: String,
+    val status: String,
+    val doctor: DoctorReport,
+    val config: ConfigValidationReport,
+    val run: VerifyRun?,
+    val trace: VerifyTrace?,
+    val errors: List<String>,
+    val next: List<String>,
+)
+
+@Serializable
+private data class VerifyRun(
+    val runId: String,
+    val workflowName: String,
+    val success: Boolean,
+    val task: String,
+    val snapshot: String,
+    val processCount: Int,
+    val tokenTotal: Int,
+    val syscallCount: Int,
+    val contextBytes: Int,
+    val durationMillis: Long,
+)
+
+@Serializable
+private data class VerifyTrace(
+    val runId: String,
+    val schema: String,
+    val valid: Boolean,
+    val processCount: Int,
+    val eventCount: Int,
+    val issues: List<String>,
 )
 
 private data class InitCommand(

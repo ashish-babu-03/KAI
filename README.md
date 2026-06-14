@@ -39,7 +39,7 @@ Kotlin gives this model a strong foundation: JVM ecosystem reach, type safety, c
 
 ## Quick Start
 
-Three steps get you from install to a useful project artifact:
+Three steps get you from install to a ready local Agent Gate:
 
 ```bash
 brew tap morning-verlu/tap
@@ -47,17 +47,26 @@ brew install kaios
 
 kaios demo
 kaios setup --ci
+kaios verify
+```
+
+`kaios setup --ci` creates a validated `kaios.json` and a no-key GitHub Actions Agent Gate without overwriting existing files.
+`kaios verify` checks the local runtime, validates the workflow, runs a deterministic mock smoke workflow, validates the process trace contract, and leaves a normal run snapshot for `ps`, `inspect`, and `trace`.
+
+When the gate is ready, create a project artifact:
+
+```bash
 kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
 If the project does not have `README.md`, omit `--context README.md`. KAI OS still uses the Workspace Index to orient the run.
-`kaios setup --ci` creates a validated `kaios.json` and a no-key GitHub Actions Agent Gate without overwriting existing files.
 
 Every command has local examples when you need the next move without opening docs:
 
 ```bash
 kaios
 kaios help demo
+kaios help verify
 kaios help run
 kaios help analyze
 kaios help config
@@ -95,10 +104,11 @@ Create a local workflow config when you want your own agent process graph:
 kaios setup --ci
 kaios config show
 kaios config validate --json
+kaios verify
 kaios run --out artifacts/runtime.md "map the JVM agent runtime"
 ```
 
-`kaios setup --ci` also writes `.github/workflows/kaios.yml`, a no-key Agent Gate that installs KAI OS, runs `doctor --json`, validates `kaios.json`, executes a deterministic smoke run, and checks the process trace contract.
+`kaios setup --ci` also writes `.github/workflows/kaios.yml`, a no-key Agent Gate that installs KAI OS and runs `kaios verify --config kaios.json`.
 
 Or install with the hosted script:
 
@@ -106,8 +116,8 @@ Or install with the hosted script:
 curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
 kaios demo
-kaios analyze . --out artifacts/analysis.md --force
-kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
+kaios setup --ci
+kaios verify
 ```
 
 Or build from source:
@@ -301,6 +311,8 @@ For built-in syscall tools, see [docs/TOOLS.md](docs/TOOLS.md).
 
 For one-command project setup, see [docs/SETUP.md](docs/SETUP.md).
 
+For the no-key readiness gate, see [docs/VERIFY.md](docs/VERIFY.md).
+
 For persisted memory, see [docs/MEMORY.md](docs/MEMORY.md).
 
 For Workspace Index and project context, see [docs/INDEX.md](docs/INDEX.md).
@@ -322,8 +334,9 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Permissioned tools: `echo`, `clock`, `mock-http`, allowlisted `http`, scoped `file`.
 - Project workflow templates, retry policy, config validation, config graph display, and auto-detected `kaios.json` runs.
 - `kaios setup` bootstraps a validated project workflow and can add the CI Agent Gate in one command.
+- `kaios verify` emits `kaios.verify/v1`, runs the no-key readiness gate, and saves a normal run snapshot for inspection.
 - `kaios config validate --json` emits `kaios.config-validation/v1` for CI and release gates.
-- `kaios init --ci` writes a GitHub Actions Agent Gate using `doctor --json`, config validation, a mock-provider smoke run, and `trace --check`.
+- `kaios init --ci` writes a GitHub Actions Agent Gate that uses the same local `kaios verify --config kaios.json` contract.
 - Deterministic workspace analysis with `kaios analyze` for no-key Markdown and JSON project reports.
 - Workspace Index with `kaios index` and `kaios run --index <path>` for language stats, notable files, and project source maps.
 - Project-aware runs with `kaios context`, `.kaiosignore`, and bounded `kaios run --context <file-or-dir>` ingestion.

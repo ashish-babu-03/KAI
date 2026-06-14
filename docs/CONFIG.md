@@ -5,6 +5,7 @@ KAI OS can run the built-in `planner -> executor -> validator` workflow, or load
 ```bash
 kaios config templates
 kaios setup --ci
+kaios verify
 kaios config validate
 kaios config show
 kaios run "map the JVM agent runtime"
@@ -25,7 +26,7 @@ kaios init --template research --ci
 git add kaios.json .github/workflows/kaios.yml
 ```
 
-The generated Agent Gate installs KAI OS, uses the deterministic mock provider, runs `kaios doctor --json`, validates the config as `kaios.config-validation/v1`, executes one smoke workflow, and checks the saved process trace with `kaios trace latest --check`.
+The generated Agent Gate installs KAI OS, uses the deterministic mock provider, and runs `kaios verify --config kaios.json`. That single gate validates the config as `kaios.config-validation/v1`, executes one smoke workflow, and checks the saved process trace with `kaios.process-trace/v1`.
 
 When `kaios.json` exists in the current directory, `kaios run "task"` uses it automatically. Use `--default` to force the built-in workflow:
 

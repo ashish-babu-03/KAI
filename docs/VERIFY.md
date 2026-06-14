@@ -1,0 +1,62 @@
+# Verify Gate
+
+Use `kaios verify` when you want one answer to the question: is this KAI OS project ready to run and inspect?
+
+```bash
+kaios setup --ci
+kaios verify
+```
+
+The command runs the same no-key checks locally and in CI:
+
+- local runtime diagnostics from `kaios doctor`.
+- project workflow validation from `kaios.config-validation/v1`.
+- a deterministic `MockModelProvider` smoke workflow.
+- process trace contract validation for `kaios.process-trace/v1`.
+- a normal run snapshot under `.kaios/runs/` for `ps`, `inspect`, `trace`, and `bug-report`.
+
+## Output
+
+Text output is designed for humans:
+
+```bash
+kaios verify
+```
+
+JSON output is designed for CI, release gates, dashboards, and future Agent Desktop integrations:
+
+```bash
+kaios verify --json
+```
+
+The JSON schema is `kaios.verify/v1`.
+
+## Config Path
+
+By default, verify reads `kaios.json` from the current directory:
+
+```bash
+kaios verify
+```
+
+Use `--config` for another workflow:
+
+```bash
+kaios verify --config workflows/research.json
+```
+
+## Exit Codes
+
+- `0`: doctor, config validation, smoke run, and trace contract all passed.
+- `1`: command usage was invalid.
+- `2`: the readiness gate failed.
+
+## CI
+
+`kaios setup --ci` writes `.github/workflows/kaios.yml` with the same gate:
+
+```bash
+kaios verify --config kaios.json
+```
+
+That makes failures reproducible locally before pushing.

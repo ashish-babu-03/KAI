@@ -17,13 +17,10 @@ git add kaios.json .github/workflows/kaios.yml
 The generated `.github/workflows/kaios.yml` is intentionally no-key by default. It pins the current KAI OS CLI version, sets `KAIOS_MODEL_PROVIDER=mock`, and runs:
 
 ```bash
-kaios doctor --json
-kaios config validate --config kaios.json --json
-kaios run --config kaios.json --trace-out .kaios/artifacts/ci-trace.json --force "ci smoke: validate the agent workflow"
-kaios trace latest --check
+kaios verify --config kaios.json
 ```
 
-This gives teams a stable gate for environment readiness, editable workflow validation, deterministic runtime execution, and process trace contract checks.
+This gives teams a stable gate for environment readiness, editable workflow validation, deterministic runtime execution, and process trace contract checks. The same command runs locally before pushing.
 
 ## Repository CI
 

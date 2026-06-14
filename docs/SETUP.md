@@ -13,6 +13,7 @@ This command:
 - validates the workflow with `kaios.config-validation/v1`.
 - runs the same readiness checks as `kaios doctor`.
 - writes `.github/workflows/kaios.yml` when `--ci` is passed.
+- points the generated Agent Gate at `kaios verify --config kaios.json`.
 - prints the next useful commands.
 
 ## Common Paths
@@ -52,12 +53,20 @@ JSON output uses schema `kaios.setup/v1`.
 
 ## After Setup
 
-Run the configured workflow:
+Run the readiness gate:
+
+```bash
+kaios verify
+kaios ps latest
+kaios trace latest --check
+```
+
+`kaios verify` checks the local runtime, validates the project workflow, runs a deterministic mock smoke workflow, validates the process trace contract, and saves a normal run snapshot.
+
+Create a project artifact when the gate is ready:
 
 ```bash
 kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
-kaios ps latest
-kaios trace latest --check
 ```
 
 If something behaves differently across machines:

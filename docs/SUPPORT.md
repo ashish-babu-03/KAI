@@ -44,8 +44,6 @@ kaios bug-report --out artifacts/kaios-bug-report.md --force
 For project-specific issues, include the workflow and trace:
 
 ```bash
-kaios config validate --json
-kaios run --index . --trace-out artifacts/trace.json --force "summarize this project"
-kaios trace latest --check
+kaios verify
 kaios bug-report --out artifacts/kaios-bug-report.md --force
 ```
