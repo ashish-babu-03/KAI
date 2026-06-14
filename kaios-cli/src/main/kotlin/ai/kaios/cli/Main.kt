@@ -35,7 +35,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.64"
+private const val KAIOS_VERSION = "0.1.65"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val RUN_CAPSULE_SCHEMA = "kaios.run-capsule/v1"
 private const val RUN_REPLAY_SCHEMA = "kaios.run-replay/v1"
@@ -179,6 +179,13 @@ class KaiosCli(
         out.println()
         out.println("Run 'kaios help' for all commands.")
         return 0
+    }
+
+    private fun renderNextCommands(stream: PrintStream, commands: List<String>) {
+        if (commands.isEmpty()) return
+        stream.println()
+        stream.println("next:")
+        commands.forEach { command -> stream.println("  $command") }
     }
 
     private fun printNamedCommandHelp(args: List<String>, out: PrintStream, err: PrintStream): Int {
@@ -909,10 +916,10 @@ class KaiosCli(
             append(" --ci --force")
         }
 
-    private fun configRecoveryCommands(configPath: Path): List<String> =
+    private fun configRecoveryCommands(configPath: Path, includeValidate: Boolean = true): List<String> =
         buildList {
             if (configPath.exists()) {
-                add("kaios config validate --config ${displayPath(configPath)} --json")
+                if (includeValidate) add("kaios config validate --config ${displayPath(configPath)} --json")
                 add("fix ${displayPath(configPath)} or rerun ${setupForceCommand(configPath)}")
             } else {
                 add(setupCommand(configPath))
@@ -1231,6 +1238,7 @@ class KaiosCli(
                         out.println("status: valid")
                         out.println("workflow: ${workflow.name}")
                         out.println("agents: ${workflow.nodes.size}")
+                        renderNextCommands(out, configValidationNextCommands(path, valid = true))
                     }
                     0
                 },
@@ -1254,7 +1262,18 @@ class KaiosCli(
             agentCount = workflow?.nodes?.size ?: 0,
             agentIds = workflow?.nodes?.map { it.id }.orEmpty(),
             errors = errors,
+            next = configValidationNextCommands(path, valid = errors.isEmpty()),
         )
+
+    private fun configValidationNextCommands(path: Path, valid: Boolean): List<String> =
+        if (valid) {
+            listOf(
+                verifyEvidenceCommand(path),
+                "kaios config show --config ${displayPath(path)}",
+            )
+        } else {
+            configRecoveryCommands(path, includeValidate = false)
+        }
 
     private fun showConfig(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val path = runCatching { parseConfigPath(args) }.getOrElse { error ->
@@ -1295,6 +1314,8 @@ class KaiosCli(
             err.println("Run '${setupCommand(path)}' to create a validated project workflow and CI gate.")
             err.println("Run 'kaios config templates' to choose a different template before setup.")
             err.println("Use '--config path/to/kaios.json' to inspect another config file.")
+        } else {
+            renderNextCommands(err, configValidationNextCommands(path, valid = false))
         }
         return 1
     }
@@ -4685,6 +4706,7 @@ private data class ConfigValidationReport(
     val agentCount: Int,
     val agentIds: List<String>,
     val errors: List<String>,
+    val next: List<String>,
 )
 
 private data class DoctorCommand(

@@ -31,7 +31,7 @@ class KaiosCliSmokeTest {
         val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
 
         assertEquals(0, code)
-        assertEquals("kaios 0.1.64\n", out.toString())
+        assertEquals("kaios 0.1.65\n", out.toString())
     }
 
     @Test
@@ -924,7 +924,7 @@ class KaiosCliSmokeTest {
         assertTrue(capsuleText.contains("valid: true"))
         assertTrue(capsuleText.contains("kaios replay --file $capsulePath"))
         assertEquals("kaios.run-capsule/v1", capsuleJson.getValue("schema").jsonPrimitive.content)
-        assertEquals("0.1.64", capsuleJson.getValue("version").jsonPrimitive.content)
+        assertEquals("0.1.65", capsuleJson.getValue("version").jsonPrimitive.content)
         assertEquals(runId, run.getValue("runId").jsonPrimitive.content)
         assertEquals(3, run.getValue("processCount").jsonPrimitive.int)
         assertEquals(runId, snapshot.getValue("runId").jsonPrimitive.content)
@@ -1811,7 +1811,7 @@ class KaiosCliSmokeTest {
 
         assertEquals(0, code)
         assertEquals("kaios.setup/v1", json.getValue("schema").jsonPrimitive.content)
-        assertEquals("0.1.64", json.getValue("version").jsonPrimitive.content)
+        assertEquals("0.1.65", json.getValue("version").jsonPrimitive.content)
         assertEquals("code-review", json.getValue("requestedTemplate").jsonPrimitive.content)
         assertEquals("created", config.getValue("action").jsonPrimitive.content)
         assertEquals("created", ci.getValue("action").jsonPrimitive.content)
@@ -1819,7 +1819,7 @@ class KaiosCliSmokeTest {
         assertEquals("code-review", validation.getValue("workflowName").jsonPrimitive.content)
         assertTrue(validation.getValue("valid").jsonPrimitive.content == "true")
         assertEquals("ready", doctor.getValue("summary").jsonObject.getValue("status").jsonPrimitive.content)
-        assertTrue(workflowText.contains("KAIOS_VERSION: \"0.1.64\""))
+        assertTrue(workflowText.contains("KAIOS_VERSION: \"0.1.65\""))
         assertTrue(workflowText.contains("kaios verify --config 'kaios.json' --evidence --force"))
         assertTrue(workflowText.contains("uses: actions/upload-artifact@v4"))
         assertTrue(!workflowText.contains("kaios config validate --config 'kaios.json' --json"))
@@ -2063,7 +2063,7 @@ class KaiosCliSmokeTest {
         assertEquals(0, setupCode)
         assertEquals(0, code)
         assertEquals("kaios.verify/v1", json.getValue("schema").jsonPrimitive.content)
-        assertEquals("0.1.64", json.getValue("version").jsonPrimitive.content)
+        assertEquals("0.1.65", json.getValue("version").jsonPrimitive.content)
         assertEquals("ready", json.getValue("status").jsonPrimitive.content)
         assertEquals("code-review", config.getValue("workflowName").jsonPrimitive.content)
         assertTrue(config.getValue("valid").jsonPrimitive.content == "true")
@@ -2272,7 +2272,7 @@ class KaiosCliSmokeTest {
         assertTrue(outputText.contains("kaios config validate --config kaios.json --json"))
         assertTrue(outputText.contains("kaios verify --config kaios.json --evidence --force"))
         assertTrue(workflowText.contains("name: KAI OS Agent Gate"))
-        assertTrue(workflowText.contains("KAIOS_VERSION: \"0.1.64\""))
+        assertTrue(workflowText.contains("KAIOS_VERSION: \"0.1.65\""))
         assertTrue(workflowText.contains("KAIOS_MODEL_PROVIDER: mock"))
         assertTrue(workflowText.contains("kaios verify --config 'kaios.json' --evidence --force"))
         assertTrue(workflowText.contains("name: kaios-evidence"))
@@ -2349,6 +2349,9 @@ class KaiosCliSmokeTest {
         assertEquals(0, validateCode)
         assertTrue(validateText.contains("status: valid"))
         assertTrue(validateText.contains("workflow: code-review"))
+        assertTrue(validateText.contains("next:"))
+        assertTrue(validateText.contains("kaios verify --config kaios.json --evidence --force"))
+        assertTrue(validateText.contains("kaios config show --config kaios.json"))
 
         val showOut = ByteArrayOutputStream()
         val showCode = cli.run(arrayOf("config", "show"), PrintStream(showOut), PrintStream(ByteArrayOutputStream()))
@@ -2395,6 +2398,22 @@ class KaiosCliSmokeTest {
             assertTrue(text.contains("Run 'kaios config templates' to choose a different template before setup."))
             assertTrue(text.contains("Use '--config path/to/kaios.json' to inspect another config file."))
             assertTrue(!text.contains("kaios init --template default"))
+        }
+
+        listOf(
+            arrayOf("config", "validate", "--json") to "kaios setup --ci",
+            arrayOf("config", "validate", "--config", "workflows/research.json", "--json") to "kaios setup --config workflows/research.json --ci",
+        ).forEach { (args, setupCommand) ->
+            val out = ByteArrayOutputStream()
+            val code = cli.run(args, PrintStream(out), PrintStream(ByteArrayOutputStream()))
+            val json = Json.parseToJsonElement(out.toString()).jsonObject
+            val next = json.getValue("next").jsonArray.map { it.jsonPrimitive.content }
+
+            assertEquals(1, code)
+            assertEquals("kaios.config-validation/v1", json.getValue("schema").jsonPrimitive.content)
+            assertTrue(json.getValue("valid").jsonPrimitive.content == "false")
+            assertTrue(next.contains(setupCommand))
+            assertTrue(!next.any { it.contains("kaios init --template default") })
         }
     }
 
@@ -2585,6 +2604,8 @@ class KaiosCliSmokeTest {
 
         assertEquals(1, code)
         assertTrue(err.toString().contains("retries must be between 0 and 10"))
+        assertTrue(err.toString().contains("next:"))
+        assertTrue(err.toString().contains("fix retry.json or rerun kaios setup --config retry.json --ci --force"))
 
         val jsonOut = ByteArrayOutputStream()
         val jsonCode = cli.run(
@@ -2600,6 +2621,9 @@ class KaiosCliSmokeTest {
         assertEquals(false, json.getValue("valid").jsonPrimitive.content.toBoolean())
         assertEquals(0, json.getValue("agentCount").jsonPrimitive.int)
         assertTrue(jsonText.contains("retries must be between 0 and 10"))
+        val next = json.getValue("next").jsonArray.map { it.jsonPrimitive.content }
+        assertTrue(next.contains("fix retry.json or rerun kaios setup --config retry.json --ci --force"))
+        assertTrue(!next.any { it.contains("kaios config validate") })
     }
 
     @Test
@@ -2795,7 +2819,7 @@ class KaiosCliSmokeTest {
 
         assertEquals(0, code)
         assertEquals("kaios.doctor/v1", json.getValue("schema").jsonPrimitive.content)
-        assertEquals("0.1.64", json.getValue("version").jsonPrimitive.content)
+        assertEquals("0.1.65", json.getValue("version").jsonPrimitive.content)
         assertEquals("ready", summary.getValue("status").jsonPrimitive.content)
         assertEquals(0, summary.getValue("failed").jsonPrimitive.int)
         assertTrue(checks.any { check ->
@@ -2858,7 +2882,7 @@ class KaiosCliSmokeTest {
         assertEquals(0, code)
         assertTrue(text.contains("# KAI OS Bug Report"))
         assertTrue(text.contains("schema: `kaios.bug-report/v1`"))
-        assertTrue(text.contains("version: `0.1.64`"))
+        assertTrue(text.contains("version: `0.1.65`"))
         assertTrue(text.contains("## What Happened"))
         assertTrue(text.contains("## Doctor"))
         assertTrue(text.contains("No saved run snapshot was found."))
@@ -2888,7 +2912,7 @@ class KaiosCliSmokeTest {
         assertEquals(0, demoCode)
         assertEquals(0, code)
         assertEquals("kaios.bug-report/v1", json.getValue("schema").jsonPrimitive.content)
-        assertEquals("0.1.64", json.getValue("version").jsonPrimitive.content)
+        assertEquals("0.1.65", json.getValue("version").jsonPrimitive.content)
         assertEquals(runId, latestRun.getValue("runId").jsonPrimitive.content)
         assertEquals("default", latestRun.getValue("workflowName").jsonPrimitive.content)
         assertEquals(3, latestRun.getValue("processCount").jsonPrimitive.int)

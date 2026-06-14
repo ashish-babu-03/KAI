@@ -223,7 +223,7 @@ For CI or release gates, use the machine-readable validation contract:
 kaios config validate --json
 ```
 
-It emits `kaios.config-validation/v1` with `valid`, workflow metadata, agent ids, and validation errors.
+It emits `kaios.config-validation/v1` with `valid`, workflow metadata, agent ids, validation errors, and machine-readable `next` commands.
 
 To create a ready-to-commit GitHub Actions workflow around that contract:
 
