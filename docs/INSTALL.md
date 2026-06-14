@@ -9,7 +9,8 @@ kaios --version
 ```
 
 Running `kaios` with no arguments prints the quick start and exits successfully, so it is safe to use as a first smoke test.
-Mistyped commands show a suggestion when there is a clear match, such as `kaios analyse` pointing to `kaios analyze`.
+Common aliases execute directly: `kaios start --no-ci`, `kaios status`, `kaios ls`, `kaios proc latest`, and `kaios audit latest`.
+Mistyped commands still show a suggestion when there is a clear match.
 If a run id is missing, `kaios ps`, `kaios inspect`, `kaios trace`, `kaios capsule`, `kaios report`, and `kaios export` point back to `kaios runs`; when no snapshots exist yet, the CLI points back to `kaios quickstart`, `kaios demo`, `kaios setup --ci`, and `kaios verify --evidence --force`.
 If `kaios.json` is missing, `kaios config show` and `kaios config validate` point back to `kaios setup --ci`; use `kaios config templates` when you want to choose a different workflow template before setup.
 
@@ -73,9 +74,9 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.71.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.71/kaios-0.1.71.zip
-unzip kaios-0.1.71.zip
-./kaios-0.1.71/bin/kaios quickstart
+curl -L -o kaios-0.1.72.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.72/kaios-0.1.72.zip
+unzip kaios-0.1.72.zip
+./kaios-0.1.72/bin/kaios quickstart
 ```
 
 ## Build From Source

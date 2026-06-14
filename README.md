@@ -97,7 +97,7 @@ kaios help config
 kaios help config show
 ```
 
-If you mistype a command, KAI OS suggests the closest safe next command instead of guessing and running it.
+Common aliases also work directly: `kaios start --no-ci` for local quickstart, `kaios status` for doctor, `kaios ls` for saved runs, `kaios proc latest` for the process table, and `kaios audit latest` for evidence packaging. If you truly mistype a command, KAI OS suggests the closest safe next command instead of guessing.
 
 Need a support-friendly environment check?
 

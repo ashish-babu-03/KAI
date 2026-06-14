@@ -35,7 +35,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.71"
+private const val KAIOS_VERSION = "0.1.72"
 private const val CI_AGENT_GATE_ARTIFACT_NAME = "kaios-agent-gate"
 private const val CI_WORKFLOW_PUSH_NOTE = "Pushing .github/workflows/kaios.yml may require GitHub workflow permission/scope."
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
@@ -130,8 +130,10 @@ class KaiosCli(
             return 0
         }
 
+        val inputCommand = args.first()
+        val command = resolveTopLevelCommand(inputCommand)
         val commandArgs = args.drop(1)
-        return when (args.first()) {
+        return when (command) {
             "quickstart" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("quickstart")) else runQuickstart(commandArgs, out, err)
             "setup" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("setup")) else setupProject(commandArgs, out, err)
             "verify" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("verify")) else verifyProject(commandArgs, out, err)
@@ -163,8 +165,8 @@ class KaiosCli(
                 0
             }
             else -> {
-                err.println("Unknown command '${args.first()}'.")
-                printSuggestion(err, args.first(), TOP_LEVEL_COMMANDS, TOP_LEVEL_COMMAND_ALIASES, "kaios")
+                err.println("Unknown command '$inputCommand'.")
+                printSuggestion(err, inputCommand, TOP_LEVEL_COMMANDS, TOP_LEVEL_COMMAND_ALIASES, "kaios")
                 err.println("Run 'kaios help' for available commands.")
                 printUsage(err)
                 1
@@ -174,6 +176,9 @@ class KaiosCli(
 
     private fun isHelp(args: List<String>): Boolean =
         args.size == 1 && args.first() in setOf("help", "--help", "-h")
+
+    private fun resolveTopLevelCommand(input: String): String =
+        TOP_LEVEL_COMMAND_ALIASES[input.lowercase().trim()] ?: input
 
     private fun printCommandHelp(out: PrintStream, help: CommandHelp): Int {
         out.println("Usage: ${help.usage}")
@@ -294,7 +299,7 @@ class KaiosCli(
 
     private fun helpCommandKey(args: List<String>): String? =
         when {
-            args.size == 1 -> args.first()
+            args.size == 1 -> resolveTopLevelCommand(args.first())
             args.size == 2 && args.first() == "config" -> "config ${args[1]}"
             else -> null
         }
@@ -3163,6 +3168,13 @@ class KaiosCli(
                 kaios bug-report [--config kaios.json] [--out report.md]
                 kaios --version
                 kaios help <command>
+
+              Common aliases:
+                kaios start [--no-ci]  -> kaios quickstart
+                kaios status           -> kaios doctor
+                kaios ls               -> kaios runs
+                kaios proc latest      -> kaios ps latest
+                kaios audit latest     -> kaios evidence latest
             """.trimIndent(),
         )
     }
