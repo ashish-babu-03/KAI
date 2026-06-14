@@ -142,9 +142,12 @@ The v0.1 safe syscall set is intentionally small:
 - `echo`: returns a supplied message.
 - `clock`: returns the current UTC timestamp.
 - `mock-http`: returns a deterministic mocked HTTP response.
+- `http`: performs real allowlisted HTTP `GET`, `HEAD`, and `POST` requests when `KAIOS_HTTP_ALLOWLIST` is set.
 - `file`: reads, writes, lists, and checks files inside `.kaios/files`.
 
 Tool names are validated before any agent process starts. Unknown tools fail fast.
+
+See [TOOLS.md](TOOLS.md) for HTTP allowlist rules, file syscall scope, and tool examples.
 
 ## Validation
 

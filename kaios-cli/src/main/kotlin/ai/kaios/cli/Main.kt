@@ -29,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.11"
+private const val KAIOS_VERSION = "0.1.12"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -376,6 +376,7 @@ class KaiosCli(
             directoryCheck("reports directory", reportRoot),
             directoryCheck("artifacts directory", artifactRoot),
             modelProviderCheck(),
+            httpAllowlistCheck(),
             memoryStoreCheck(),
             configCheck(),
             snapshotsCheck(),
@@ -456,6 +457,16 @@ class KaiosCli(
                     DoctorCheck("memory store", DoctorStatus.FAIL, error.message ?: "invalid memory store configuration")
                 },
             )
+    }
+
+    private fun httpAllowlistCheck(): DoctorCheck {
+        val allowlist = httpAllowlist()
+        val detail = if (allowlist.isEmpty()) {
+            "disabled (set KAIOS_HTTP_ALLOWLIST to enable real HTTP syscalls)"
+        } else {
+            "${allowlist.size} allowlist rule(s): ${allowlist.joinToString(", ")}"
+        }
+        return DoctorCheck("http syscall", DoctorStatus.OK, detail)
     }
 
     private fun snapshotsCheck(): DoctorCheck =
@@ -614,7 +625,17 @@ class KaiosCli(
     private fun defaultConfigPath(): Path = workingDir.resolve(KAIOS_CONFIG_FILE).normalize()
 
     private fun toolRegistry() =
-        builtInToolRegistry(fileRoot = workingDir.resolve(".kaios").resolve("files"))
+        builtInToolRegistry(
+            fileRoot = workingDir.resolve(".kaios").resolve("files"),
+            httpAllowlist = httpAllowlist(),
+        )
+
+    private fun httpAllowlist(): List<String> =
+        env("KAIOS_HTTP_ALLOWLIST")
+            ?.split(',', ';', '\n')
+            ?.map { it.trim() }
+            ?.filter { it.isNotBlank() }
+            .orEmpty()
 
     private fun contextLoader() =
         ContextLoader(

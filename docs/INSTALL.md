@@ -41,14 +41,14 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.11.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.11/kaios-0.1.11.zip
-unzip kaios-0.1.11.zip
-./kaios-0.1.11/bin/kaios doctor
-./kaios-0.1.11/bin/kaios run "analyze crypto market"
-./kaios-0.1.11/bin/kaios init --template research
-./kaios-0.1.11/bin/kaios run --out artifacts/runtime.md "map the JVM agent runtime"
-./kaios-0.1.11/bin/kaios context .
-./kaios-0.1.11/bin/kaios run --context README.md --out artifacts/project.md "summarize this project"
+curl -L -o kaios-0.1.12.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.12/kaios-0.1.12.zip
+unzip kaios-0.1.12.zip
+./kaios-0.1.12/bin/kaios doctor
+./kaios-0.1.12/bin/kaios run "analyze crypto market"
+./kaios-0.1.12/bin/kaios init --template research
+./kaios-0.1.12/bin/kaios run --out artifacts/runtime.md "map the JVM agent runtime"
+./kaios-0.1.12/bin/kaios context .
+./kaios-0.1.12/bin/kaios run --context README.md --out artifacts/project.md "summarize this project"
 ```
 
 ## Build From Source

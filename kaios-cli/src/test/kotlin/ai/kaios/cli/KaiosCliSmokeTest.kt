@@ -411,6 +411,39 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `config validation accepts allowlisted http syscall tool`() {
+        val workspace = Files.createTempDirectory("kaios-cli-http-config")
+        val cli = cliFor(workspace)
+        val config = workspace.resolve("http.json")
+        Files.writeString(
+            config,
+            """
+            {
+              "name": "http-research",
+              "agents": [
+                {
+                  "id": "researcher",
+                  "instruction": "Fetch allowlisted project evidence.",
+                  "tools": ["http"],
+                  "dependsOn": []
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(
+            arrayOf("config", "validate", "--config", config.toString()),
+            PrintStream(out),
+            PrintStream(ByteArrayOutputStream()),
+        )
+
+        assertEquals(0, code)
+        assertTrue(out.toString().contains("status: valid"))
+    }
+
+    @Test
     fun `run with config executes configured workflow agents`() {
         val workspace = Files.createTempDirectory("kaios-cli-config-run")
         val cli = cliFor(workspace)
@@ -577,8 +610,33 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("[OK] reports directory"))
         assertTrue(text.contains("[OK] artifacts directory"))
         assertTrue(text.contains("[OK] model provider: mock"))
+        assertTrue(text.contains("[OK] http syscall: disabled"))
         assertTrue(text.contains("[OK] project config"))
         assertTrue(text.contains("summary: ready"))
+    }
+
+    @Test
+    fun `doctor reports configured http allowlist without secrets`() {
+        val workspace = Files.createTempDirectory("kaios-cli-doctor-http")
+        val cli = KaiosCli(
+            FileRunSnapshotStore(workspace.resolve("runs")),
+            workspace.resolve("reports"),
+            artifactRoot = workspace.resolve("artifacts"),
+            snapshotRoot = workspace.resolve("runs"),
+            workingDir = workspace,
+            env = { key ->
+                mapOf("KAIOS_HTTP_ALLOWLIST" to "example.com,https://api.example.com/v1")[key]
+            },
+        )
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("doctor"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(text.contains("[OK] http syscall: 2 allowlist rule(s)"))
+        assertTrue(text.contains("example.com"))
+        assertTrue(text.contains("https://api.example.com/v1"))
     }
 
     @Test

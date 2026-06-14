@@ -1,9 +1,14 @@
 package ai.kaios
 
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.Clock
+import java.time.Duration
 import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
 import kotlin.io.path.isRegularFile
@@ -44,6 +49,136 @@ class MockHttpTool : Tool {
         val url = call.arguments["url"] ?: "mock://kaios"
         return ToolResult.success(name, "$method $url -> 200 OK (mock)")
     }
+}
+
+data class HttpSyscallRequest(
+    val method: String,
+    val uri: URI,
+    val body: String,
+    val contentType: String,
+    val timeout: Duration,
+)
+
+data class HttpSyscallResponse(
+    val statusCode: Int,
+    val body: String,
+)
+
+fun interface HttpSyscallTransport {
+    fun send(request: HttpSyscallRequest): HttpSyscallResponse
+}
+
+class JdkHttpSyscallTransport(
+    private val client: HttpClient = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(5))
+        .build(),
+) : HttpSyscallTransport {
+    override fun send(request: HttpSyscallRequest): HttpSyscallResponse {
+        val builder = HttpRequest.newBuilder(request.uri)
+            .timeout(request.timeout)
+            .header("User-Agent", "KAI-OS-Agent-Runtime")
+
+        val httpRequest = when (request.method) {
+            "GET" -> builder.GET().build()
+            "HEAD" -> builder.method("HEAD", HttpRequest.BodyPublishers.noBody()).build()
+            "POST" -> builder
+                .header("Content-Type", request.contentType)
+                .POST(HttpRequest.BodyPublishers.ofString(request.body))
+                .build()
+            else -> error("Unsupported HTTP method '${request.method}'.")
+        }
+
+        val response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString())
+        return HttpSyscallResponse(response.statusCode(), response.body())
+    }
+}
+
+class HttpTool(
+    allowlist: Iterable<String> = emptyList(),
+    private val transport: HttpSyscallTransport = JdkHttpSyscallTransport(),
+    private val timeout: Duration = Duration.ofSeconds(10),
+    private val maxResponseChars: Int = 20_000,
+) : Tool {
+    override val name: String = "http"
+    override val description: String = "Performs allowlisted HTTP GET, HEAD, and POST requests."
+    override val permission: ToolPermission = ToolPermission.NETWORK
+
+    private val rules = allowlist
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .map(::HttpAllowRule)
+
+    override fun call(call: ToolCall): ToolResult {
+        if (rules.isEmpty()) {
+            return ToolResult.failure(name, "HTTP syscall denied. Set KAIOS_HTTP_ALLOWLIST to enable real network hosts.")
+        }
+
+        val method = (call.arguments["method"] ?: "GET").uppercase()
+        if (method !in allowedMethods) {
+            return ToolResult.failure(name, "Unsupported HTTP method '$method'. Use GET, HEAD, or POST.")
+        }
+
+        val rawUrl = call.arguments["url"] ?: return ToolResult.failure(name, "HTTP syscall requires a url argument.")
+        val uri = runCatching { URI(rawUrl) }.getOrNull()
+            ?: return ToolResult.failure(name, "Invalid HTTP URL.")
+
+        if (uri.scheme !in setOf("http", "https") || uri.host.isNullOrBlank()) {
+            return ToolResult.failure(name, "HTTP syscall only supports absolute http(s) URLs.")
+        }
+
+        if (rules.none { it.matches(uri) }) {
+            return ToolResult.failure(name, "HTTP syscall denied for host '${uri.host}'. Not in KAIOS_HTTP_ALLOWLIST.")
+        }
+
+        return runCatching {
+            val response = transport.send(
+                HttpSyscallRequest(
+                    method = method,
+                    uri = uri,
+                    body = call.arguments["body"].orEmpty(),
+                    contentType = call.arguments["contentType"] ?: "application/json",
+                    timeout = timeout,
+                ),
+            )
+            val body = response.body.take(maxResponseChars)
+            val suffix = if (response.body.length > maxResponseChars) "\n[truncated at $maxResponseChars chars]" else ""
+            ToolResult.success(name, "HTTP ${response.statusCode}\n$body$suffix".trimEnd())
+        }.getOrElse { error ->
+            ToolResult.failure(name, error.message ?: "HTTP syscall failed.")
+        }
+    }
+
+    private companion object {
+        val allowedMethods = setOf("GET", "HEAD", "POST")
+    }
+}
+
+private class HttpAllowRule(rawRule: String) {
+    private val rule = rawRule.trim().trimEnd('/')
+    private val uri = rule.takeIf { "://" in it }?.let { value -> runCatching { URI(value) }.getOrNull() }
+    private val hostRule = uri?.host ?: rule.substringBefore('/')
+    private val scheme = uri?.scheme
+    private val hostPattern = hostRule.substringBefore(':').lowercase()
+    private val port = uri?.port?.takeIf { it >= 0 } ?: hostRule.substringAfter(':', "").toIntOrNull()
+    private val pathPrefix = uri?.rawPath?.takeIf { it.isNotBlank() && it != "/" }
+        ?: rule.takeIf { "://" !in it && "/" in it }?.substringAfter('/')?.let { "/$it" }
+
+    fun matches(uri: URI): Boolean {
+        if (scheme != null && uri.scheme != scheme) return false
+        if (port != null && uri.port != port) return false
+        if (!matchesHost(uri.host.lowercase())) return false
+        if (pathPrefix != null && !uri.rawPath.orEmpty().ifBlank { "/" }.startsWith(pathPrefix)) return false
+        return true
+    }
+
+    private fun matchesHost(host: String): Boolean =
+        when {
+            hostPattern.startsWith("*.") -> {
+                val suffix = hostPattern.removePrefix("*.")
+                host == suffix || host.endsWith(".$suffix")
+            }
+            else -> host == hostPattern
+        }
 }
 
 class ScopedFileTool(
@@ -120,12 +255,14 @@ class ScopedFileTool(
 fun builtInToolRegistry(
     clock: Clock = Clock.systemUTC(),
     fileRoot: Path = Paths.get(".kaios", "files"),
+    httpAllowlist: Iterable<String> = emptyList(),
 ): ToolRegistry =
     ToolRegistry(
         listOf(
             EchoTool(),
             ClockTool(clock),
             MockHttpTool(),
+            HttpTool(httpAllowlist),
             ScopedFileTool(fileRoot),
         ),
     )

@@ -1,6 +1,7 @@
 package ai.kaios
 
 import java.nio.file.Files
+import java.time.Duration
 import kotlin.io.path.exists
 import kotlin.io.path.readText
 import kotlin.test.Test
@@ -118,5 +119,93 @@ class ToolRuntimeTest {
 
         assertFalse(result.ok)
         assertTrue(result.error.orEmpty().contains("lacks permission"))
+    }
+
+    @Test
+    fun `http tool denies real network when allowlist is empty`() {
+        val tool = HttpTool(transport = HttpSyscallTransport { error("transport should not be called") })
+
+        val result = tool.call(ToolCall("http", mapOf("url" to "https://example.com")))
+
+        assertFalse(result.ok)
+        assertTrue(result.error.orEmpty().contains("KAIOS_HTTP_ALLOWLIST"))
+    }
+
+    @Test
+    fun `http tool performs allowlisted request through transport`() {
+        var request: HttpSyscallRequest? = null
+        val tool = HttpTool(
+            allowlist = listOf("example.com"),
+            transport = HttpSyscallTransport { syscall ->
+                request = syscall
+                HttpSyscallResponse(200, "hello from http")
+            },
+        )
+
+        val result = tool.call(ToolCall("http", mapOf("method" to "GET", "url" to "https://example.com/docs")))
+
+        assertTrue(result.ok)
+        assertEquals("GET", request?.method)
+        assertEquals("https://example.com/docs", request?.uri.toString())
+        assertTrue(result.output.contains("HTTP 200"))
+        assertTrue(result.output.contains("hello from http"))
+    }
+
+    @Test
+    fun `http tool enforces host and path allowlist`() {
+        val tool = HttpTool(
+            allowlist = listOf("https://api.example.com/v1", "*.docs.example.com"),
+            transport = HttpSyscallTransport { HttpSyscallResponse(200, "ok") },
+        )
+
+        val allowedPath = tool.call(ToolCall("http", mapOf("url" to "https://api.example.com/v1/search")))
+        val deniedPath = tool.call(ToolCall("http", mapOf("url" to "https://api.example.com/v2/search")))
+        val allowedWildcard = tool.call(ToolCall("http", mapOf("url" to "https://guide.docs.example.com/index.html")))
+        val deniedHost = tool.call(ToolCall("http", mapOf("url" to "https://evil.example.com/index.html")))
+
+        assertTrue(allowedPath.ok)
+        assertFalse(deniedPath.ok)
+        assertTrue(allowedWildcard.ok)
+        assertFalse(deniedHost.ok)
+    }
+
+    @Test
+    fun `http tool does not allow malformed allowlist rules`() {
+        val tool = HttpTool(
+            allowlist = listOf("https://["),
+            transport = HttpSyscallTransport { error("transport should not be called") },
+        )
+
+        val result = tool.call(ToolCall("http", mapOf("url" to "https://example.com")))
+
+        assertFalse(result.ok)
+        assertTrue(result.error.orEmpty().contains("Not in KAIOS_HTTP_ALLOWLIST"))
+    }
+
+    @Test
+    fun `http tool truncates large responses`() {
+        val tool = HttpTool(
+            allowlist = listOf("example.com"),
+            transport = HttpSyscallTransport { HttpSyscallResponse(200, "abcdef") },
+            timeout = Duration.ofSeconds(1),
+            maxResponseChars = 3,
+        )
+
+        val result = tool.call(ToolCall("http", mapOf("url" to "https://example.com")))
+
+        assertTrue(result.ok)
+        assertTrue(result.output.contains("abc"))
+        assertTrue(result.output.contains("truncated at 3 chars"))
+        assertTrue(!result.output.contains("def"))
+    }
+
+    @Test
+    fun `agent DSL maps http tool to network permission`() {
+        val spec = agent("researcher") {
+            tool("http")
+        }
+
+        assertTrue("http" in spec.allowedTools)
+        assertTrue(ToolPermission.NETWORK in spec.permissions)
     }
 }

@@ -30,6 +30,7 @@ Most agent frameworks model AI work as chains, prompts, or chat sessions. KAI OS
 - Track token usage like CPU.
 - Track context size like memory.
 - Track tool calls like IO/syscalls.
+- Keep real network access behind explicit allowlist policy.
 - Schedule multi-agent workflows as DAGs.
 - Persist run snapshots for inspection and debugging.
 
@@ -151,7 +152,7 @@ secrets/
 Modules:
 
 - `runtime-core`: process lifecycle, scheduler, events, model abstraction, DSL.
-- `tool-runtime`: built-in syscall tools.
+- `tool-runtime`: built-in syscall tools including allowlisted HTTP and scoped files.
 - `memory-engine`: in-memory session memory and JSON run snapshots.
 - `model-providers`: OpenAI-compatible and Ollama model provider implementations.
 - `kaios-cli`: `kaios init`, `kaios run`, `kaios runs`, `kaios ps`, `kaios inspect`, `kaios report`, context-file loading, and `kaios doctor`.
@@ -222,6 +223,8 @@ For launch posts, demos, and community announcements, see [docs/LAUNCH_KIT.md](d
 
 For real model execution, see [docs/PROVIDERS.md](docs/PROVIDERS.md).
 
+For built-in syscall tools, see [docs/TOOLS.md](docs/TOOLS.md).
+
 For persisted memory, see [docs/MEMORY.md](docs/MEMORY.md).
 
 For all install options, see [docs/INSTALL.md](docs/INSTALL.md).
@@ -232,10 +235,11 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 
 - Deterministic `MockModelProvider`, no API key needed.
 - OpenAI-compatible and Ollama providers for real model execution.
+- Real providers can request tools through `KAIOS_SYSCALL` directives.
 - Agent lifecycle: spawn, start, suspend, resume, cancel, succeed, fail.
 - Process metrics: PID, state, token usage, context size, syscall count, duration.
 - Coroutine-based DAG scheduler with parallel-ready nodes, fallback routing, timeout policy, and sibling cancellation.
-- Permissioned tools: `echo`, `clock`, `mock-http`, scoped `file`.
+- Permissioned tools: `echo`, `clock`, `mock-http`, allowlisted `http`, scoped `file`.
 - Project workflow templates, config validation, config graph display, and auto-detected `kaios.json` runs.
 - Project-aware runs with `kaios context`, `.kaiosignore`, and bounded `kaios run --context <file-or-dir>` ingestion.
 - Session memory and JSON snapshots under `.kaios/runs/`.

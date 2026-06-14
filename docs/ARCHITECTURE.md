@@ -53,7 +53,10 @@ Built-in tools in v0.1:
 - `echo`
 - `clock`
 - `mock-http`
+- `http`
 - `file`
+
+Real HTTP syscalls are disabled unless `KAIOS_HTTP_ALLOWLIST` grants an exact host, wildcard host, or URL prefix. This keeps agent network IO explicit and inspectable.
 
 The `file` syscall is rooted to a configured directory, defaults to `.kaios/files`, rejects absolute paths, and rejects normalized paths that escape the scoped root.
 

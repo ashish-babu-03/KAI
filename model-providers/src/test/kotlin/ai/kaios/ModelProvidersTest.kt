@@ -41,6 +41,7 @@ class ModelProvidersTest {
         assertTrue(transport.lastRequest?.body.orEmpty().contains("\"model\":\"test-model\""))
         assertTrue(transport.lastRequest?.body.orEmpty().contains("\"role\":\"system\""))
         assertTrue(transport.lastRequest?.body.orEmpty().contains("Dependency outputs"))
+        assertTrue(transport.lastRequest?.body.orEmpty().contains("KAIOS_SYSCALL"))
     }
 
     @Test
@@ -99,12 +100,73 @@ class ModelProvidersTest {
         assertTrue(!error.message.orEmpty().contains("secret-key"))
     }
 
-    private fun modelRequest(): ModelRequest = ModelRequest(
+    @Test
+    fun `openai compatible provider parses syscall directives`() {
+        val transport = RecordingTransport(
+            ProviderHttpResponse(
+                statusCode = 200,
+                body = """
+                    {
+                      "choices": [
+                        { "message": { "content": "Need external evidence.\nKAIOS_SYSCALL http method=GET url=https://example.com/docs\nThen validate it." } }
+                      ]
+                    }
+                """.trimIndent(),
+            ),
+        )
+        val provider = OpenAiCompatibleModelProvider(
+            config = OpenAiCompatibleConfig(
+                apiKey = "test-key",
+                model = "test-model",
+                baseUrl = "https://llm.example/v1",
+            ),
+            httpClient = transport,
+        )
+
+        val response = provider.complete(modelRequest(availableTools = setOf("http")))
+
+        assertEquals("Need external evidence.\nThen validate it.", response.content)
+        assertEquals(1, response.toolCalls.size)
+        assertEquals("http", response.toolCalls.single().tool)
+        assertEquals("GET", response.toolCalls.single().arguments["method"])
+        assertEquals("https://example.com/docs", response.toolCalls.single().arguments["url"])
+    }
+
+    @Test
+    fun `ollama provider parses quoted syscall arguments`() {
+        val transport = RecordingTransport(
+            ProviderHttpResponse(
+                statusCode = 200,
+                body = """
+                    {
+                      "message": { "content": "KAIOS_SYSCALL echo message=\"hello from provider\"" }
+                    }
+                """.trimIndent(),
+            ),
+        )
+        val provider = OllamaModelProvider(
+            config = OllamaConfig(
+                model = "local-model",
+                baseUrl = "http://localhost:11434",
+            ),
+            httpClient = transport,
+        )
+
+        val response = provider.complete(modelRequest(availableTools = setOf("echo")))
+
+        assertEquals("requested 1 syscall(s)", response.content)
+        assertEquals("echo", response.toolCalls.single().tool)
+        assertEquals("hello from provider", response.toolCalls.single().arguments["message"])
+    }
+
+    private fun modelRequest(
+        availableTools: Set<String> = setOf("echo"),
+    ): ModelRequest = ModelRequest(
         runId = RunId("run-provider"),
         agent = AgentSpec(
             id = AgentId("planner"),
             instruction = "Plan carefully.",
-            allowedTools = setOf("echo"),
+            allowedTools = availableTools,
         ),
         input = "ship a provider",
         dependencyContext = mapOf("input" to "user request"),
@@ -117,7 +179,7 @@ class ModelProvidersTest {
                 timestamp = java.time.Instant.parse("2026-06-13T12:00:00Z"),
             ),
         ),
-        availableTools = setOf("echo"),
+        availableTools = availableTools,
     )
 
     private class RecordingTransport(

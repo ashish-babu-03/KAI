@@ -72,14 +72,16 @@ class OpenAiCompatibleModelProvider(
         val decoded = json.decodeFromString<OpenAiChatCompletionResponse>(response.body)
         val content = decoded.choices.firstOrNull()?.message?.content?.trim()
             ?: error("OpenAI-compatible provider returned no message content.")
+        val parsed = SyscallDirectiveParser.parse(content)
 
         return ModelResponse(
-            content = content,
+            content = parsed.content,
             tokenUsage = TokenUsage(
                 input = decoded.usage?.promptTokens
                     ?: estimateProviderTokens(messages.joinToString(" ") { it.content }),
                 output = decoded.usage?.completionTokens ?: estimateProviderTokens(content),
             ),
+            toolCalls = parsed.toolCalls,
         )
     }
 

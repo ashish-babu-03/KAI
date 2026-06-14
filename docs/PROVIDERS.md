@@ -62,4 +62,12 @@ Environment variables:
 
 ## Current Scope
 
-The v0.1 provider implementations return text output and token usage when available. Tool calling through provider-native function-call APIs is intentionally left for a later runtime design pass, because KAI OS treats tools as explicit syscall boundaries.
+The v0.1 provider implementations return text output, token usage when available, and lightweight syscall directives. When a model emits a line like:
+
+```text
+KAIOS_SYSCALL echo message="hello"
+```
+
+the provider converts it into a `ToolCall`. The runtime still enforces tool registration, agent permissions, and syscall event recording. Provider-native function-call APIs are intentionally left for a later runtime design pass.
+
+See [TOOLS.md](TOOLS.md) for syscall syntax and allowlisted HTTP configuration.

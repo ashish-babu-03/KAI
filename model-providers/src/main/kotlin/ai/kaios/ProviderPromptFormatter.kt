@@ -45,6 +45,8 @@ internal object ProviderPromptFormatter {
         if (request.availableTools.isNotEmpty()) {
             appendLine()
             append("Available syscalls: ${request.availableTools.sorted().joinToString(", ")}.")
+            appendLine()
+            append("To request a syscall, emit a line exactly like: KAIOS_SYSCALL <tool> key=value key=value. Use only available syscalls.")
         }
         appendLine()
         append("Return concise output for this process.")

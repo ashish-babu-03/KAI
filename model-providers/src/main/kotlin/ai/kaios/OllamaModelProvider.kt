@@ -64,13 +64,15 @@ class OllamaModelProvider(
         val decoded = json.decodeFromString<OllamaChatResponse>(response.body)
         val content = decoded.message?.content?.trim()
             ?: error("Ollama provider returned no message content.")
+        val parsed = SyscallDirectiveParser.parse(content)
 
         return ModelResponse(
-            content = content,
+            content = parsed.content,
             tokenUsage = TokenUsage(
                 input = decoded.promptEvalCount ?: estimateProviderTokens(messages.joinToString(" ") { it.content }),
                 output = decoded.evalCount ?: estimateProviderTokens(content),
             ),
+            toolCalls = parsed.toolCalls,
         )
     }
 

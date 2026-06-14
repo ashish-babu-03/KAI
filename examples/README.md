@@ -171,6 +171,32 @@ build/install/kaios-cli/bin/kaios run "draft a launch plan"
 
 See [../docs/PROVIDERS.md](../docs/PROVIDERS.md) for provider details.
 
+## Allowlisted HTTP Syscall
+
+Real HTTP syscalls are disabled until you opt in with `KAIOS_HTTP_ALLOWLIST`:
+
+```bash
+export KAIOS_HTTP_ALLOWLIST="example.com,https://api.example.com/v1"
+```
+
+Then grant the `http` tool in `kaios.json`:
+
+```json
+{
+  "name": "http-research",
+  "agents": [
+    {
+      "id": "researcher",
+      "instruction": "Fetch allowlisted evidence and summarize it.",
+      "tools": ["http", "echo"],
+      "dependsOn": []
+    }
+  ]
+}
+```
+
+See [../docs/TOOLS.md](../docs/TOOLS.md) for syscall details.
+
 ## Use SQLite Memory
 
 ```bash

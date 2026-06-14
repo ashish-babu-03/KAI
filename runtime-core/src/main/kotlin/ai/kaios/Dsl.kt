@@ -21,6 +21,7 @@ class AgentBuilder(
             "echo" -> permissions += ToolPermission.ECHO
             "clock" -> permissions += ToolPermission.READ_CLOCK
             "mock-http" -> permissions += ToolPermission.NETWORK
+            "http" -> permissions += ToolPermission.NETWORK
             "file" -> permissions += ToolPermission.FILE
         }
     }
