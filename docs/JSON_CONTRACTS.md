@@ -85,6 +85,7 @@ The `command` value in every `nextActions` item is also present in `next`.
 | `stage-generated-files` | Stage generated config and CI files. |
 | `quickstart` | Run the no-key onboarding gate and create inspectable evidence. |
 | `setup-project` | Create a validated workflow and optional CI gate. |
+| `regenerate-config` | Regenerate an invalid workflow config with an executable `kaios setup ... --force` command. |
 | `validate-config` | Validate workflow config without running agents. |
 | `show-config` | Inspect agents, tools, dependencies, and fallback routes. |
 | `verify-project` | Run the readiness gate and optionally write evidence. |
@@ -201,7 +202,7 @@ Gate on:
 - `errors` is empty
 - `agentCount > 0`
 
-If validation fails, read `nextActions` and prefer `repair-config` or `setup-project`.
+If validation fails, read `nextActions` and prefer `regenerate-config` for an existing invalid config or `setup-project` when the config is missing. `repair-config` is retained for older human-readable repair notes.
 
 ## Field Notes
 

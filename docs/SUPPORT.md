@@ -46,7 +46,7 @@ For the full JSON command matrix and shared action ids, see [JSON_CONTRACTS.md](
 
 - missing project config: `kaios setup --ci`.
 - valid project config: `kaios gate --config kaios.json`.
-- existing but invalid project config: `kaios config validate --config kaios.json --json`, then fix the file or rerun `kaios setup --ci --force`.
+- existing but invalid project config: `kaios config validate --config kaios.json --json`, then rerun the executable repair command `kaios setup --ci --force` or edit the file manually.
 
 ## Better Reproduction
 

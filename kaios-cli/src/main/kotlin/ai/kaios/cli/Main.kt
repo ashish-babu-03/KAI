@@ -36,7 +36,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.78"
+private const val KAIOS_VERSION = "0.1.79"
 private const val CI_AGENT_GATE_ARTIFACT_NAME = "kaios-agent-gate"
 private const val CI_WORKFLOW_PUSH_NOTE = "Pushing .github/workflows/kaios.yml may require GitHub workflow permission/scope."
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
@@ -227,6 +227,7 @@ class KaiosCli(
             command.startsWith("fix ") -> "repair-config"
             command.startsWith("git add ") -> "stage-generated-files"
             command.startsWith("kaios quickstart") -> "quickstart"
+            command.startsWith("kaios setup ") && command.contains(" --force") -> "regenerate-config"
             command.startsWith("kaios setup ") || command == "kaios setup" -> "setup-project"
             command.startsWith("kaios config validate ") -> "validate-config"
             command.startsWith("kaios config show ") -> "show-config"
@@ -258,6 +259,7 @@ class KaiosCli(
             "stage-generated-files" -> "Stage generated config and CI gate files for review."
             "quickstart" -> "Run the no-key onboarding gate and create inspectable evidence."
             "setup-project" -> "Create a validated local workflow and optional CI gate."
+            "regenerate-config" -> "Regenerate the invalid workflow config and optional CI gate."
             "validate-config" -> "Check the workflow contract without starting agents."
             "show-config" -> "Inspect agents, tools, dependencies, and fallback routes."
             "verify-project" -> "Run the deterministic readiness gate and write evidence when requested."
@@ -1187,7 +1189,7 @@ class KaiosCli(
                 add(verifyEvidenceCommand(Paths.get(validation.config)))
                 add("kaios ps")
             } else {
-                add("fix ${displayPath(Paths.get(validation.config))} or rerun ${setupForceCommand(command)}")
+                add(setupForceCommand(command))
             }
             if (ciFile.path != null) {
                 add("git add ${displayPath(Paths.get(validation.config))} ${displayPath(Paths.get(ciFile.path))}")
@@ -1243,7 +1245,7 @@ class KaiosCli(
         buildList {
             if (configPath.exists()) {
                 if (includeValidate) add("kaios config validate --config ${displayPath(configPath)} --json")
-                add("fix ${displayPath(configPath)} or rerun ${setupForceCommand(configPath)}")
+                add(setupForceCommand(configPath))
             } else {
                 add(setupCommand(configPath))
             }
@@ -3616,6 +3618,11 @@ class KaiosCli(
         val evidence = report.evidence
         if (command.evidenceCheck && evidence?.diff?.same == false) {
             return evidence.next.firstOrNull { next -> next.startsWith("kaios diff ") }
+        }
+        if (!report.config.valid) {
+            return report.next.firstOrNull { next ->
+                nextActionId(next) == "regenerate-config" || nextActionId(next) == "setup-project"
+            }
         }
         return report.next.firstOrNull()
     }
