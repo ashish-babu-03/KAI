@@ -35,7 +35,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.66"
+private const val KAIOS_VERSION = "0.1.67"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val RUN_CAPSULE_SCHEMA = "kaios.run-capsule/v1"
 private const val RUN_REPLAY_SCHEMA = "kaios.run-replay/v1"
@@ -187,6 +187,70 @@ class KaiosCli(
         stream.println("next:")
         commands.forEach { command -> stream.println("  $command") }
     }
+
+    private fun nextActions(commands: List<String>): List<NextAction> =
+        commands.map(::nextAction)
+
+    private fun nextAction(command: String): NextAction {
+        val id = nextActionId(command)
+        return NextAction(
+            id = id,
+            command = command,
+            reason = nextActionReason(id),
+        )
+    }
+
+    private fun nextActionId(command: String): String =
+        when {
+            command == "fix failed checks above" -> "fix-failed-checks"
+            command.startsWith("fix ") -> "repair-config"
+            command.startsWith("git add ") -> "stage-generated-files"
+            command.startsWith("kaios setup ") || command == "kaios setup" -> "setup-project"
+            command.startsWith("kaios config validate ") -> "validate-config"
+            command.startsWith("kaios config show ") -> "show-config"
+            command.startsWith("kaios verify ") -> "verify-project"
+            command.startsWith("kaios demo") -> "run-demo"
+            command.startsWith("kaios run ") -> "run-workflow"
+            command.startsWith("kaios analyze ") -> "analyze-workspace"
+            command.startsWith("kaios ps ") -> "show-processes"
+            command.startsWith("kaios inspect ") -> "inspect-run"
+            command.startsWith("kaios trace ") && command.contains(" --check") -> "check-trace"
+            command.startsWith("kaios trace ") -> "view-trace"
+            command.startsWith("kaios evidence ") && command.contains(" --baseline ") -> "compare-evidence"
+            command.startsWith("kaios evidence ") -> "package-evidence"
+            command.startsWith("kaios capsule ") -> "validate-capsule"
+            command.startsWith("kaios replay ") -> "replay-capsule"
+            command.startsWith("kaios diff ") -> "diff-capsules"
+            command.startsWith("kaios bug-report") -> "collect-support-report"
+            command.startsWith("kaios doctor") -> "run-diagnostics"
+            else -> "next"
+        }
+
+    private fun nextActionReason(id: String): String =
+        when (id) {
+            "fix-failed-checks" -> "Resolve failed diagnostics before retrying the workflow."
+            "repair-config" -> "Repair the workflow config or regenerate it safely."
+            "stage-generated-files" -> "Stage generated config and CI gate files for review."
+            "setup-project" -> "Create a validated local workflow and optional CI gate."
+            "validate-config" -> "Check the workflow contract without starting agents."
+            "show-config" -> "Inspect agents, tools, dependencies, and fallback routes."
+            "verify-project" -> "Run the deterministic readiness gate and write evidence when requested."
+            "run-demo" -> "Create a no-key run snapshot for inspection and support."
+            "run-workflow" -> "Run an inspectable agent workflow for a real task."
+            "analyze-workspace" -> "Generate a deterministic workspace report without a model key."
+            "show-processes" -> "Inspect agent process metrics for the run."
+            "inspect-run" -> "Read final output and lifecycle events for the run."
+            "check-trace" -> "Validate the saved process trace contract."
+            "view-trace" -> "Inspect the saved process trace."
+            "compare-evidence" -> "Compare current evidence against a baseline capsule."
+            "package-evidence" -> "Package, validate, replay, and optionally diff run evidence."
+            "validate-capsule" -> "Validate a portable run capsule."
+            "replay-capsule" -> "Replay the capsule offline to confirm determinism."
+            "diff-capsules" -> "Compare two capsules using stable runtime signatures."
+            "collect-support-report" -> "Generate a safe support bundle for issues or handoff."
+            "run-diagnostics" -> "Run machine-readable local diagnostics."
+            else -> "Continue with the next recommended command."
+        }
 
     private fun printNamedCommandHelp(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val helpKey = helpCommandKey(args)
@@ -823,6 +887,7 @@ class KaiosCli(
             return 1
         }
         val doctor = buildDoctorReport(configPath, runtimeConfigFailureStatus = DoctorStatus.WARN)
+        val next = setupNextCommands(validation, ciFile, command)
         val report = SetupReport(
             schema = SETUP_SCHEMA,
             version = KAIOS_VERSION,
@@ -832,7 +897,8 @@ class KaiosCli(
             ci = ciFile,
             doctor = doctor,
             validation = validation,
-            next = setupNextCommands(validation, ciFile, command),
+            next = next,
+            nextActions = nextActions(next),
         )
 
         when (command.format) {
@@ -1070,6 +1136,7 @@ class KaiosCli(
         }
 
         val status = if (errors.isEmpty() && run?.success == true && trace?.valid == true) "ready" else "failed"
+        val next = verifyNextCommands(config, run, trace, evidence)
         return VerifyReport(
             schema = VERIFY_SCHEMA,
             version = KAIOS_VERSION,
@@ -1081,7 +1148,8 @@ class KaiosCli(
             trace = trace,
             evidence = evidence,
             errors = errors.distinct(),
-            next = verifyNextCommands(config, run, trace, evidence),
+            next = next,
+            nextActions = nextActions(next),
         )
     }
 
@@ -1269,8 +1337,9 @@ class KaiosCli(
             )
     }
 
-    private fun configValidationReport(path: Path, workflow: Workflow?, errors: List<String>): ConfigValidationReport =
-        ConfigValidationReport(
+    private fun configValidationReport(path: Path, workflow: Workflow?, errors: List<String>): ConfigValidationReport {
+        val next = configValidationNextCommands(path, valid = errors.isEmpty())
+        return ConfigValidationReport(
             schema = CONFIG_VALIDATION_SCHEMA,
             config = path.toString(),
             valid = errors.isEmpty(),
@@ -1278,8 +1347,10 @@ class KaiosCli(
             agentCount = workflow?.nodes?.size ?: 0,
             agentIds = workflow?.nodes?.map { it.id }.orEmpty(),
             errors = errors,
-            next = configValidationNextCommands(path, valid = errors.isEmpty()),
+            next = next,
+            nextActions = nextActions(next),
         )
+    }
 
     private fun configValidationNextCommands(path: Path, valid: Boolean): List<String> =
         if (valid) {
@@ -1556,6 +1627,7 @@ class KaiosCli(
         val latestRun = latestSnapshot?.let(::bugReportRun)
         val trace = latestSnapshot?.let(::bugReportTrace)
 
+        val next = bugReportNextCommands(config, latestRun)
         return BugReport(
             schema = BUG_REPORT_SCHEMA,
             version = KAIOS_VERSION,
@@ -1571,7 +1643,8 @@ class KaiosCli(
             config = config,
             latestRun = latestRun,
             trace = trace,
-            next = bugReportNextCommands(config, latestRun),
+            next = next,
+            nextActions = nextActions(next),
         )
     }
 
@@ -1733,6 +1806,7 @@ class KaiosCli(
         val projectConfigStatus = checks.first { it.name == "project config" }.status
         val next = doctorNextCommands(failed, configPath, projectConfigStatus)
 
+        val actions = nextActions(next)
         return DoctorReport(
             schema = DOCTOR_SCHEMA,
             version = KAIOS_VERSION,
@@ -1751,6 +1825,7 @@ class KaiosCli(
                 )
             },
             next = next,
+            nextActions = actions,
         )
     }
 
@@ -2243,6 +2318,7 @@ class KaiosCli(
         }
         val absoluteCapsulePath = capsulePath.toAbsolutePath().normalize()
         val absoluteBaselinePath = baselinePath?.toAbsolutePath()?.normalize()
+        val next = evidenceNextCommands(absoluteCapsulePath, absoluteBaselinePath, capsule.run.runId)
         return RunEvidenceReport(
             schema = RUN_EVIDENCE_SCHEMA,
             version = KAIOS_VERSION,
@@ -2278,7 +2354,8 @@ class KaiosCli(
                 differences = diff?.differences?.size ?: 0,
                 issues = diff?.issues ?: emptyList(),
             ),
-            next = evidenceNextCommands(absoluteCapsulePath, absoluteBaselinePath, capsule.run.runId),
+            next = next,
+            nextActions = nextActions(next),
         )
     }
 
@@ -4269,6 +4346,13 @@ private data class CommandHelp(
     val notes: List<String> = emptyList(),
 )
 
+@Serializable
+private data class NextAction(
+    val id: String,
+    val command: String,
+    val reason: String,
+)
+
 private data class RunCommand(
     val task: String,
     val configPath: Path?,
@@ -4311,6 +4395,7 @@ private data class SetupReport(
     val doctor: DoctorReport,
     val validation: ConfigValidationReport,
     val next: List<String>,
+    val nextActions: List<NextAction>,
 )
 
 @Serializable
@@ -4349,6 +4434,7 @@ private data class VerifyReport(
     val evidence: RunEvidenceReport?,
     val errors: List<String>,
     val next: List<String>,
+    val nextActions: List<NextAction>,
 )
 
 @Serializable
@@ -4598,6 +4684,7 @@ private data class RunEvidenceReport(
     val replay: EvidenceReplayStatus,
     val diff: EvidenceDiffStatus,
     val next: List<String>,
+    val nextActions: List<NextAction>,
 )
 
 @Serializable
@@ -4750,6 +4837,7 @@ private data class ConfigValidationReport(
     val agentIds: List<String>,
     val errors: List<String>,
     val next: List<String>,
+    val nextActions: List<NextAction>,
 )
 
 private data class DoctorCommand(
@@ -4783,6 +4871,7 @@ private data class DoctorReport(
     val summary: DoctorSummary,
     val checks: List<DoctorReportCheck>,
     val next: List<String>,
+    val nextActions: List<NextAction>,
 )
 
 @Serializable
@@ -4811,6 +4900,7 @@ private data class BugReport(
     val latestRun: BugReportRun?,
     val trace: BugReportTrace?,
     val next: List<String>,
+    val nextActions: List<NextAction>,
 )
 
 @Serializable

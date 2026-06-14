@@ -375,7 +375,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Project workflow templates, retry policy, config validation, config graph display, and auto-detected `kaios.json` runs.
 - `kaios setup` bootstraps a validated project workflow and can add the CI Agent Gate in one command.
 - `kaios verify` emits `kaios.verify/v1`, runs the no-key readiness gate, can write `kaios.evidence/v1`, and saves a normal run snapshot for inspection.
-- `kaios config validate --json` emits `kaios.config-validation/v1` with machine-readable next commands for CI and release gates.
+- `kaios config validate --json` emits `kaios.config-validation/v1` with `next` commands and structured `nextActions` for CI and release gates.
 - `kaios init --ci` writes a GitHub Actions Agent Gate that uses the same local `kaios verify --config kaios.json --evidence --force` contract.
 - Deterministic workspace analysis with `kaios analyze` for no-key Markdown and JSON project reports.
 - Workspace Index with `kaios index` and `kaios run --index <path>` for language stats, notable files, and project source maps.
