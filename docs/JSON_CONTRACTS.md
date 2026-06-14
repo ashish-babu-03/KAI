@@ -123,6 +123,7 @@ Gate on:
 - `verify.evidence.valid == true`
 - `errors` is empty
 
+Use `kaios quickstart --no-ci --json` when automation should prove local onboarding without writing `.github/workflows/kaios.yml`. In that mode `setup.ci.action == "skipped"` and `setup.ciArtifact == null`.
 Read `nextActions` to send the user to process inspection, trace validation, or the first project run without parsing terminal text.
 
 ### Bootstrap Gate
@@ -138,6 +139,7 @@ Read:
 - `config.path` and `config.action` for the project workflow file.
 - `ci.path` and `ci.action` for the generated GitHub Actions Agent Gate.
 - `ciArtifact.name` and `ciArtifact.paths` for the uploaded `kaios-agent-gate` bundle when CI is enabled.
+- `ciArtifact.pushPermissionNote` before asking users to push generated GitHub Actions workflows.
 - `validation.valid == true` before committing the generated workflow.
 
 ### Readiness Gate

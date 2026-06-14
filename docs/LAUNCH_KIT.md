@@ -32,7 +32,7 @@ It can diff two shared capsules offline (`kaios.run-diff/v1`) for stable regress
 It can generate a static Agent Process Manager report for screenshots.
 The README now includes a terminal process-table preview for quick sharing.
 There is a short CLI demo GIF for run -> ps -> inspect.
-New users can run `kaios quickstart` to complete demo, setup, verify, and evidence in one no-key pass before choosing their own task.
+New users can run `kaios quickstart` to complete demo, setup, verify, and evidence in one no-key pass before choosing their own task. Use `kaios quickstart --no-ci` for local-only onboarding without writing a GitHub Actions workflow.
 
 Repo: https://github.com/morning-verlu/KAI
 Site: https://morning-verlu.github.io/KAI/
@@ -75,6 +75,7 @@ The v0.1 release is a runnable Kotlin/JVM seed:
 - install-first onboarding through Homebrew or the checksum-verifying installer
 - kaios demo for a no-key first run with process table and trace artifact
 - kaios quickstart for one-command no-key onboarding with setup, CI gate, verify, evidence, and next actions
+- kaios quickstart --no-ci for local-only onboarding when a project is not ready for CI files
 - kaios setup for one-command project workflow bootstrap
 - kaios verify for one-command readiness and evidence gates in local projects and CI
 - kaios capsule for portable run evidence packages
@@ -91,6 +92,7 @@ Try:
 brew tap morning-verlu/tap
 brew install kaios
 kaios quickstart
+kaios quickstart --no-ci
 kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 kaios runs --json
 kaios ps latest
@@ -101,7 +103,7 @@ kaios export latest
 Repo: https://github.com/morning-verlu/KAI
 Site: https://morning-verlu.github.io/KAI/
 GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
-Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.70/kaios-0.1.70.zip
+Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.71/kaios-0.1.71.zip
 Installer: curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 ```
 
@@ -179,11 +181,11 @@ kaios report latest
 Download ZIP:
 
 ```bash
-curl -L -o kaios-0.1.70.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.70/kaios-0.1.70.zip
-unzip kaios-0.1.70.zip
-./kaios-0.1.70/bin/kaios quickstart
-./kaios-0.1.70/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
-./kaios-0.1.70/bin/kaios verify --evidence --baseline artifacts/baseline.capsule.json --check --force
+curl -L -o kaios-0.1.71.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.71/kaios-0.1.71.zip
+unzip kaios-0.1.71.zip
+./kaios-0.1.71/bin/kaios quickstart
+./kaios-0.1.71/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
+./kaios-0.1.71/bin/kaios verify --evidence --baseline artifacts/baseline.capsule.json --check --force
 ```
 
 Build from source:

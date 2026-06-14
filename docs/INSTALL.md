@@ -37,6 +37,12 @@ brew install kaios
 kaios quickstart
 ```
 
+Local-only first run:
+
+```bash
+kaios quickstart --no-ci
+```
+
 Manual path:
 
 ```bash
@@ -67,9 +73,9 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.70.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.70/kaios-0.1.70.zip
-unzip kaios-0.1.70.zip
-./kaios-0.1.70/bin/kaios quickstart
+curl -L -o kaios-0.1.71.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.71/kaios-0.1.71.zip
+unzip kaios-0.1.71.zip
+./kaios-0.1.71/bin/kaios quickstart
 ```
 
 ## Build From Source

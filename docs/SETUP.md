@@ -6,6 +6,12 @@ Use `kaios quickstart` when you want the shortest safe path from install to a va
 kaios quickstart
 ```
 
+Use local-only quickstart when you want the same onboarding gate without writing a GitHub Actions workflow:
+
+```bash
+kaios quickstart --no-ci
+```
+
 Use `kaios setup` directly when you want to split onboarding into manual steps:
 
 ```bash
@@ -22,6 +28,7 @@ This command:
 - points the generated Agent Gate at `kaios verify --config kaios.json --evidence --json --force`.
 - uploads verify JSON, a portable capsule, and a failure-time bug report as `kaios-agent-gate`.
 - prints `ci_artifact` and `ci_artifact_paths` so automation and maintainers know which GitHub Actions artifact to open.
+- prints a workflow permission note because pushing `.github/workflows/kaios.yml` may require GitHub workflow scope.
 - prints the next useful commands.
 
 ## Common Paths

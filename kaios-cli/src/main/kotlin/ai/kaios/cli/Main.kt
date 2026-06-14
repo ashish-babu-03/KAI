@@ -35,8 +35,9 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.70"
+private const val KAIOS_VERSION = "0.1.71"
 private const val CI_AGENT_GATE_ARTIFACT_NAME = "kaios-agent-gate"
+private const val CI_WORKFLOW_PUSH_NOTE = "Pushing .github/workflows/kaios.yml may require GitHub workflow permission/scope."
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val RUN_CAPSULE_SCHEMA = "kaios.run-capsule/v1"
 private const val RUN_REPLAY_SCHEMA = "kaios.run-replay/v1"
@@ -378,15 +379,17 @@ class KaiosCli(
     private fun commandHelpOrNull(command: String): CommandHelp? =
         when (command) {
             "quickstart" -> CommandHelp(
-                usage = "kaios quickstart [--force] [--json|--format json]",
-                summary = "Run the no-key onboarding path: demo, setup CI, verify evidence, and print one trusted next move.",
+                usage = "kaios quickstart [--no-ci|--local] [--force] [--json|--format json]",
+                summary = "Run the no-key onboarding path: demo, setup, optional CI gate, verify evidence, and next moves.",
                 examples = listOf(
                     "kaios quickstart",
+                    "kaios quickstart --no-ci",
                     "kaios quickstart --json",
                     "kaios quickstart --force",
                 ),
                 notes = listOf(
                     "The command uses the deterministic mock provider; no API key is required.",
+                    "Use --no-ci or --local when you want a local-only workflow without writing .github/workflows/kaios.yml.",
                     "Existing config and CI files are kept unless --force is passed.",
                     "Evidence is written to a quickstart-owned capsule so repeated runs stay low-friction.",
                     "JSON output uses schema $QUICKSTART_SCHEMA for onboarding checks and docs automation.",
@@ -710,7 +713,7 @@ class KaiosCli(
                     configPath = defaultConfigPath(),
                     force = command.force,
                     templateId = "research",
-                    writeCi = true,
+                    writeCi = command.writeCi,
                     format = SetupFormat.Text,
                 ),
             )
@@ -766,9 +769,7 @@ class KaiosCli(
                 add("kaios inspect latest")
                 add("kaios trace latest --check")
                 add(firstProjectRunCommand())
-                setup?.ci?.path?.let { ciPath ->
-                    add("git add kaios.json ${displayPath(Paths.get(ciPath))}")
-                }
+                quickstartStageCommand(setup)?.let(::add)
             } else {
                 setup?.next?.let(::addAll)
                 verify?.next?.let(::addAll)
@@ -777,6 +778,16 @@ class KaiosCli(
                 add("kaios doctor --json")
             }
         }.distinct()
+
+    private fun quickstartStageCommand(setup: SetupReport?): String? {
+        if (setup == null) return null
+        val paths = buildList {
+            setup.config.path?.let { add(displayPath(Paths.get(it))) }
+            setup.ci.path?.let { add(displayPath(Paths.get(it))) }
+        }.distinct()
+        if (paths.isEmpty()) return null
+        return "git add ${paths.joinToString(" ")}"
+    }
 
     private fun renderQuickstartText(report: QuickstartReport, out: PrintStream) {
         out.println("KAI OS quickstart")
@@ -817,6 +828,7 @@ class KaiosCli(
             it.ciArtifact?.let { artifact ->
                 out.println("  ci_artifact: ${artifact.name}")
                 out.println("  ci_artifact_paths: ${artifact.paths.joinToString(", ")}")
+                out.println("  ci_push_note: ${artifact.pushPermissionNote}")
             }
         }
         verify?.run?.let { run -> out.println("  verify_snapshot: ${run.snapshot}") }
@@ -1219,6 +1231,7 @@ class KaiosCli(
         report.ciArtifact?.let { artifact ->
             out.println("ci_artifact: ${artifact.name}")
             out.println("ci_artifact_paths: ${artifact.paths.joinToString(", ")}")
+            out.println("ci_push_note: ${artifact.pushPermissionNote}")
         }
         val warnings = doctorWarnings(report.doctor)
         if (warnings.isNotEmpty()) {
@@ -3747,6 +3760,7 @@ class KaiosCli(
 
     private fun parseQuickstartCommand(args: List<String>): QuickstartCommand {
         var force = false
+        var writeCi = true
         var format = QuickstartFormat.Text
         var index = 0
 
@@ -3755,6 +3769,10 @@ class KaiosCli(
             when {
                 arg == "--force" || arg == "-f" -> {
                     force = true
+                    index += 1
+                }
+                arg == "--no-ci" || arg == "--local" -> {
+                    writeCi = false
                     index += 1
                 }
                 arg == "--json" -> {
@@ -3777,7 +3795,7 @@ class KaiosCli(
             }
         }
 
-        return QuickstartCommand(force = force, format = format)
+        return QuickstartCommand(force = force, writeCi = writeCi, format = format)
     }
 
     private fun parseQuickstartFormat(value: String): QuickstartFormat =
@@ -4633,6 +4651,7 @@ private data class RunCommand(
 
 private data class QuickstartCommand(
     val force: Boolean,
+    val writeCi: Boolean,
     val format: QuickstartFormat,
 )
 
@@ -4714,6 +4733,7 @@ private data class SetupFileReport(
 private data class SetupCiArtifact(
     val name: String,
     val paths: List<String>,
+    val pushPermissionNote: String = CI_WORKFLOW_PUSH_NOTE,
 )
 
 private data class VerifyCommand(

@@ -62,6 +62,8 @@ kaios quickstart
 ```
 
 `kaios quickstart` runs the deterministic demo, creates a validated `kaios.json`, writes a no-key GitHub Actions Agent Gate, verifies the workflow, writes a portable evidence capsule, and prints the next command to inspect the agent processes. It is safe to rerun: existing config and CI files are kept unless you pass `--force`.
+Use `kaios quickstart --no-ci` when you want the same local onboarding path without writing `.github/workflows/kaios.yml`.
+When you do keep the generated workflow, pushing it to GitHub may require an account token or session with workflow permission.
 
 Prefer the manual path when you want to see each step:
 

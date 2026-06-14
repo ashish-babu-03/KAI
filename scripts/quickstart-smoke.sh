@@ -63,6 +63,7 @@ assert_contains quickstart.out "setup: ready config=created ci=created"
 assert_contains quickstart.out "verify: ready"
 assert_contains quickstart.out "ci_artifact: kaios-agent-gate"
 assert_contains quickstart.out "ci_artifact_paths: artifacts/kaios-verify.json, artifacts/kaios-run.capsule.json, artifacts/kaios-bug-report.json"
+assert_contains quickstart.out "ci_push_note: Pushing .github/workflows/kaios.yml may require GitHub workflow permission/scope."
 assert_contains quickstart.out "evidence_capsule:"
 assert_file kaios.json
 assert_file .github/workflows/kaios.yml
@@ -74,6 +75,26 @@ assert_contains .github/workflows/kaios.yml "name: kaios-agent-gate"
 run_step "kaios quickstart --json" "$KAIOS_BIN" quickstart --json > quickstart.json
 assert_contains quickstart.json '"schema": "kaios.quickstart/v1"'
 assert_contains quickstart.json '"status": "ready"'
+
+mkdir -p local-only
+(
+  cd local-only
+  cat > README.md <<'MARKDOWN'
+# Local Quickstart Smoke
+
+Small local-only project used to verify quickstart without CI files.
+MARKDOWN
+  run_step "kaios quickstart --no-ci" "$KAIOS_BIN" quickstart --no-ci > quickstart-local.out
+  assert_contains quickstart-local.out "schema: kaios.quickstart/v1"
+  assert_contains quickstart-local.out "status: ready"
+  assert_contains quickstart-local.out "setup: ready config=created ci=skipped"
+  assert_contains quickstart-local.out "git add kaios.json"
+  assert_file kaios.json
+  if [[ -f .github/workflows/kaios.yml ]]; then
+    echo "Expected local-only quickstart not to write .github/workflows/kaios.yml." >&2
+    exit 1
+  fi
+)
 
 run_step "kaios run --index . --context README.md" "$KAIOS_BIN" run \
   --index . \
