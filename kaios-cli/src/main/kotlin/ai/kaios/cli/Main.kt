@@ -29,7 +29,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.19"
+private const val KAIOS_VERSION = "0.1.20"
 
 fun main(args: Array<String>) {
     val exitCode = KaiosCli().run(args, System.out, System.err)
@@ -904,6 +904,9 @@ class KaiosCli(
                 arg == "--" -> {
                     taskParts += args.drop(index + 1)
                     index = args.size
+                }
+                arg.startsWith("-") && taskParts.isEmpty() -> {
+                    error("Unknown run option '$arg'. Use -- before a task that starts with '-'.")
                 }
                 else -> {
                     taskParts += arg

@@ -29,7 +29,7 @@ class KaiosCliSmokeTest {
         val code = cli.run(arrayOf("--version"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
 
         assertEquals(0, code)
-        assertEquals("kaios 0.1.19\n", out.toString())
+        assertEquals("kaios 0.1.20\n", out.toString())
     }
 
     @Test
@@ -47,6 +47,33 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("kaios run --index . --out artifacts/project.md --force \"summarize this project\""))
         assertTrue(text.contains("kaios --version"))
         assertTrue(text.contains("Command groups:"))
+    }
+
+    @Test
+    fun `run rejects unknown leading options but allows dash tasks after separator`() {
+        val workspace = Files.createTempDirectory("kaios-cli-run-options")
+        val cli = cliFor(workspace)
+        val err = ByteArrayOutputStream()
+
+        val badCode = cli.run(
+            arrayOf("run", "--bad-option", "hello"),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(err),
+        )
+
+        assertEquals(1, badCode)
+        assertTrue(err.toString().contains("Unknown run option '--bad-option'"))
+        assertTrue(err.toString().contains("Use -- before a task that starts with '-'"))
+
+        val out = ByteArrayOutputStream()
+        val separatorCode = cli.run(
+            arrayOf("run", "--", "--write", "a", "dash-prefixed", "task"),
+            PrintStream(out),
+            PrintStream(ByteArrayOutputStream()),
+        )
+
+        assertEquals(0, separatorCode)
+        assertTrue(out.toString().contains("success: true"))
     }
 
     @Test

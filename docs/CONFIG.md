@@ -29,6 +29,12 @@ kaios init --template research --config workflows/research.json
 kaios run --config workflows/research.json "analyze a release plan"
 ```
 
+If a task itself starts with `-`, separate CLI options from task text with `--`:
+
+```bash
+kaios run -- "--audit release flags"
+```
+
 ## Workspace Index
 
 Build a no-key project report and source map before a run:
