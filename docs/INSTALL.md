@@ -35,7 +35,7 @@ brew install kaios
 
 kaios demo
 kaios setup --ci
-kaios verify
+kaios verify --evidence-out artifacts/kaios-run.capsule.json --force
 ```
 
 After `kaios verify` reports `status: ready`, create an artifact with `kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"`.
@@ -50,7 +50,7 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
 kaios demo
 kaios setup --ci
-kaios verify
+kaios verify --evidence-out artifacts/kaios-run.capsule.json --force
 ```
 
 Set `KAIOS_INSTALL_DIR` to install somewhere else:
@@ -62,11 +62,11 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.55.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.55/kaios-0.1.55.zip
-unzip kaios-0.1.55.zip
-./kaios-0.1.55/bin/kaios demo
-./kaios-0.1.55/bin/kaios setup --ci
-./kaios-0.1.55/bin/kaios verify
+curl -L -o kaios-0.1.56.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.56/kaios-0.1.56.zip
+unzip kaios-0.1.56.zip
+./kaios-0.1.56/bin/kaios demo
+./kaios-0.1.56/bin/kaios setup --ci
+./kaios-0.1.56/bin/kaios verify --evidence-out artifacts/kaios-run.capsule.json --force
 ```
 
 ## Build From Source
@@ -77,7 +77,7 @@ cd KAI
 ./gradlew test installDist
 build/install/kaios-cli/bin/kaios demo
 build/install/kaios-cli/bin/kaios setup --ci
-build/install/kaios-cli/bin/kaios verify
+build/install/kaios-cli/bin/kaios verify --evidence-out artifacts/kaios-run.capsule.json --force
 ```
 
 Useful next commands after the first artifact:
@@ -86,7 +86,7 @@ Useful next commands after the first artifact:
 kaios analyze . --format json --out artifacts/analysis.json --force
 kaios doctor --json
 kaios setup --ci
-kaios verify
+kaios verify --evidence-out artifacts/kaios-run.capsule.json --force
 kaios config show
 kaios config validate --json
 kaios run --index . --trace-out artifacts/trace.json --force "summarize this project"
@@ -96,7 +96,6 @@ kaios inspect latest
 kaios trace latest
 kaios trace latest --json
 kaios trace latest --json --out artifacts/trace.json --force
-kaios evidence latest --out artifacts/run.capsule.json --force
-kaios evidence latest --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
+kaios verify --evidence-out artifacts/kaios-run.capsule.json --baseline artifacts/baseline.capsule.json --check --force
 kaios bug-report --out artifacts/kaios-bug-report.md --force
 ```

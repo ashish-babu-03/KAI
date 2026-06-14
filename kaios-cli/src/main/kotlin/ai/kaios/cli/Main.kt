@@ -35,7 +35,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.55"
+private const val KAIOS_VERSION = "0.1.56"
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
 private const val RUN_CAPSULE_SCHEMA = "kaios.run-capsule/v1"
 private const val RUN_REPLAY_SCHEMA = "kaios.run-replay/v1"
@@ -309,16 +309,20 @@ class KaiosCli(
                 ),
             )
             "verify" -> CommandHelp(
-                usage = "kaios verify [--config kaios.json] [--json|--format json]",
-                summary = "Run the one-command readiness gate for local projects and CI.",
+                usage = "kaios verify [--config kaios.json] [--evidence-out capsule.json] [--baseline capsule.json] [--check] [--force] [--json|--format json]",
+                summary = "Run the one-command readiness and evidence gate for local projects and CI.",
                 examples = listOf(
                     "kaios verify",
                     "kaios verify --config kaios.json",
+                    "kaios verify --config kaios.json --evidence-out artifacts/kaios-run.capsule.json --force",
+                    "kaios verify --config kaios.json --evidence-out artifacts/kaios-run.capsule.json --baseline artifacts/baseline.capsule.json --check --force",
                     "kaios verify --json",
                 ),
                 notes = listOf(
                     "The gate checks doctor diagnostics, validates project config, runs a deterministic mock smoke workflow, and validates the process trace contract.",
-                    "It writes a normal run snapshot under .kaios/runs/ so ps, inspect, trace, capsule, and bug-report keep working.",
+                    "Use --evidence-out to also write, validate, replay, and optionally diff a portable capsule from the verify run.",
+                    "--check exits 1 when the baseline evidence differs, and 2 when readiness or evidence validation fails.",
+                    "It writes a normal run snapshot under .kaios/runs/ so ps, inspect, trace, capsule, evidence, and bug-report keep working.",
                     "JSON output uses schema $VERIFY_SCHEMA for CI and release gates.",
                 ),
             )
@@ -907,22 +911,32 @@ class KaiosCli(
         val command = runCatching { parseVerifyCommand(args) }.getOrElse { error ->
             return printCommandUsageError(err, "verify", error.message)
         }
-        val report = buildVerifyReport(command.configPath)
+        val report = buildVerifyReport(command)
 
         when (command.format) {
             VerifyFormat.Text -> renderVerifyText(report, out)
             VerifyFormat.Json -> out.println(TRACE_JSON.encodeToString(report))
         }
 
-        return if (report.status == "ready") 0 else 2
+        return verifyExitCode(report, command)
     }
 
-    private fun buildVerifyReport(configPath: Path): VerifyReport {
+    private fun verifyExitCode(report: VerifyReport, command: VerifyCommand): Int =
+        when {
+            report.status != "ready" -> 2
+            report.evidence?.valid == false -> 2
+            command.evidenceCheck && report.evidence?.diff?.same == false -> 1
+            else -> 0
+        }
+
+    private fun buildVerifyReport(command: VerifyCommand): VerifyReport {
+        val configPath = command.configPath
         val doctor = buildDoctorReport(configPath, runtimeConfigFailureStatus = DoctorStatus.WARN)
         val config = buildConfigValidationReport(configPath)
         val errors = mutableListOf<String>()
         var run: VerifyRun? = null
         var trace: VerifyTrace? = null
+        var evidence: RunEvidenceReport? = null
 
         if (doctor.summary.failed > 0) {
             errors += "doctor failed with ${doctor.summary.failed} failed check(s)."
@@ -975,6 +989,17 @@ class KaiosCli(
                 if (traceIssues.isNotEmpty()) {
                     errors += "process trace contract failed."
                 }
+                if (command.evidenceRequested && result.success && traceIssues.isEmpty()) {
+                    evidence = buildAndWriteRunEvidence(
+                        snapshot = snapshot,
+                        outputPath = command.evidenceOutputPath ?: defaultCapsulePath(result.runId),
+                        baselinePath = command.evidenceBaselinePath,
+                        forceOutput = command.evidenceForce,
+                    )
+                    if (evidence.valid == false) {
+                        errors += "evidence contract failed."
+                    }
+                }
             }.onFailure { error ->
                 errors += error.message ?: "verify smoke workflow failed."
             }
@@ -990,8 +1015,9 @@ class KaiosCli(
             config = config,
             run = run,
             trace = trace,
+            evidence = evidence,
             errors = errors.distinct(),
-            next = verifyNextCommands(config, run, trace),
+            next = verifyNextCommands(config, run, trace, evidence),
         )
     }
 
@@ -999,6 +1025,7 @@ class KaiosCli(
         config: ConfigValidationReport,
         run: VerifyRun?,
         trace: VerifyTrace?,
+        evidence: RunEvidenceReport?,
     ): List<String> =
         buildList {
             if (!config.valid) add("kaios setup --ci")
@@ -1010,7 +1037,7 @@ class KaiosCli(
                 add(if (trace.valid) "kaios trace latest --check" else "kaios trace latest")
             }
             if (run != null) {
-                add("kaios evidence latest")
+                if (evidence == null) add("kaios evidence latest")
             }
             add("kaios bug-report")
         }.distinct()
@@ -1043,6 +1070,15 @@ class KaiosCli(
             out.println("trace: ${if (trace.valid) "valid" else "invalid"} (${trace.schema})")
             out.println("processes: ${trace.processCount}")
             out.println("events: ${trace.eventCount}")
+        }
+        val evidence = report.evidence
+        if (evidence == null) {
+            out.println("evidence: skipped")
+        } else {
+            out.println("evidence: ${evidence.status} (${evidence.schema})")
+            out.println("capsule: ${evidence.capsulePath}")
+            out.println("replay: ${evidence.replay.status}")
+            out.println("diff: ${evidence.diff.status}")
         }
         val warnings = doctorWarnings(report.doctor)
         if (warnings.isNotEmpty()) {
@@ -2051,39 +2087,20 @@ class KaiosCli(
         val snapshot = runCatching { snapshotStore.load(runId) }.getOrElse {
             return printSnapshotLoadError(err, it)
         }
-        val capsule = buildRunCapsule(snapshot)
-        val capsulePath = command.outputPath ?: defaultCapsulePath(runId)
-        if (command.baselinePath?.toAbsolutePath()?.normalize() == capsulePath.toAbsolutePath().normalize()) {
-            err.println("Baseline capsule and output capsule must be different files.")
-            return 1
-        }
-        val renderedCapsule = CAPSULE_JSON.encodeToString(capsule)
-        val writtenCapsulePath = runCatching {
-            writeTextOutput("$renderedCapsule\n", capsulePath, command.forceOutput)
+        val report = runCatching {
+            buildAndWriteRunEvidence(
+                snapshot = snapshot,
+                outputPath = command.outputPath ?: defaultCapsulePath(runId),
+                baselinePath = command.baselinePath,
+                forceOutput = command.forceOutput,
+            )
         }.getOrElse { error ->
             err.println(error.message)
             return 1
         }
-        val replay = buildRunReplayReport(capsule, writtenCapsulePath)
-        val diff = if (command.baselinePath == null) {
-            null
-        } else {
-            val baseline = runCatching { loadRunCapsule(command.baselinePath) }.getOrElse { error ->
-                err.println(error.message)
-                return 1
-            }
-            buildRunDiffReport(baseline, command.baselinePath, capsule, writtenCapsulePath)
-        }
-        val report = buildRunEvidenceReport(
-            capsule = capsule,
-            capsulePath = writtenCapsulePath,
-            replay = replay,
-            diff = diff,
-            baselinePath = command.baselinePath,
-        )
         val exitCode = when {
             !report.valid -> 2
-            command.check && diff != null && !diff.same -> 1
+            command.check && report.diff.same == false -> 1
             else -> 0
         }
 
@@ -2095,6 +2112,31 @@ class KaiosCli(
         val stream = if (exitCode == 0) out else err
         printRunEvidenceSummary(report, stream)
         return exitCode
+    }
+
+    private fun buildAndWriteRunEvidence(
+        snapshot: StoredRunSnapshot,
+        outputPath: Path,
+        baselinePath: Path?,
+        forceOutput: Boolean,
+    ): RunEvidenceReport {
+        if (baselinePath?.toAbsolutePath()?.normalize() == outputPath.toAbsolutePath().normalize()) {
+            error("Baseline capsule and output capsule must be different files.")
+        }
+        val capsule = buildRunCapsule(snapshot)
+        val renderedCapsule = CAPSULE_JSON.encodeToString(capsule)
+        val writtenCapsulePath = writeTextOutput("$renderedCapsule\n", outputPath, forceOutput)
+        val replay = buildRunReplayReport(capsule, writtenCapsulePath)
+        val diff = baselinePath?.let { baseline ->
+            buildRunDiffReport(loadRunCapsule(baseline), baseline, capsule, writtenCapsulePath)
+        }
+        return buildRunEvidenceReport(
+            capsule = capsule,
+            capsulePath = writtenCapsulePath,
+            replay = replay,
+            diff = diff,
+            baselinePath = baselinePath,
+        )
     }
 
     private fun buildRunEvidenceReport(
@@ -3034,7 +3076,15 @@ class KaiosCli(
                       echo "${'$'}HOME/.kaios/bin" >> "${'$'}GITHUB_PATH"
 
                   - name: Verify KAI OS project
-                    run: kaios verify --config $config
+                    run: kaios verify --config $config --evidence-out artifacts/kaios-run.capsule.json --force
+
+                  - name: Upload KAI evidence
+                    if: always()
+                    uses: actions/upload-artifact@v4
+                    with:
+                      name: kaios-evidence
+                      path: artifacts/kaios-run.capsule.json
+                      if-no-files-found: ignore
         """.trimIndent() + "\n"
     }
 
@@ -3318,6 +3368,10 @@ class KaiosCli(
     private fun parseVerifyCommand(args: List<String>): VerifyCommand {
         var configPath = defaultConfigPath()
         var format = VerifyFormat.Text
+        var evidenceOutputPath: Path? = null
+        var evidenceBaselinePath: Path? = null
+        var evidenceCheck = false
+        var evidenceForce = false
         var index = 0
 
         while (index < args.size) {
@@ -3349,12 +3403,53 @@ class KaiosCli(
                     format = parseVerifyFormat(value)
                     index += 1
                 }
+                arg == "--evidence-out" || arg == "--evidence-output" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    evidenceOutputPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--evidence-out=") || arg.startsWith("--evidence-output=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "$arg requires a path." }
+                    evidenceOutputPath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--baseline" || arg == "--evidence-baseline" -> {
+                    val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
+                    evidenceBaselinePath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--baseline=") || arg.startsWith("--evidence-baseline=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "$arg requires a path." }
+                    evidenceBaselinePath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--check" || arg == "--evidence-check" -> {
+                    evidenceCheck = true
+                    index += 1
+                }
+                arg == "--force" || arg == "-f" || arg == "--evidence-force" -> {
+                    evidenceForce = true
+                    index += 1
+                }
                 arg.startsWith("-") -> error("Unknown verify option '$arg'.")
                 else -> error("Unexpected verify argument '$arg'.")
             }
         }
 
-        return VerifyCommand(configPath, format)
+        if ((evidenceCheck || evidenceForce) && evidenceOutputPath == null && evidenceBaselinePath == null) {
+            error("--check and --force require --evidence-out or --baseline.")
+        }
+
+        return VerifyCommand(
+            configPath = configPath,
+            format = format,
+            evidenceOutputPath = evidenceOutputPath,
+            evidenceBaselinePath = evidenceBaselinePath,
+            evidenceCheck = evidenceCheck,
+            evidenceForce = evidenceForce,
+        )
     }
 
     private fun parseVerifyFormat(value: String): VerifyFormat =
@@ -4108,7 +4203,14 @@ private data class SetupFileReport(
 private data class VerifyCommand(
     val configPath: Path,
     val format: VerifyFormat,
-)
+    val evidenceOutputPath: Path? = null,
+    val evidenceBaselinePath: Path? = null,
+    val evidenceCheck: Boolean = false,
+    val evidenceForce: Boolean = false,
+) {
+    val evidenceRequested: Boolean
+        get() = evidenceOutputPath != null || evidenceBaselinePath != null
+}
 
 private enum class VerifyFormat(val id: String) {
     Text("text"),
@@ -4125,6 +4227,7 @@ private data class VerifyReport(
     val config: ConfigValidationReport,
     val run: VerifyRun?,
     val trace: VerifyTrace?,
+    val evidence: RunEvidenceReport?,
     val errors: List<String>,
     val next: List<String>,
 )

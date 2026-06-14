@@ -46,7 +46,6 @@ kaios bug-report --out artifacts/kaios-bug-report.md --force
 For project-specific issues, include the workflow, trace, and capsule evidence:
 
 ```bash
-kaios verify
-kaios evidence latest --out artifacts/kaios-run.capsule.json --force
+kaios verify --evidence-out artifacts/kaios-run.capsule.json --force
 kaios bug-report --out artifacts/kaios-bug-report.md --force
 ```
