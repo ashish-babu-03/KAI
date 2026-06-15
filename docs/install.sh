@@ -51,7 +51,7 @@ readme_context_arg() {
 
 project_run_command() {
   kaios_cmd="$1"
-  context="$(readme_context_arg)"
+  context="$(readme_context_arg || true)"
   printf '%s run --index .%s --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"' "$kaios_cmd" "$context"
 }
 
