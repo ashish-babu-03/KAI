@@ -58,6 +58,8 @@ kaios context README.md docs
 kaios run --index . --context README.md --context docs "explain the architecture"
 ```
 
+For a guided local run that combines analysis, project-aware execution, process inspection, trace validation, evidence packaging, and offline replay, use [Local Tour](LOCAL_TOUR.md).
+
 ## Ignore Rules
 
 Workspace Index uses the same safety rules as context loading.

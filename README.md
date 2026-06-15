@@ -69,6 +69,14 @@ kaios trace --check
 `kaios quickstart` runs the deterministic demo, creates a validated `kaios.json`, writes a no-key GitHub Actions Agent Gate, verifies the workflow, writes a portable evidence capsule, and prints the next command to inspect the agent processes. It is safe to rerun: existing config and CI files are kept unless you pass `--force`.
 `kaios ps`, `kaios inspect`, and `kaios trace --check` expose the process model: PID, state, tokens, context, syscalls, duration, output, lifecycle events, and trace validity.
 
+Want a guided local tour that writes artifacts to `/tmp` and shows the full path from project analysis to replayable evidence?
+
+```bash
+./scripts/local-tour.sh
+```
+
+See [docs/LOCAL_TOUR.md](docs/LOCAL_TOUR.md) for the exact flow and environment variables.
+
 Need KAI OS to choose the next command from the current workspace?
 
 ```bash
@@ -82,6 +90,7 @@ Choose the first command by risk level:
 | Need | Command |
 | --- | --- |
 | See the product model and local entrypoints | `kaios` |
+| Run the guided local tour from source | `./scripts/local-tour.sh` |
 | Get one read-only recommendation | `kaios next` |
 | Preview onboarding writes | `kaios quickstart --dry-run` |
 | Run the full no-key onboarding path | `kaios quickstart` |
