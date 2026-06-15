@@ -519,7 +519,7 @@ class KaiosCli(
                 summary = "Run an inspectable agent workflow and persist a snapshot under .kaios/runs/.",
                 examples = listOf(
                     "kaios run \"summarize this project\"",
-                    "kaios run --index . --out artifacts/project.md --force \"summarize this project\"",
+                    "kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\"",
                     "kaios run --index . --trace-out artifacts/trace.json --force \"summarize this project\"",
                     "kaios run --index . --context README.md --out artifacts/project.md --force \"explain the architecture\"",
                     "kaios run --config kaios.json \"review this release\"",
@@ -2168,9 +2168,9 @@ class KaiosCli(
 
     private fun projectArtifactCommand(): String =
         if (Files.exists(workingDir.resolve("README.md"))) {
-            "kaios run --index . --context README.md --out artifacts/project.md --force \"summarize this project\""
+            "kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\""
         } else {
-            "kaios run --index . --out artifacts/project.md --force \"summarize this project\""
+            "kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\""
         }
 
     private fun nextStatus(
@@ -3912,7 +3912,7 @@ class KaiosCli(
     private fun firstProjectRunCommand(): String {
         val readme = preferredReadmePath()
         val context = readme?.let { " --context ${displayPath(it)}" }.orEmpty()
-        return "kaios run --index .$context --out artifacts/project.md --force \"summarize this project\""
+        return "kaios run --index .$context --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\""
     }
 
     private fun preferredReadmePath(): Path? =

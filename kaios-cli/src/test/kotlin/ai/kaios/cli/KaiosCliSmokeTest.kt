@@ -400,7 +400,7 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("Usage: kaios run"))
         assertTrue(text.contains("Run an inspectable agent workflow"))
         assertTrue(text.contains("Examples:"))
-        assertTrue(text.contains("kaios run --index . --out artifacts/project.md --force \"summarize this project\""))
+        assertTrue(text.contains("kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\""))
         assertTrue(text.contains("No API key is required by default"))
         assertTrue(text.contains("kaios ps"))
         assertTrue(text.contains("kaios trace"))
@@ -636,7 +636,7 @@ class KaiosCliSmokeTest {
         assertEquals("ready", readyJson.getValue("status").jsonPrimitive.content)
         assertEquals("create-project-artifact", readyAction.getValue("id").jsonPrimitive.content)
         assertEquals(
-            "kaios run --index . --context README.md --out artifacts/project.md --force \"summarize this project\"",
+            "kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\"",
             readyAction.getValue("command").jsonPrimitive.content,
         )
         assertEquals(JsonNull, readyJson.getValue("fixFirst"))
@@ -653,6 +653,8 @@ class KaiosCliSmokeTest {
                 "README.md",
                 "--out",
                 "artifacts/project.md",
+                "--trace-out",
+                "artifacts/trace.json",
                 "--force",
                 "summarize this project",
             ),
@@ -660,6 +662,8 @@ class KaiosCliSmokeTest {
             PrintStream(ByteArrayOutputStream()),
         )
         assertEquals(0, projectRunCode)
+        assertTrue(Files.exists(workspace.resolve("artifacts/project.md")))
+        assertTrue(Files.exists(workspace.resolve("artifacts/trace.json")))
 
         val projectNextOut = ByteArrayOutputStream()
         val projectNextCode = cli.run(arrayOf("next", "--json"), PrintStream(projectNextOut), PrintStream(ByteArrayOutputStream()))

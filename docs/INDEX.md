@@ -6,7 +6,7 @@ Use it when you want the runtime to understand repository shape without loading 
 
 ```bash
 kaios analyze . --out artifacts/analysis.md --force
-kaios run --index . --context README.md --out artifacts/project.md --force "summarize this project"
+kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
 ## Analyze vs Index vs Context
@@ -85,7 +85,7 @@ When `--index` is used during a run, snapshots and Markdown artifacts include a 
 ```bash
 kaios analyze . --out artifacts/analysis.md --force
 kaios analyze . --format json --out artifacts/analysis.json --force
-kaios run --index . --out artifacts/project.md --force "summarize this project"
+kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 kaios export
 ```
 
