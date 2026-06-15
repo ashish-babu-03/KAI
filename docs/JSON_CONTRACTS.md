@@ -15,6 +15,7 @@ The rule of thumb is simple:
 | --- | --- | --- |
 | `kaios next --json` | `kaios.next/v1` | Read-only workspace compass with one prioritized command. |
 | `kaios quickstart --json` | `kaios.quickstart/v1` | One-command onboarding state across demo, setup, verify, and evidence. |
+| `kaios review --json` | `kaios.review/v1` | Current-change review artifact, process trace, capsule, replay proof, optional baseline diff, and next actions. |
 | `kaios setup --json` | `kaios.setup/v1` | Bootstrap state, generated files, validation, and next actions. |
 | `kaios verify --json` | `kaios.verify/v1` | One-command local and CI readiness gate. |
 | `kaios config validate --json` | `kaios.config-validation/v1` | Workflow config validation without starting agents. |
@@ -46,6 +47,7 @@ These schemas include both `next` and `nextActions`:
 - `kaios.verify/v1`
 - `kaios.next/v1`
 - `kaios.quickstart/v1`
+- `kaios.review/v1`
 - `kaios.config-validation/v1`
 - `kaios.doctor/v1`
 - `kaios.doctor-fix/v1`
@@ -89,6 +91,7 @@ The `command` value in every `nextActions` item is also present in `next`.
 | `repair-project` | Preview or apply the safest local repair for failed diagnostics. |
 | `stage-generated-files` | Stage generated config and CI files. |
 | `quickstart` | Run the no-key onboarding gate and create inspectable evidence. |
+| `review-current-change` | Review the current Git change set and package replayable evidence. |
 | `setup-project` | Create a validated workflow and optional CI gate. |
 | `regenerate-config` | Regenerate an invalid workflow config with an executable `kaios setup ... --force` command. |
 | `validate-config` | Validate workflow config without running agents. |
@@ -159,6 +162,34 @@ Use `kaios quickstart --dry-run --json` when automation or docs need to preview 
 Use `kaios quickstart --no-ci --json` when automation should prove local onboarding without writing `.github/workflows/kaios.yml`. In that mode `setup.ci.action == "skipped"` and `setup.ciArtifact == null`.
 Read `nextActions` to send the user to process inspection, trace validation, or the first project run without parsing terminal text.
 
+### Review Gate
+
+Use `kaios.review/v1` when a PR bot, CI job, or local script needs one current-change review path:
+
+```bash
+kaios review --json
+kaios review --baseline artifacts/baseline.capsule.json --check --json
+```
+
+Gate on:
+
+- `status == "valid"` when no baseline is required.
+- `replay.valid == true`.
+- `baselineDiff.status == "same"` when `--baseline ... --check` is required to match.
+- `changedFiles.total > 0`.
+- `artifact.exists == true`, `trace.exists == true`, and `capsule.exists == true`.
+
+Read:
+
+- `changedFiles.files` for the changed-file list and which paths were attached as bounded context.
+- `artifact.path` for the Markdown review handoff.
+- `trace.path` for the `kaios.process-trace/v1` file.
+- `capsule.path` for the portable replayable evidence capsule.
+- `nextActions` for process inspection, trace checks, replay, or baseline comparison.
+
+When the Git workspace is clean, `kaios review` exits `1` and prints executable next commands instead of creating empty evidence.
+When running with `--check` and a baseline, KAI OS exits `1` for valid-but-different behavior and `2` for invalid evidence.
+
 ### Bootstrap Gate
 
 Use `kaios.setup/v1` when automation needs to know what setup wrote:
@@ -228,6 +259,7 @@ Use `kaios.evidence/v1` when CI needs a portable proof artifact:
 
 ```bash
 kaios verify --evidence --json --force
+kaios evidence --summary
 ```
 
 Gate on:
@@ -240,6 +272,7 @@ Gate on:
 - `diff.status == "same"` when a baseline is required to match
 
 When running with `--check` and a baseline, KAI OS exits `1` for a valid-but-different result and `2` for invalid evidence.
+Use `kaios evidence --summary` when a PR or CI surface needs short Markdown with Verdict, Changed Runtime Behavior, Fix First, and Process Table sections.
 
 ### Config Gate
 
@@ -314,6 +347,6 @@ Use `kaios.next/v1` when the support surface only needs the first command instea
 - `signals`
 - `nextActions`
 
-When Git metadata is available, `signals` can include `changes` with `clean` or `dirty` status. A dirty working tree changes `status` to `review` and makes `action` / `fixFirst` recommend `kaios analyze .` before readiness gates or evidence packaging.
+When Git metadata is available, `signals` can include `changes` with `clean` or `dirty` status. A dirty working tree changes `status` to `review` and makes `action` / `fixFirst` recommend `kaios review` before readiness gates or evidence packaging.
 
 `schemaVersion: 1` workspace analysis is intentionally separate from the `kaios.*` runtime schemas. Use it for dashboards and onboarding reports, not runtime correctness gates. Its `changeSummary` object reports whether Git metadata was available, whether the working tree is dirty, changed and untracked file counts, and a capped changed-file list. Its `actionPlan` array contains prioritized actions with stable `id`, `priority`, `action`, `command`, and `reason` fields so tools can surface a useful next move without parsing Markdown tables.

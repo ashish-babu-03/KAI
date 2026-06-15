@@ -8,7 +8,7 @@ Check the installed version at any time:
 kaios --version
 ```
 
-Running `kaios` with no arguments prints the product model, concrete use cases, and the three-step path from onboarding to process inspection. It exits successfully, so it is safe to use as a first smoke test.
+Running `kaios` with no arguments prints the product model, concrete use cases, and the three-step Evidence OS path from onboarding to current-change review to evidence gates. It exits successfully, so it is safe to use as a first smoke test.
 Run `kaios next` when you want one read-only recommendation for the current workspace before writing config, CI, or evidence files.
 Common aliases execute directly: `kaios start --no-ci`, `kaios status`, `kaios ls`, `kaios proc`, and `kaios audit`.
 Mistyped commands still show a suggestion when there is a clear match.
@@ -24,6 +24,7 @@ If `kaios.json` is missing, `kaios config show`, `kaios config validate`, and `k
 | Preview onboarding writes | `kaios quickstart --dry-run` |
 | Run the full no-key onboarding path | `kaios quickstart` |
 | Run onboarding without writing GitHub Actions | `kaios quickstart --no-ci` |
+| Review the current Git change set | `kaios review` |
 | Verify an existing `kaios.json` workflow | `kaios gate --config kaios.json` |
 
 Every core command also supports local help with examples and notes:
@@ -35,6 +36,7 @@ kaios quickstart --help
 kaios setup --help
 kaios gate --help
 kaios verify --help
+kaios review --help
 kaios demo --help
 kaios run --help
 kaios help run
@@ -72,6 +74,7 @@ kaios gate
 
 After `kaios gate` reports `status: ready`, create an artifact with `kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"`.
 If your project uses `README.markdown` or `README`, use that path instead. README matching is case-insensitive, so lowercase variants work too. If it has no README, omit `--context`; `kaios next` chooses the first available README path automatically.
+When the workspace has local Git changes, use `kaios review` for the first-class review path that writes `artifacts/change-review.md`, `artifacts/change-review.trace.json`, and `artifacts/change-review.capsule.json`.
 
 ## Hosted Installer
 
@@ -115,6 +118,8 @@ kaios analyze . --format json --out artifacts/analysis.json --force
 kaios next
 kaios quickstart
 kaios doctor --json
+kaios review
+kaios evidence --summary
 kaios doctor --fix --dry-run
 kaios doctor --fix
 kaios doctor --config workflows/research.json --json

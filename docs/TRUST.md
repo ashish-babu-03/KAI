@@ -6,7 +6,7 @@ The v0.1 trust boundary is simple: the default path runs without model credentia
 
 ## Default Safety Posture
 
-- No API key is required for `kaios quickstart`, `kaios demo`, `kaios setup`, `kaios gate`, `kaios verify`, `kaios analyze`, `kaios index`, `kaios next`, `kaios doctor`, or `kaios bug-report`.
+- No API key is required for `kaios quickstart`, `kaios review`, `kaios demo`, `kaios setup`, `kaios gate`, `kaios verify`, `kaios analyze`, `kaios index`, `kaios next`, `kaios doctor`, or `kaios bug-report`.
 - The default model provider is `mock`, which is deterministic and local.
 - `kaios gate` and `kaios verify` always run the smoke workflow with the deterministic mock provider.
 - Real HTTP is disabled unless `KAIOS_HTTP_ALLOWLIST` is set.

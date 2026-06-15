@@ -55,21 +55,23 @@ Instead of asking "what did the agent do?", you can inspect which process ran, w
 Use this when you want an agent pass over the files you are changing right now, without hand-picking every `--context` path.
 
 ```bash
-kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force "review current code change"
+kaios review
 kaios ps
-kaios trace --check
+kaios evidence --summary
 ```
 
 What KAI OS gives you:
 
 - up to 8 readable changed Git files attached as bounded context.
 - a Workspace Index so the agent sees project shape without copying the whole repo.
-- a Markdown review artifact you can share or inspect.
-- a process trace and saved run snapshot for debugging the review itself.
+- `artifacts/change-review.md` for the human review artifact.
+- `artifacts/change-review.trace.json` for process trace inspection.
+- `artifacts/change-review.capsule.json` for offline replay and baseline diff gates.
+- `kaios.review/v1` JSON when you need a stable CI or PR-bot contract.
 
 Why it matters:
 
-The common developer loop becomes one command: current change in, inspectable agent review out.
+The common developer loop becomes one command: current change in, inspectable evidence out. The agent review is not just text; it comes with the process trace, replay proof, and optional baseline comparison that lets a team gate runtime behavior.
 
 ## 4. Package A Reproducible Run For Review Or Support
 
@@ -85,6 +87,7 @@ Add a baseline when you want stable regression checks:
 
 ```bash
 kaios evidence --out artifacts/current.capsule.json --baseline artifacts/baseline.capsule.json --check --force
+kaios review --baseline artifacts/baseline.capsule.json --check
 ```
 
 What KAI OS gives you:
@@ -92,6 +95,7 @@ What KAI OS gives you:
 - a portable KAI Run Capsule with snapshot, trace, and provenance hashes.
 - offline replay without the original `.kaios/runs` directory.
 - stable diffs that ignore run ids, timestamps, and duration noise.
+- a PR/CI Markdown summary with Verdict, Changed Runtime Behavior, Fix First, and a Process Table through `kaios evidence --summary`.
 - a safe support report with doctor checks, config validation, latest run summary, trace status, and a Fix First command.
 
 Why it matters:

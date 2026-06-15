@@ -34,6 +34,7 @@ Memory   = Process state
 KAI OS is intentionally small in v0.1. If you only need a chatbot UI or a thin prompt wrapper, this project is probably lower-level than you need.
 
 For concrete workflows, read [KAI OS Use Cases](docs/USE_CASES.md).
+For the product moat, read [Evidence OS for Agents](docs/EVIDENCE_OS.md).
 For safety, reproducibility, and artifact-sharing boundaries, read the [KAI OS Trust Contract](docs/TRUST.md).
 
 ## Why This Exists
@@ -51,6 +52,7 @@ Most agent frameworks model AI work as chains, prompts, or chat sessions. KAI OS
 - Package runs as portable KAI Run Capsules with snapshots, traces, provenance hashes, and replay commands.
 - Replay shared capsules offline by rebuilding traces from embedded snapshots.
 - Diff two capsules offline for stable agent-run regression checks.
+- Review the current Git change as a first-class product path that writes a Markdown artifact, process trace, capsule, offline replay proof, and optional baseline diff.
 - Create one-command evidence bundles for CI by packaging, validating, replaying, and optionally diffing a run.
 
 Kotlin gives this model a strong foundation: JVM ecosystem reach, type safety, coroutines-ready concurrency, DSL ergonomics, and a path toward Kotlin Multiplatform.
@@ -61,13 +63,13 @@ Once the `kaios` CLI is installed, this is the product path:
 
 ```bash
 kaios quickstart
-kaios ps
-kaios inspect
-kaios trace --check
+kaios review
+kaios evidence --baseline artifacts/baseline.capsule.json --check
 ```
 
 `kaios quickstart` runs the deterministic demo, creates a validated `kaios.json`, writes a no-key GitHub Actions Agent Gate, verifies the workflow, writes a portable evidence capsule, and prints the next command to inspect the agent processes. It is safe to rerun: existing config and CI files are kept unless you pass `--force`.
-`kaios ps`, `kaios inspect`, and `kaios trace --check` expose the process model: PID, state, tokens, context, syscalls, duration, output, lifecycle events, and trace validity.
+`kaios review` is the Evidence OS loop for a dirty Git workspace: it reads the current change set, attaches bounded changed-file context, honors `.kaiosignore`, runs the deterministic agent review, and writes `artifacts/change-review.md`, `artifacts/change-review.trace.json`, and `artifacts/change-review.capsule.json`.
+`kaios evidence --baseline ... --check` turns a run capsule into a CI-grade gate by validating the capsule, replaying it offline, and failing when stable runtime behavior differs from the baseline.
 
 Want a guided local tour that writes artifacts to `/tmp` and shows the full path from project analysis to replayable evidence?
 
@@ -96,7 +98,7 @@ Choose the first command by risk level:
 | Run the full no-key onboarding path | `kaios quickstart` |
 | Run onboarding without writing GitHub Actions | `kaios quickstart --no-ci` |
 | Verify an existing `kaios.json` workflow | `kaios gate --config kaios.json` |
-| Review the current Git change set | `kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force "review current code change"` |
+| Review the current Git change set | `kaios review` |
 
 Install KAI OS using the path that fits your machine, then come back to the product flow above:
 
@@ -187,10 +189,12 @@ kaios run --index . --trace-out artifacts/trace.json --force "summarize this pro
 Need a bounded agent review of the code you are changing right now?
 
 ```bash
-kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force "review current code change"
+kaios review
+kaios evidence --summary
 ```
 
-`--changes` reads the Git working tree, attaches up to 8 readable changed text files as bounded context, and still keeps the run inspectable with `kaios ps`, `kaios inspect`, `kaios trace --check`, and `kaios evidence`.
+`kaios review` reads the Git working tree, attaches up to 8 readable changed text files as bounded context, writes a Markdown review artifact, writes a process trace, writes a portable capsule, verifies offline replay, and can compare behavior with `kaios review --baseline artifacts/baseline.capsule.json --check`.
+`kaios evidence --summary` prints a short PR/CI Markdown summary with Verdict, Changed Runtime Behavior, Fix First, and a process table.
 
 Need a portable audit package for CI, review, or future Agent Desktop imports?
 
@@ -366,9 +370,10 @@ Modules:
 - `tool-runtime`: built-in syscall tools including allowlisted HTTP and scoped files.
 - `memory-engine`: in-memory session memory and JSON run snapshots.
 - `model-providers`: OpenAI-compatible and Ollama model provider implementations.
-- `kaios-cli`: `kaios next`, `kaios quickstart`, `kaios gate`, `kaios demo`, `kaios init`, `kaios run`, `kaios runs`, `kaios ps`, `kaios inspect`, `kaios trace`, `kaios capsule`, `kaios replay`, `kaios diff`, `kaios report`, workspace analysis, Workspace Index, context-file loading, and `kaios doctor`.
+- `kaios-cli`: `kaios next`, `kaios quickstart`, `kaios review`, `kaios gate`, `kaios demo`, `kaios init`, `kaios run`, `kaios runs`, `kaios ps`, `kaios inspect`, `kaios trace`, `kaios capsule`, `kaios replay`, `kaios diff`, `kaios evidence`, `kaios report`, workspace analysis, Workspace Index, context-file loading, and `kaios doctor`.
 
 Read the deeper design notes in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Read why evidence is the moat in [docs/EVIDENCE_OS.md](docs/EVIDENCE_OS.md).
 Read concrete workflows in [docs/USE_CASES.md](docs/USE_CASES.md).
 Read the safety and reproducibility boundary in [docs/TRUST.md](docs/TRUST.md).
 Read the JSON automation contracts in [docs/JSON_CONTRACTS.md](docs/JSON_CONTRACTS.md).
@@ -486,6 +491,8 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Session memory and JSON snapshots under `.kaios/runs/`.
 - SQLite memory adapter for persisted agent process memory.
 - No-key `kaios quickstart` that runs demo, setup, verify, evidence, and prints the process inspection path.
+- First-class `kaios review` for dirty Git workspaces with a Markdown artifact, process trace, replayable capsule, `kaios.review/v1` JSON, and optional baseline check.
+- PR-friendly `kaios evidence --summary` output with Verdict, Changed Runtime Behavior, Fix First, and Process Table sections.
 - Read-only `kaios next` workspace compass that returns one prioritized command plus `kaios.next/v1` JSON.
 - No-key `kaios demo` that prints the process table and writes a trace artifact.
 - CLI process table, run registry, and run inspector.

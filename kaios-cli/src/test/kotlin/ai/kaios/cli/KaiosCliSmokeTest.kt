@@ -55,7 +55,7 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("PID/state/token/context/syscall observability"))
         assertTrue(text.contains("portable evidence"))
         assertTrue(text.contains("Three-step product path:"))
-        assertTrue(text.contains("kaios ps && kaios inspect"))
+        assertTrue(text.contains("kaios review"))
         assertTrue(text.contains("Need the next workspace-aware move?"))
         assertTrue(text.contains("kaios next"))
         assertTrue(text.contains("Quick start shortcuts:"))
@@ -84,7 +84,7 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("PID/state/token/context/syscall observability"))
         assertTrue(text.contains("portable evidence"))
         assertTrue(text.contains("Three-step product path:"))
-        assertTrue(text.contains("kaios ps && kaios inspect"))
+        assertTrue(text.contains("kaios review"))
         assertTrue(text.contains("Need the next workspace-aware move?"))
         assertTrue(text.contains("kaios next"))
         assertTrue(text.contains("Quick start shortcuts:"))
@@ -116,6 +116,7 @@ class KaiosCliSmokeTest {
             "init" to "Usage: kaios init",
             "demo" to "Usage: kaios demo",
             "run" to "Usage: kaios run",
+            "review" to "Usage: kaios review",
             "context" to "Usage: kaios context",
             "index" to "Usage: kaios index",
             "analyze" to "Usage: kaios analyze",
@@ -401,7 +402,9 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("Run an inspectable agent workflow"))
         assertTrue(text.contains("Examples:"))
         assertTrue(text.contains("--changes"))
-        assertTrue(text.contains("kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\""))
+        assertTrue(text.contains("kaios review"))
+        assertTrue(text.contains("first-class current-change review path"))
+        assertTrue(text.contains("Use --changes"))
         assertTrue(text.contains("kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\""))
         assertTrue(text.contains("No API key is required by default"))
         assertTrue(text.contains("attach up to 8 readable changed Git files"))
@@ -409,6 +412,23 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("kaios trace"))
         assertTrue(text.contains("kaios help"))
         assertTrue(!text.contains("run_id:"))
+    }
+
+    @Test
+    fun `review help documents evidence os path`() {
+        val cli = cliFor(Files.createTempDirectory("kaios-cli-help-review"))
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("help", "review"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+
+        assertEquals(0, code)
+        assertTrue(text.contains("Usage: kaios review"))
+        assertTrue(text.contains("kaios.review/v1"))
+        assertTrue(text.contains("artifacts/change-review.md"))
+        assertTrue(text.contains("artifacts/change-review.trace.json"))
+        assertTrue(text.contains("artifacts/change-review.capsule.json"))
+        assertTrue(text.contains("no API key is required"))
     }
 
     @Test
@@ -482,6 +502,8 @@ class KaiosCliSmokeTest {
         assertEquals(0, code)
         assertTrue(text.contains("Usage: kaios evidence"))
         assertTrue(text.contains("kaios.evidence/v1"))
+        assertTrue(text.contains("--summary"))
+        assertTrue(text.contains("PR-friendly Markdown"))
         assertTrue(text.contains("packaging, validating, replaying"))
         assertTrue(text.contains("--check exits 1"))
     }
@@ -623,15 +645,8 @@ class KaiosCliSmokeTest {
         assertEquals(0, code)
         assertEquals("review", json.getValue("status").jsonPrimitive.content)
         assertEquals("review-current-change", action.getValue("id").jsonPrimitive.content)
-        assertEquals(
-            "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"",
-            action.getValue("command").jsonPrimitive.content,
-        )
-        assertNextAction(
-            json,
-            "review-current-change",
-            "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"",
-        )
+        assertEquals("kaios review", action.getValue("command").jsonPrimitive.content)
+        assertNextAction(json, "review-current-change", "kaios review")
         assertTrue(json.getValue("next").jsonArray.any { command ->
             command.jsonPrimitive.content == "kaios doctor --fix --dry-run --ci"
         })
@@ -731,18 +746,11 @@ class KaiosCliSmokeTest {
         assertEquals(0, code)
         assertEquals("review", json.getValue("status").jsonPrimitive.content)
         assertEquals("review-current-change", action.getValue("id").jsonPrimitive.content)
-        assertEquals(
-            "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"",
-            action.getValue("command").jsonPrimitive.content,
-        )
+        assertEquals("kaios review", action.getValue("command").jsonPrimitive.content)
         assertEquals("review-current-change", fixFirst.getValue("id").jsonPrimitive.content)
         assertEquals("dirty", changeSignal.getValue("status").jsonPrimitive.content)
         assertTrue(changeSignal.getValue("detail").jsonPrimitive.content.contains("changed file(s)"))
-        assertNextAction(
-            json,
-            "review-current-change",
-            "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"",
-        )
+        assertNextAction(json, "review-current-change", "kaios review")
         assertNextAction(json, "verify-project", "kaios gate --config kaios.json")
     }
 
@@ -1793,6 +1801,21 @@ class KaiosCliSmokeTest {
         assertEquals("valid", jsonReplay.getValue("status").jsonPrimitive.content)
         assertEquals("skipped", jsonDiff.getValue("status").jsonPrimitive.content)
 
+        val summaryOut = ByteArrayOutputStream()
+        val summaryCode = cli.run(
+            arrayOf("evidence", runId, "--out", evidencePath.toString(), "--summary", "--force"),
+            PrintStream(summaryOut),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val summary = summaryOut.toString()
+        assertEquals(0, summaryCode)
+        assertTrue(summary.contains("## KAI OS Evidence"))
+        assertTrue(summary.contains("### Verdict"))
+        assertTrue(summary.contains("### Changed Runtime Behavior"))
+        assertTrue(summary.contains("### Fix First"))
+        assertTrue(summary.contains("### Process Table"))
+        assertTrue(summary.contains("| PID | Agent | State | Tokens | Memory | Syscalls | Duration |"))
+
         val baselineRunId = runTask("compare", "stable", "task")
         val baselinePath = workspace.resolve("artifacts/baseline.capsule.json")
         val baselineCode = cli.run(
@@ -1999,6 +2022,95 @@ class KaiosCliSmokeTest {
         assertTrue(artifactText.contains("Context:"))
         assertTrue(artifactText.contains("notes.md"))
         assertTrue(!artifactText.contains("KAI context payload"))
+    }
+
+    @Test
+    fun `review packages current change as artifact trace capsule and replay evidence`() {
+        val workspace = Files.createTempDirectory("kaios-cli-review")
+        runGit(workspace, "init")
+        Files.writeString(workspace.resolve(".kaiosignore"), "secrets/\n*.pem\n")
+        Files.writeString(workspace.resolve("README.md"), "# Demo\nUseful public overview.\n")
+        Files.createDirectories(workspace.resolve("src/main/kotlin"))
+        Files.writeString(workspace.resolve("src/main/kotlin/App.kt"), "fun main() = println(\"kai\")\n")
+        Files.createDirectories(workspace.resolve("secrets"))
+        Files.writeString(workspace.resolve("secrets/private.md"), "do-not-attach\n")
+        val cli = cliFor(workspace)
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("review", "--json"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val json = Json.parseToJsonElement(out.toString()).jsonObject
+        val changedFiles = json.getValue("changedFiles").jsonObject
+        val changedFileRows = changedFiles.getValue("files").jsonArray.map { it.jsonObject }
+        val artifactPath = Paths.get(json.getValue("artifact").jsonObject.getValue("path").jsonPrimitive.content)
+        val tracePath = Paths.get(json.getValue("trace").jsonObject.getValue("path").jsonPrimitive.content)
+        val capsulePath = Paths.get(json.getValue("capsule").jsonObject.getValue("path").jsonPrimitive.content)
+        val artifactText = Files.readString(artifactPath)
+
+        assertEquals(0, code)
+        assertEquals("kaios.review/v1", json.getValue("schema").jsonPrimitive.content)
+        assertEquals("valid", json.getValue("status").jsonPrimitive.content)
+        assertTrue(json.getValue("runId").jsonPrimitive.content.startsWith("run-"))
+        assertTrue(changedFiles.getValue("total").jsonPrimitive.int >= 4)
+        assertTrue(changedFiles.getValue("attached").jsonPrimitive.int >= 2)
+        assertTrue(changedFileRows.any { file ->
+            file.getValue("path").jsonPrimitive.content == "secrets/private.md" &&
+                file.getValue("attached").jsonPrimitive.content == "false"
+        })
+        assertTrue(Files.exists(artifactPath))
+        assertTrue(Files.exists(tracePath))
+        assertTrue(Files.exists(capsulePath))
+        assertTrue(json.getValue("artifact").jsonObject.getValue("exists").jsonPrimitive.content == "true")
+        assertTrue(json.getValue("trace").jsonObject.getValue("exists").jsonPrimitive.content == "true")
+        assertTrue(json.getValue("capsule").jsonObject.getValue("exists").jsonPrimitive.content == "true")
+        assertTrue(!artifactText.contains("secrets/private.md"))
+        assertEquals("valid", json.getValue("replay").jsonObject.getValue("status").jsonPrimitive.content)
+        assertEquals("skipped", json.getValue("baselineDiff").jsonObject.getValue("status").jsonPrimitive.content)
+        assertNextAction(json, "review-current-change", "kaios review --baseline artifacts/baseline.capsule.json --check")
+    }
+
+    @Test
+    fun `review fails clearly when git tree is clean`() {
+        val workspace = Files.createTempDirectory("kaios-cli-review-clean")
+        runGit(workspace, "init")
+        val cli = cliFor(workspace)
+        val err = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("review"), PrintStream(ByteArrayOutputStream()), PrintStream(err))
+        val text = err.toString()
+
+        assertEquals(1, code)
+        assertTrue(text.contains("No Git changes detected for review."))
+        assertTrue(text.contains("kaios run --index . \"summarize this project\""))
+        assertTrue(text.contains("kaios quickstart"))
+    }
+
+    @Test
+    fun `review check fails when baseline evidence differs`() {
+        val workspace = Files.createTempDirectory("kaios-cli-review-baseline")
+        runGit(workspace, "init")
+        Files.createDirectories(workspace.resolve("src/main/kotlin"))
+        Files.writeString(workspace.resolve("src/main/kotlin/App.kt"), "fun main() = println(\"first\")\n")
+        val cli = cliFor(workspace)
+
+        val firstCode = cli.run(arrayOf("review"), PrintStream(ByteArrayOutputStream()), PrintStream(ByteArrayOutputStream()))
+        assertEquals(0, firstCode)
+        val baselinePath = workspace.resolve("artifacts/baseline.capsule.json")
+        Files.copy(workspace.resolve("artifacts/change-review.capsule.json"), baselinePath)
+        Files.writeString(workspace.resolve("src/main/kotlin/App.kt"), "fun main() = println(\"second changed behavior\")\n")
+        val err = ByteArrayOutputStream()
+
+        val code = cli.run(
+            arrayOf("review", "--baseline", baselinePath.toString(), "--check"),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(err),
+        )
+        val text = err.toString()
+
+        assertEquals(1, code)
+        assertTrue(text.contains("KAI REVIEW"))
+        assertTrue(text.contains("status: different"))
+        assertTrue(text.contains("diff_status: different"))
+        assertTrue(text.contains("kaios diff"))
     }
 
     @Test
@@ -2338,11 +2450,7 @@ class KaiosCliSmokeTest {
             action.getValue("id").jsonPrimitive.content == "review-current-change"
         }
         assertEquals("P0", reviewAction.getValue("priority").jsonPrimitive.content)
-        assertEquals(
-            "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"",
-            reviewAction.getValue("command").jsonPrimitive.content,
-        )
-        assertTrue(reviewAction.getValue("command").jsonPrimitive.content.contains("--trace-out artifacts/change-review.trace.json"))
+        assertEquals("kaios review", reviewAction.getValue("command").jsonPrimitive.content)
         assertTrue(!text.contains("Useful public overview."))
     }
 
@@ -2373,10 +2481,7 @@ class KaiosCliSmokeTest {
         val command = reviewAction.getValue("command").jsonPrimitive.content
 
         assertEquals(0, code)
-        assertEquals(
-            "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"",
-            command,
-        )
+        assertEquals("kaios review", command)
         assertTrue(!command.contains("--context"))
     }
 

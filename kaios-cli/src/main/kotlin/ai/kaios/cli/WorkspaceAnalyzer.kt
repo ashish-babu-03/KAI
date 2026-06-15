@@ -343,7 +343,7 @@ internal class WorkspaceAnalyzer {
     }
 
     private fun changeReviewRunCommand(): String =
-        "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\""
+        "kaios review"
 
     private fun preferredReadmeFile(index: WorkspaceIndex): WorkspaceIndexFile? =
         index.files

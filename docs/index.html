@@ -540,6 +540,7 @@
         <div class="nav-links">
           <a href="#model">Model</a>
           <a href="#processes">Processes</a>
+          <a href="#evidence">Evidence</a>
           <a href="#quickstart">Quick start</a>
           <a class="nav-cta" href="https://github.com/morning-verlu/KAI">Explore KAI OS</a>
         </div>
@@ -551,11 +552,11 @@
         <div class="hero-inner">
           <h1>KAI OS</h1>
           <p class="hero-copy">
-            AI Agent Operating System in Kotlin. Run multi-agent workflows as observable processes with lifecycle, scheduling, memory, permissions, and syscall-bounded tools.
+            AI Agent Operating System in Kotlin. Turn agent runs into local-first process traces, replayable capsules, and CI-grade evidence.
           </p>
           <div class="actions">
             <a class="button primary" href="https://github.com/morning-verlu/KAI">Explore KAI OS</a>
-            <a class="button secondary" href="#processes">See agent processes</a>
+            <a class="button secondary" href="#evidence">See Evidence OS</a>
           </div>
           <div class="metaphor" aria-label="KAI OS core metaphor">
             <div>
@@ -712,13 +713,18 @@
         </div>
       </section>
 
-      <section class="band">
+      <section id="evidence" class="band">
         <div class="section-inner">
           <div class="section-heading">
             <h2>Use KAI OS when agent work needs runtime evidence.</h2>
-            <p>Start with concrete workflows: gate a repo, debug a run, package evidence, or give an agent bounded project context with explicit trust boundaries.</p>
+            <p>Start with the local review loop: current Git change in, Markdown artifact, process trace, replayable capsule, and baseline gate out.</p>
           </div>
           <div class="features">
+            <article class="feature">
+              <h3>Current-Change Review</h3>
+              <p>Review a dirty Git workspace with bounded changed-file context, no API key, and a stable kaios.review/v1 JSON contract.</p>
+              <span class="tag">kaios review</span>
+            </article>
             <article class="feature">
               <h3>CI Agent Gate</h3>
               <p>Add a no-key readiness gate that validates config, runs a deterministic workflow, writes JSON evidence, and explains failures from the PR page.</p>
@@ -731,7 +737,7 @@
             </article>
             <article class="feature">
               <h3>Portable Evidence</h3>
-              <p>Package a run as a capsule, replay it offline, compare it against a baseline, and share a safe support report when something changes.</p>
+              <p>Package a run as a capsule, replay it offline, compare it against a baseline, and print a PR-friendly evidence summary.</p>
               <span class="tag">kaios evidence</span>
             </article>
             <article class="feature">
@@ -746,12 +752,13 @@
       <section id="quickstart">
         <div class="section-inner quickstart">
           <div class="section-heading">
-            <h2>Run agents as processes in 60 seconds.</h2>
-            <p>KAI OS starts locally with no API key. Quickstart creates a real agent run, project workflow, process trace, and portable evidence; then ps and inspect expose the runtime state.</p>
+            <h2>Run the Evidence OS loop in 60 seconds.</h2>
+            <p>KAI OS starts locally with no API key. Quickstart creates the first run and gate, review packages the current code change, and evidence turns it into replayable proof.</p>
             <div class="link-grid">
               <a class="button primary" href="https://github.com/morning-verlu/KAI">Open repository</a>
               <a class="button secondary" href="https://github.com/morning-verlu/KAI/releases">View releases</a>
               <a class="button secondary" href="https://github.com/morning-verlu/KAI/blob/main/docs/USE_CASES.md">Use cases</a>
+              <a class="button secondary" href="https://github.com/morning-verlu/KAI/blob/main/docs/EVIDENCE_OS.md">Evidence OS</a>
               <a class="button secondary" href="https://github.com/morning-verlu/KAI/blob/main/docs/TRUST.md">Trust contract</a>
               <a class="button secondary" href="https://github.com/morning-verlu/KAI/blob/main/docs/JSON_CONTRACTS.md">JSON contracts</a>
               <a class="button secondary" href="https://github.com/morning-verlu/KAI/blob/main/examples/README.md">Examples</a>
@@ -759,10 +766,9 @@
           </div>
           <pre class="command"><code># Run KAI OS after installing the CLI
 kaios quickstart
-kaios ps
-kaios inspect
-kaios trace --check
-kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
+kaios review
+kaios evidence --summary
+kaios evidence --baseline artifacts/baseline.capsule.json --check
 
 # Ask KAI OS for the next workspace-aware command
 kaios next
@@ -786,12 +792,12 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
 kaios next
 kaios quickstart
-kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
+kaios review
 kaios ps
 kaios inspect
 kaios trace --check
 # optional when you keep a baseline:
-kaios gate --baseline artifacts/baseline.capsule.json --check
+kaios evidence --baseline artifacts/baseline.capsule.json --check
 kaios report</code></pre>
         </div>
       </section>

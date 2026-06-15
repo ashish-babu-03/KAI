@@ -45,6 +45,7 @@ private const val RUN_CAPSULE_SCHEMA = "kaios.run-capsule/v1"
 private const val RUN_REPLAY_SCHEMA = "kaios.run-replay/v1"
 private const val RUN_DIFF_SCHEMA = "kaios.run-diff/v1"
 private const val RUN_EVIDENCE_SCHEMA = "kaios.evidence/v1"
+private const val REVIEW_SCHEMA = "kaios.review/v1"
 private const val DOCTOR_SCHEMA = "kaios.doctor/v1"
 private const val DOCTOR_FIX_SCHEMA = "kaios.doctor-fix/v1"
 private const val NEXT_SCHEMA = "kaios.next/v1"
@@ -66,6 +67,7 @@ private val TOP_LEVEL_COMMANDS = listOf(
     "init",
     "demo",
     "run",
+    "review",
     "context",
     "index",
     "analyze",
@@ -150,6 +152,7 @@ class KaiosCli(
             "init" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("init")) else initProject(commandArgs, out, err)
             "demo" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("demo")) else runDemo(commandArgs, out, err)
             "run" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("run")) else runWorkflow(commandArgs, out, err)
+            "review" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("review")) else reviewChanges(commandArgs, out, err)
             "context" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("context")) else previewContext(commandArgs, out, err)
             "index" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("index")) else previewIndex(commandArgs, out, err)
             "analyze" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("analyze")) else analyzeWorkspace(commandArgs, out, err)
@@ -243,6 +246,7 @@ class KaiosCli(
             command == "kaios gate" || command.startsWith("kaios gate ") -> "verify-project"
             command.startsWith("kaios verify ") -> "verify-project"
             command.startsWith("kaios demo") -> "run-demo"
+            command == "kaios review" || command.startsWith("kaios review ") -> "review-current-change"
             command.startsWith("kaios run --index .") && command.contains("--out artifacts/project.md") -> "create-project-artifact"
             command.startsWith("kaios run ") -> "run-workflow"
             command.startsWith("kaios analyze ") -> "analyze-workspace"
@@ -275,6 +279,7 @@ class KaiosCli(
             "show-config" -> "Inspect agents, tools, dependencies, and fallback routes."
             "verify-project" -> "Run the deterministic readiness gate and write evidence when requested."
             "run-demo" -> "Create a no-key run snapshot for inspection and support."
+            "review-current-change" -> "Run a local-first agent review and package replayable evidence."
             "create-project-artifact" -> "Turn the current workspace into a saved run, trace, and Markdown handoff artifact."
             "run-workflow" -> "Run an inspectable agent workflow for a real task."
             "analyze-workspace" -> "Generate a deterministic workspace report without a model key."
@@ -521,7 +526,7 @@ class KaiosCli(
                 summary = "Run an inspectable agent workflow and persist a snapshot under .kaios/runs/.",
                 examples = listOf(
                     "kaios run \"summarize this project\"",
-                    "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"",
+                    "kaios review",
                     "kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\"",
                     "kaios run --index . --trace-out artifacts/trace.json --force \"summarize this project\"",
                     "kaios run --index . --context README.md --out artifacts/project.md --force \"explain the architecture\"",
@@ -529,10 +534,26 @@ class KaiosCli(
                 ),
                 notes = listOf(
                     "No API key is required by default; the mock provider is deterministic.",
-                    "Use --changes to attach up to $CHANGED_CONTEXT_FILE_LIMIT readable changed Git files as bounded context for code review runs.",
+                    "Use 'kaios review' for the first-class current-change review path with artifact, trace, capsule, replay, and optional baseline diff evidence.",
+                    "Use --changes to attach up to $CHANGED_CONTEXT_FILE_LIMIT readable changed Git files as bounded context for lower-level run commands.",
                     "Use --trace-out to write kaios.process-trace/v1 JSON during the run.",
                     "Use -- before a task that starts with '-'.",
                     "After a run, use 'kaios ps', 'kaios inspect', 'kaios trace', and 'kaios evidence'.",
+                ),
+            )
+            "review" -> CommandHelp(
+                usage = "kaios review [--baseline capsule.json] [--check] [--json|--format json]",
+                summary = "Review the current Git change set and package artifact, trace, capsule, replay, and optional baseline diff evidence.",
+                examples = listOf(
+                    "kaios review",
+                    "kaios review --json",
+                    "kaios review --baseline artifacts/baseline.capsule.json --check",
+                ),
+                notes = listOf(
+                    "The command uses the deterministic mock provider by default; no API key is required.",
+                    "It attaches up to $CHANGED_CONTEXT_FILE_LIMIT readable changed Git files as bounded context and honors .kaiosignore.",
+                    "Outputs are owned by the review path and overwritten safely: artifacts/change-review.md, artifacts/change-review.trace.json, and artifacts/change-review.capsule.json.",
+                    "JSON output uses schema $REVIEW_SCHEMA for CI, PR bots, and future Agent Desktop imports.",
                 ),
             )
             "context" -> CommandHelp(
@@ -683,10 +704,11 @@ class KaiosCli(
                 ),
             )
             "evidence" -> CommandHelp(
-                usage = "kaios evidence [run-id|latest] [--out capsule.json] [--baseline capsule.json] [--json|--format json] [--check] [--force]",
+                usage = "kaios evidence [run-id|latest] [--out capsule.json] [--baseline capsule.json] [--summary|--json|--format json] [--check] [--force]",
                 summary = "Create a CI-ready evidence bundle by packaging, validating, replaying, and optionally diffing a run capsule.",
                 examples = listOf(
                     "kaios evidence",
+                    "kaios evidence --summary",
                     "kaios evidence --out artifacts/run.capsule.json --force",
                     "kaios evidence --out artifacts/run.capsule.json --baseline artifacts/baseline.capsule.json --check --force",
                     "kaios evidence run-97381ae9 --json --out artifacts/run.capsule.json --force",
@@ -694,6 +716,7 @@ class KaiosCli(
                 notes = listOf(
                     "Evidence never calls a model provider; it works from an existing .kaios/runs snapshot.",
                     "JSON output uses schema $RUN_EVIDENCE_SCHEMA for CI gates, release audits, and future Agent Desktop imports.",
+                    "Use --summary for PR-friendly Markdown with Verdict, Changed Runtime Behavior, Fix First, and Process Table.",
                     "--check exits 1 when the baseline diff is different, and 2 when capsule or replay validation fails.",
                     "Existing capsule files are protected unless --force is passed.",
                 ),
@@ -1212,8 +1235,100 @@ class KaiosCli(
         return if (result.success) 0 else 2
     }
 
-    private fun changedContextPaths(): List<Path> {
+    private fun reviewChanges(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val command = runCatching { parseReviewCommand(args) }.getOrElse { error ->
+            return printCommandUsageError(err, "review", error.message)
+        }
         val changes = detectWorkspaceGitChanges(workingDir)
+        if (!changes.available) {
+            return printReviewPreflightError(
+                err,
+                "Review requires a Git worktree so KAI OS can bound the change set.",
+            )
+        }
+        if (!changes.dirty) {
+            return printReviewPreflightError(
+                err,
+                "No Git changes detected for review.",
+            )
+        }
+        val changedContextPaths = runCatching { changedContextPaths(changes) }.getOrElse { error ->
+            return printReviewPreflightError(err, error.message ?: "No readable changed text files found for review.")
+        }
+        val memory = SessionMemoryStore()
+        val tools = toolRegistry()
+        val context = runCatching { contextLoader().load(changedContextPaths) }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+        val workspaceIndex = runCatching { workspaceIndexer().index(listOf(workingDir)) }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+        val scheduler = WorkflowScheduler(
+            runtime = AgentRuntime(),
+            modelProvider = MockModelProvider(),
+            tools = tools,
+            memory = memory,
+        )
+        val task = "review current code change"
+        val result = scheduler.run(defaultWorkflow(memory), composeRunInput(task, context, workspaceIndex))
+        snapshotStore.save(composeTaskSummary(task, context, workspaceIndex), result)
+        val snapshot = snapshotStore.load(result.runId)
+        val artifactPath = runCatching { writeArtifact(snapshot, defaultReviewArtifactPath(), force = true) }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+        val tracePath = runCatching { writeTraceJson(snapshot, defaultReviewTracePath(), force = true) }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+        val evidence = runCatching {
+            buildAndWriteRunEvidence(
+                snapshot = snapshot,
+                outputPath = defaultReviewCapsulePath(),
+                baselinePath = command.baselinePath,
+                forceOutput = true,
+            )
+        }.getOrElse { error ->
+            err.println(error.message)
+            return 1
+        }
+        val report = buildReviewReport(
+            snapshot = snapshot,
+            changes = changes,
+            changedContextPaths = changedContextPaths,
+            artifactPath = artifactPath,
+            tracePath = tracePath,
+            evidence = evidence,
+        )
+        val exitCode = when {
+            !snapshot.success -> 2
+            !evidence.valid -> 2
+            command.check && evidence.diff.same == false -> 1
+            else -> 0
+        }
+
+        if (command.format == ReviewFormat.Json) {
+            out.println(CAPSULE_JSON.encodeToString(report))
+            return exitCode
+        }
+
+        val stream = if (exitCode == 0) out else err
+        printReviewSummary(report, stream)
+        return exitCode
+    }
+
+    private fun printReviewPreflightError(err: PrintStream, message: String): Int {
+        err.println(message)
+        err.println()
+        err.println("next:")
+        err.println("  kaios run --index . \"summarize this project\"")
+        err.println("  kaios quickstart")
+        return 1
+    }
+
+    private fun changedContextPaths(changes: WorkspaceChangeSummary = detectWorkspaceGitChanges(workingDir)): List<Path> {
         require(changes.available) {
             "--changes requires a Git worktree. Use --context path when running outside Git."
         }
@@ -1256,6 +1371,100 @@ class KaiosCli(
                 path.startsWith("docs/") -> 4
             else -> 5
         }
+
+    private fun buildReviewReport(
+        snapshot: StoredRunSnapshot,
+        changes: WorkspaceChangeSummary,
+        changedContextPaths: List<Path>,
+        artifactPath: Path,
+        tracePath: Path,
+        evidence: RunEvidenceReport,
+    ): ReviewReport {
+        val attachedPaths = changedContextPaths
+            .map { path -> displayPath(path) }
+            .toSet()
+        val status = when {
+            !snapshot.success -> "failed"
+            !evidence.valid -> "invalid"
+            evidence.diff.status == "different" -> "different"
+            else -> "valid"
+        }
+        val next = buildList {
+            add("kaios ps ${snapshot.runId}")
+            add("kaios trace ${snapshot.runId} --check")
+            add("kaios replay --file ${displayPath(Paths.get(evidence.capsulePath))}")
+            if (evidence.diff.baselinePath == null) {
+                add("kaios review --baseline artifacts/baseline.capsule.json --check")
+            } else {
+                add("kaios diff ${displayPath(Paths.get(evidence.diff.baselinePath))} ${displayPath(Paths.get(evidence.capsulePath))} --check")
+            }
+        }.distinct()
+
+        return ReviewReport(
+            schema = REVIEW_SCHEMA,
+            version = KAIOS_VERSION,
+            generatedAt = Instant.now().toString(),
+            cwd = workingDir.toString(),
+            status = status,
+            runId = snapshot.runId,
+            task = snapshot.task,
+            changedFiles = ReviewChangedFiles(
+                total = changes.changedFiles,
+                attached = attachedPaths.size,
+                untracked = changes.untrackedFiles,
+                truncated = changes.changedFiles > attachedPaths.size,
+                files = changes.files.map { changed ->
+                    ReviewChangedFile(
+                        status = changed.status,
+                        path = changed.path,
+                        attached = changed.path in attachedPaths,
+                    )
+                },
+            ),
+            artifact = ReviewOutputFile(
+                path = artifactPath.toAbsolutePath().normalize().toString(),
+                exists = artifactPath.exists(),
+            ),
+            trace = ReviewOutputFile(
+                path = tracePath.toAbsolutePath().normalize().toString(),
+                exists = tracePath.exists(),
+                schema = PROCESS_TRACE_SCHEMA,
+                status = "valid",
+            ),
+            capsule = ReviewOutputFile(
+                path = evidence.capsulePath,
+                exists = Paths.get(evidence.capsulePath).exists(),
+                schema = evidence.capsule.schema,
+                status = evidence.capsule.status,
+            ),
+            replay = evidence.replay,
+            baselineDiff = evidence.diff,
+            next = next,
+            nextActions = nextActions(next),
+        )
+    }
+
+    private fun printReviewSummary(report: ReviewReport, out: PrintStream) {
+        out.println("KAI REVIEW")
+        out.println("schema: ${report.schema}")
+        out.println("status: ${report.status}")
+        out.println("run_id: ${report.runId}")
+        out.println("changed_files: ${report.changedFiles.total} total, ${report.changedFiles.attached} attached")
+        out.println("artifact: ${report.artifact.path}")
+        out.println("trace: ${report.trace.path}")
+        out.println("capsule: ${report.capsule.path}")
+        out.println("replay_status: ${report.replay.status}")
+        out.println("diff_status: ${report.baselineDiff.status}")
+        report.baselineDiff.baselinePath?.let { out.println("baseline: $it") }
+        if (report.baselineDiff.changes.isNotEmpty()) {
+            out.println("changes:")
+            report.baselineDiff.changes.forEach { change ->
+                out.println("  - ${change.field}: ${abbreviate(singleLine(change.left), 80)} -> ${abbreviate(singleLine(change.right), 80)}")
+            }
+        }
+        out.println("next:")
+        report.next.forEach { command -> out.println("  $command") }
+    }
 
     private fun previewContext(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val paths = runCatching { parseContextCommand(args) }.getOrElse { error ->
@@ -2217,7 +2426,7 @@ class KaiosCli(
         )
 
     private fun changeReviewRunCommand(): String =
-        "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\""
+        "kaios review"
 
     private fun nextHealthyAction(latestRun: BugReportRun?): NextAction =
         when {
@@ -3251,13 +3460,12 @@ class KaiosCli(
             else -> 0
         }
 
-        if (command.format == EvidenceFormat.Json) {
-            out.println(CAPSULE_JSON.encodeToString(report))
-            return exitCode
-        }
-
         val stream = if (exitCode == 0) out else err
-        printRunEvidenceSummary(report, stream)
+        when (command.format) {
+            EvidenceFormat.Json -> out.println(CAPSULE_JSON.encodeToString(report))
+            EvidenceFormat.Summary -> printRunEvidenceMarkdownSummary(report, snapshot, stream)
+            EvidenceFormat.Text -> printRunEvidenceSummary(report, stream)
+        }
         return exitCode
     }
 
@@ -3394,6 +3602,60 @@ class KaiosCli(
         out.println("next:")
         report.next.forEach { command -> out.println("  $command") }
     }
+
+    private fun printRunEvidenceMarkdownSummary(report: RunEvidenceReport, snapshot: StoredRunSnapshot, out: PrintStream) {
+        out.println(renderRunEvidenceMarkdownSummary(report, snapshot))
+    }
+
+    private fun renderRunEvidenceMarkdownSummary(report: RunEvidenceReport, snapshot: StoredRunSnapshot): String = buildString {
+        appendLine("## KAI OS Evidence")
+        appendLine()
+        appendLine("### Verdict")
+        appendLine()
+        appendLine(
+            when {
+                !report.valid -> "Failed. Evidence could not be validated or replayed."
+                report.diff.same == false -> "Different. Evidence is valid, but stable runtime behavior changed against the baseline."
+                else -> "Valid. Capsule contract, offline replay, and trace evidence passed."
+            },
+        )
+        appendLine()
+        appendLine("- Run: `${report.runId}`")
+        appendLine("- Capsule: `${markdownCell(report.capsulePath)}`")
+        appendLine("- Replay: `${report.replay.status}`")
+        appendLine("- Baseline diff: `${report.diff.status}`")
+        appendLine()
+        appendLine("### Changed Runtime Behavior")
+        appendLine()
+        if (report.diff.status == "skipped") {
+            appendLine("No baseline was provided.")
+        } else if (report.diff.changes.isEmpty()) {
+            appendLine("No stable runtime differences were found.")
+        } else {
+            report.diff.changes.forEach { change ->
+                appendLine("- `${markdownCell(change.field)}`: `${markdownCell(abbreviate(singleLine(change.left), 80))}` -> `${markdownCell(abbreviate(singleLine(change.right), 80))}`")
+            }
+        }
+        appendLine()
+        appendLine("### Fix First")
+        appendLine()
+        appendLine("`${markdownCell(evidenceSummaryFixCommand(report))}`")
+        appendLine()
+        appendLine("### Process Table")
+        appendLine()
+        appendLine("| PID | Agent | State | Tokens | Memory | Syscalls | Duration |")
+        appendLine("| ---: | --- | --- | ---: | ---: | ---: | ---: |")
+        snapshot.processes.forEach { process ->
+            appendLine("| ${process.pid} | `${markdownCell(process.agent)}` | `${process.state}` | ${process.tokens} | ${process.contextSize} | ${process.syscallCount} | ${process.durationMillis}ms |")
+        }
+    }.trimEnd()
+
+    private fun evidenceSummaryFixCommand(report: RunEvidenceReport): String =
+        when {
+            report.diff.same == false -> report.next.firstOrNull { command -> command.startsWith("kaios diff ") }
+            !report.valid -> report.next.firstOrNull()
+            else -> report.next.firstOrNull { command -> command.startsWith("kaios replay ") }
+        } ?: "kaios evidence ${report.runId} --out ${displayPath(Paths.get(report.capsulePath))} --force"
 
     private fun buildRunDiffReport(
         left: RunCapsule,
@@ -3910,7 +4172,7 @@ class KaiosCli(
             Three-step product path:
               1. kaios quickstart --dry-run
               2. kaios quickstart
-              3. kaios ps && kaios inspect
+              3. kaios review
 
             Need the next workspace-aware move?
               kaios next
@@ -3936,6 +4198,7 @@ class KaiosCli(
               Runtime:
                 kaios demo
                 kaios run "task"
+                kaios review [--baseline baseline.capsule.json] [--check]
                 kaios run --index . --context README.md --out artifact.md --trace-out trace.json --force "task"
 
               Workspace:
@@ -3956,7 +4219,7 @@ class KaiosCli(
                 kaios capsule [latest] [--json] [--out capsule.json] [--check]
                 kaios replay --file capsule.json [--json]
                 kaios diff baseline.capsule.json current.capsule.json [--check]
-                kaios evidence [latest] [--out capsule.json] [--baseline baseline.capsule.json] [--check]
+                kaios evidence [latest] [--out capsule.json] [--baseline baseline.capsule.json] [--summary] [--check]
                 kaios report [latest]
                 kaios export [latest] [--out artifact.md]
                 kaios doctor [--config kaios.json] [--fix] [--dry-run]
@@ -4164,6 +4427,15 @@ class KaiosCli(
 
     private fun defaultQuickstartEvidencePath(): Path =
         artifactRoot.resolve("kaios-quickstart.capsule.json").normalize()
+
+    private fun defaultReviewArtifactPath(): Path =
+        workingDir.resolve("artifacts").resolve("change-review.md").normalize()
+
+    private fun defaultReviewTracePath(): Path =
+        workingDir.resolve("artifacts").resolve("change-review.trace.json").normalize()
+
+    private fun defaultReviewCapsulePath(): Path =
+        workingDir.resolve("artifacts").resolve("change-review.capsule.json").normalize()
 
     private fun writeArtifact(snapshot: StoredRunSnapshot, path: Path, force: Boolean): Path {
         if (path.exists() && !force) {
@@ -4603,6 +4875,64 @@ class KaiosCli(
         require(!(configPath != null && useBuiltInDefault)) { "Use either --config or --default, not both." }
         return RunCommand(task, configPath, useBuiltInDefault, outputPath, traceOutputPath, forceOutput, contextPaths, indexPaths, includeChanges)
     }
+
+    private fun parseReviewCommand(args: List<String>): ReviewCommand {
+        var baselinePath: Path? = null
+        var check = false
+        var format = ReviewFormat.Text
+        var index = 0
+
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--json" -> {
+                    format = ReviewFormat.Json
+                    index += 1
+                }
+                arg == "--format" -> {
+                    val value = args.getOrNull(index + 1) ?: error("--format requires text or json.")
+                    format = parseReviewFormat(value)
+                    index += 2
+                }
+                arg.startsWith("--format=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--format requires text or json." }
+                    format = parseReviewFormat(value)
+                    index += 1
+                }
+                arg == "--baseline" -> {
+                    val value = args.getOrNull(index + 1) ?: error("--baseline requires a capsule path.")
+                    baselinePath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--baseline=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--baseline requires a capsule path." }
+                    baselinePath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--check" -> {
+                    check = true
+                    index += 1
+                }
+                arg.startsWith("-") -> error("Unknown review option '$arg'.")
+                else -> error("Unexpected review argument '$arg'.")
+            }
+        }
+
+        return ReviewCommand(
+            baselinePath = baselinePath,
+            check = check,
+            format = format,
+        )
+    }
+
+    private fun parseReviewFormat(value: String): ReviewFormat =
+        when (value.lowercase().trim()) {
+            "text", "plain" -> ReviewFormat.Text
+            "json" -> ReviewFormat.Json
+            else -> error("Unknown review format '$value'. Use text or json.")
+        }
 
     private fun parseContextCommand(args: List<String>): List<Path> {
         if (args.isEmpty()) return listOf(workingDir)
@@ -5439,6 +5769,10 @@ class KaiosCli(
                     format = EvidenceFormat.Json
                     index += 1
                 }
+                arg == "--summary" -> {
+                    format = EvidenceFormat.Summary
+                    index += 1
+                }
                 arg == "--format" -> {
                     val value = args.getOrNull(index + 1) ?: error("--format requires text or json.")
                     format = parseEvidenceFormat(value)
@@ -5503,7 +5837,8 @@ class KaiosCli(
         when (value.lowercase().trim()) {
             "text", "plain" -> EvidenceFormat.Text
             "json" -> EvidenceFormat.Json
-            else -> error("Unknown evidence format '$value'. Use text or json.")
+            "summary", "markdown" -> EvidenceFormat.Summary
+            else -> error("Unknown evidence format '$value'. Use text, json, or summary.")
         }
 
     private fun parseDoctorCommand(args: List<String>): DoctorCommand {
@@ -5787,6 +6122,12 @@ private data class RunCommand(
     val includeChanges: Boolean,
 )
 
+private data class ReviewCommand(
+    val baselinePath: Path?,
+    val check: Boolean,
+    val format: ReviewFormat,
+)
+
 private data class QuickstartCommand(
     val force: Boolean,
     val writeCi: Boolean,
@@ -6031,7 +6372,56 @@ private enum class DiffFormat(val id: String) {
 private enum class EvidenceFormat(val id: String) {
     Text("text"),
     Json("json"),
+    Summary("summary"),
 }
+
+private enum class ReviewFormat(val id: String) {
+    Text("text"),
+    Json("json"),
+}
+
+@Serializable
+private data class ReviewReport(
+    val schema: String,
+    val version: String,
+    val generatedAt: String,
+    val cwd: String,
+    val status: String,
+    val runId: String,
+    val task: String,
+    val changedFiles: ReviewChangedFiles,
+    val artifact: ReviewOutputFile,
+    val trace: ReviewOutputFile,
+    val capsule: ReviewOutputFile,
+    val replay: EvidenceReplayStatus,
+    val baselineDiff: EvidenceDiffStatus,
+    val next: List<String>,
+    val nextActions: List<NextAction>,
+)
+
+@Serializable
+private data class ReviewChangedFiles(
+    val total: Int,
+    val attached: Int,
+    val untracked: Int,
+    val truncated: Boolean,
+    val files: List<ReviewChangedFile>,
+)
+
+@Serializable
+private data class ReviewChangedFile(
+    val status: String,
+    val path: String,
+    val attached: Boolean,
+)
+
+@Serializable
+private data class ReviewOutputFile(
+    val path: String,
+    val exists: Boolean,
+    val schema: String? = null,
+    val status: String? = null,
+)
 
 @Serializable
 private data class RunCapsule(

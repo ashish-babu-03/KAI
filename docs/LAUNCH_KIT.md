@@ -77,6 +77,8 @@ The v0.1 release is a runnable Kotlin/JVM seed:
 - kaios next for one read-only workspace-aware recommendation
 - kaios quickstart for one-command no-key onboarding with setup, CI gate, verify, evidence, and next actions
 - kaios quickstart --no-ci for local-only onboarding when a project is not ready for CI files
+- kaios review for current-change review with Markdown artifact, process trace, replayable capsule, and optional baseline gate
+- kaios evidence --summary for PR-friendly Verdict, Changed Runtime Behavior, Fix First, and Process Table output
 - kaios setup for one-command project workflow bootstrap
 - kaios gate for one-command readiness, trace, evidence, replay, and optional baseline checks
 - kaios verify for lower-level CI-compatible readiness control
@@ -124,7 +126,7 @@ The core metaphor:
 - Tool = Syscall
 - Memory = Process state
 
-The current v0.1 demo runs a planner -> executor -> validator workflow and lets you inspect each agent process with PID, token usage, context size, syscall count, duration, lifecycle events, optional Workspace Index source maps, project context sources, retry attempts, a reusable `kaios.process-trace/v1` trace, and a portable `kaios.run-capsule/v1` evidence package that can be validated, replayed, or diffed from shared JSON files. You can generate no-key Markdown or JSON project reports with `kaios analyze`, preview project shape with `kaios index`, preview context with `kaios context`, exclude local noise with `.kaiosignore`, opt into real HTTP syscalls with `KAIOS_HTTP_ALLOWLIST`, and let real providers request tools through `KAIOS_SYSCALL` directives.
+The current v0.1 demo runs a planner -> executor -> validator workflow and lets you inspect each agent process with PID, token usage, context size, syscall count, duration, lifecycle events, optional Workspace Index source maps, project context sources, retry attempts, a reusable `kaios.process-trace/v1` trace, and a portable `kaios.run-capsule/v1` evidence package that can be validated, replayed, or diffed from shared JSON files. The new Evidence OS path is `kaios review`: it turns the current Git change set into a Markdown review artifact, process trace, replayable capsule, and optional baseline gate. You can generate no-key Markdown or JSON project reports with `kaios analyze`, preview project shape with `kaios index`, preview context with `kaios context`, exclude local noise with `.kaiosignore`, opt into real HTTP syscalls with `KAIOS_HTTP_ALLOWLIST`, and let real providers request tools through `KAIOS_SYSCALL` directives.
 
 It uses a deterministic mock model provider, so no API key is needed.
 
@@ -143,7 +145,7 @@ Agent = Process
 Workflow = Scheduler
 Tool = Syscall
 
-The first version is intentionally small but runnable: a default planner -> executor -> validator workflow, process metrics, lifecycle events, KAI Process Trace JSON, KAI Run Capsule JSON, offline capsule replay/diff, observable retries, permissioned tools, no-key Markdown and JSON workspace analysis reports, Workspace Index source maps, previewable bounded project context, allowlisted HTTP, and JSON run snapshots.
+The first version is intentionally small but runnable: a default planner -> executor -> validator workflow, current-change review through `kaios review`, process metrics, lifecycle events, KAI Process Trace JSON, KAI Run Capsule JSON, offline capsule replay/diff, observable retries, permissioned tools, no-key Markdown and JSON workspace analysis reports, Workspace Index source maps, previewable bounded project context, allowlisted HTTP, and JSON run snapshots.
 
 I would love feedback on the Kotlin API/DSL and runtime model.
 
