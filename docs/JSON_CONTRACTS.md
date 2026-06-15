@@ -230,6 +230,25 @@ Gate on:
 
 If validation fails, read `nextActions` and prefer `repair-project` when present. Existing invalid configs should surface the dry-run repair command before `regenerate-config`; missing configs should surface the dry-run repair command before `setup-project`. `repair-config` is retained for older human-readable repair notes.
 
+### Support Gate
+
+Use `kaios.bug-report/v1` when a job, issue template, or support workflow needs one safe diagnostic payload:
+
+```bash
+kaios bug-report --json
+```
+
+Read:
+
+- `fixFirst` before scanning `next` when it is not `null`.
+- `doctor.summary` for environment readiness.
+- `config.valid` and `config.errors` for workflow repair decisions.
+- `latestRun` and `trace` when a saved run exists.
+- `nextActions` for the complete action list.
+
+For missing or invalid project configs, `fixFirst.id == "repair-project"` and the command is the dry-run repair preview.
+For a valid project config without a saved run, `fixFirst.id == "verify-project"` so the project gate creates inspectable evidence before deeper debugging.
+
 ## Field Notes
 
 `kaios.process-trace/v1` is the best source for process observability:

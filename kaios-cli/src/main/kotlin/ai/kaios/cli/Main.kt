@@ -36,7 +36,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.82"
+private const val KAIOS_VERSION = "0.1.83"
 private const val CI_AGENT_GATE_ARTIFACT_NAME = "kaios-agent-gate"
 private const val CI_WORKFLOW_PUSH_NOTE = "Pushing .github/workflows/kaios.yml may require GitHub workflow permission/scope."
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
@@ -2093,6 +2093,7 @@ class KaiosCli(
         val trace = latestSnapshot?.let(::bugReportTrace)
 
         val next = bugReportNextCommands(config, latestRun)
+        val fixFirst = bugReportFixFirst(config, latestRun, trace, next)
         return BugReport(
             schema = BUG_REPORT_SCHEMA,
             version = KAIOS_VERSION,
@@ -2108,6 +2109,7 @@ class KaiosCli(
             config = config,
             latestRun = latestRun,
             trace = trace,
+            fixFirst = fixFirst,
             next = next,
             nextActions = nextActions(next),
         )
@@ -2165,6 +2167,26 @@ class KaiosCli(
             add(doctorJsonCommand(configPath))
         }.distinct()
 
+    private fun bugReportFixFirst(
+        config: ConfigValidationReport,
+        latestRun: BugReportRun?,
+        trace: BugReportTrace?,
+        next: List<String>,
+    ): NextAction? {
+        val command = when {
+            !config.valid -> next.firstOrNull { command -> nextActionId(command) == "repair-project" }
+                ?: next.firstOrNull { command ->
+                    val id = nextActionId(command)
+                    id == "regenerate-config" || id == "setup-project"
+                }
+            latestRun == null -> next.firstOrNull { command -> nextActionId(command) == "verify-project" }
+                ?: next.firstOrNull { command -> nextActionId(command) == "run-demo" }
+            trace?.valid == false -> next.firstOrNull { command -> nextActionId(command) == "check-trace" }
+            else -> null
+        }
+        return command?.let(::nextAction)
+    }
+
     private fun renderBugReportMarkdown(report: BugReport): String = buildString {
         appendLine("# KAI OS Bug Report")
         appendLine()
@@ -2177,6 +2199,18 @@ class KaiosCli(
         appendLine("- generated_at: `${report.generatedAt}`")
         appendLine("- cwd: `${report.cwd}`")
         appendLine()
+        report.fixFirst?.let { action ->
+            appendLine("## Fix First")
+            appendLine()
+            appendLine("Run:")
+            appendLine()
+            appendLine("```bash")
+            appendLine(action.command)
+            appendLine("```")
+            appendLine()
+            appendLine(action.reason)
+            appendLine()
+        }
         appendLine("## What Happened")
         appendLine()
         appendLine("- Expected:")
@@ -6030,6 +6064,7 @@ private data class BugReport(
     val config: ConfigValidationReport,
     val latestRun: BugReportRun?,
     val trace: BugReportTrace?,
+    val fixFirst: NextAction?,
     val next: List<String>,
     val nextActions: List<NextAction>,
 )

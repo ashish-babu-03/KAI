@@ -13,6 +13,7 @@ The default output is Markdown you can paste into a GitHub issue. It includes:
 - `kaios.config-validation/v1` status for `kaios.json`.
 - latest run summary when a saved run exists.
 - latest process trace contract status from `kaios.process-trace/v1`.
+- a Fix First command before the detailed sections when there is an obvious first recovery step.
 - next command for `kaios.run-capsule/v1` evidence packaging when a saved run exists.
 - safe next commands.
 
@@ -43,6 +44,7 @@ kaios bug-report --format json --out artifacts/kaios-bug-report.json --force
 ```
 
 JSON output uses schema `kaios.bug-report/v1`.
+Read `fixFirst` first when it is not `null`; it is the same stable `NextAction` shape used by `nextActions`.
 The report's `next` commands and structured `nextActions` use the same onboarding path as the rest of the CLI:
 
 For the full JSON command matrix and shared action ids, see [JSON_CONTRACTS.md](JSON_CONTRACTS.md).
