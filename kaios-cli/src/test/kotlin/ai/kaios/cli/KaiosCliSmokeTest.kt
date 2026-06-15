@@ -2057,6 +2057,39 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `analyze json reports git changes and review action`() {
+        val workspace = Files.createTempDirectory("kaios-cli-analyze-git")
+        runGit(workspace, "init")
+        Files.writeString(workspace.resolve("README.md"), "# Demo\nUseful public overview.\n")
+        Files.writeString(workspace.resolve("settings.gradle.kts"), "rootProject.name = \"demo\"\n")
+        Files.createDirectories(workspace.resolve("src/main/kotlin"))
+        Files.writeString(workspace.resolve("src/main/kotlin/App.kt"), "fun main() = println(\"kai\")\n")
+        val cli = cliFor(workspace)
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("analyze", ".", "--json"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+        val root = Json.parseToJsonElement(text).jsonObject
+        val changeSummary = root.getValue("changeSummary").jsonObject
+        val changedFiles = changeSummary.getValue("files").jsonArray.map { it.jsonObject }
+        val actionPlan = root.getValue("actionPlan").jsonArray.map { it.jsonObject }
+
+        assertEquals(0, code)
+        assertTrue(changeSummary.getValue("available").jsonPrimitive.content == "true")
+        assertTrue(changeSummary.getValue("dirty").jsonPrimitive.content == "true")
+        assertTrue(changedFiles.any { file ->
+            file.getValue("path").jsonPrimitive.content == "src/main/kotlin/App.kt"
+        })
+        val reviewAction = actionPlan.single { action ->
+            action.getValue("id").jsonPrimitive.content == "review-current-change"
+        }
+        assertEquals("P0", reviewAction.getValue("priority").jsonPrimitive.content)
+        assertTrue(reviewAction.getValue("command").jsonPrimitive.content.contains("--context README.md"))
+        assertTrue(reviewAction.getValue("command").jsonPrimitive.content.contains("--context src/main/kotlin/App.kt"))
+        assertTrue(!text.contains("Useful public overview."))
+    }
+
+    @Test
     fun `analyze out writes report and protects existing files`() {
         val workspace = Files.createTempDirectory("kaios-cli-analyze-out")
         Files.writeString(workspace.resolve("README.md"), "# Demo\n")
@@ -3954,6 +3987,16 @@ private fun repoFile(relativePath: String): Path {
     val fromCliModule = Paths.get("..").resolve(relativePath).normalize()
     if (Files.exists(fromCliModule)) return fromCliModule
     error("Could not locate '$relativePath' from ${Paths.get("").toAbsolutePath()}.")
+}
+
+private fun runGit(workspace: Path, vararg args: String) {
+    val process = ProcessBuilder(listOf("git", *args))
+        .directory(workspace.toFile())
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().readText()
+    val exit = process.waitFor()
+    assertEquals(0, exit, "git ${args.joinToString(" ")} failed:\n$output")
 }
 
 private fun assertNextAction(json: JsonObject, id: String, command: String) {

@@ -88,14 +88,10 @@ Choose the first command by risk level:
 | Run onboarding without writing GitHub Actions | `kaios quickstart --no-ci` |
 | Verify an existing `kaios.json` workflow | `kaios gate --config kaios.json` |
 
-Homebrew is one installation option:
+Install KAI OS using the path that fits your machine, then come back to the product flow above:
 
-```bash
-brew tap morning-verlu/tap
-brew install kaios
-```
-
-See [Install KAI OS](docs/INSTALL.md) for the hosted installer, release ZIP, and source build. Installation is only the delivery step; the runtime and process model above are the product.
+- [Install KAI OS](docs/INSTALL.md) covers Homebrew, the hosted installer, release ZIPs, and source builds.
+- Installation is only delivery. The product is the runtime model: observable agent processes, DAG scheduling, syscall-bounded tools, memory, traces, and portable evidence.
 
 Preview the onboarding write plan when needed:
 
@@ -312,7 +308,7 @@ kaios context README.md docs
 kaios run --index . --context README.md --context docs "explain the architecture"
 ```
 
-KAI OS can generate a deterministic workspace analysis report before any model call, then build a Workspace Index before a run. The report and index summarize language distribution, top directories, notable files, source/test shape, quality signals, a prioritized action plan, and suggested next KAI OS commands without dumping full file contents into artifacts. It also reads bounded context files inside the current workspace, skips generated/runtime directories such as `.git`, `.kaios`, `artifacts`, `build`, and `node_modules`, enforces size limits, and records source summaries in snapshots and artifacts. Add a `.kaiosignore` file to exclude extra paths before they reach an agent process:
+KAI OS can generate a deterministic workspace analysis report before any model call, then build a Workspace Index before a run. The report and index summarize language distribution, top directories, notable files, source/test shape, quality signals, Git working tree change signals, a prioritized action plan, and suggested next KAI OS commands without dumping full file contents into artifacts. It also reads bounded context files inside the current workspace, skips generated/runtime directories such as `.git`, `.kaios`, `artifacts`, `build`, and `node_modules`, enforces size limits, and records source summaries in snapshots and artifacts. Add a `.kaiosignore` file to exclude extra paths before they reach an agent process:
 
 ```gitignore
 secrets/

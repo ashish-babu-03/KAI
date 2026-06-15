@@ -18,10 +18,12 @@ kaios run --index . --context README.md --out artifacts/project.md --force "summ
 - language and directory tables
 - notable files and hotspots
 - test and quality signals
+- Git working tree change signals when the project is inside a repository
 - recommended action plan with priorities, commands, and reasons
 - suggested KAI OS commands
 
 It does not require a model provider or API key.
+When Git metadata is available, the action plan can include a bounded code-review command for the current changed files without reading or printing diff contents.
 
 Use JSON when CI, dashboards, or other tools need a stable schema:
 

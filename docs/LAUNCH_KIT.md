@@ -10,8 +10,7 @@ Launch site: https://morning-verlu.github.io/KAI/
 Social preview image: https://morning-verlu.github.io/KAI/assets/kaios-social-card.png
 Demo GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
 Trust contract: https://github.com/morning-verlu/KAI/blob/main/docs/TRUST.md
-Installer: https://morning-verlu.github.io/KAI/install.sh
-Install options: Homebrew, hosted installer, release ZIP, or source build
+Install page: https://github.com/morning-verlu/KAI/blob/main/docs/INSTALL.md
 
 ## Short Post
 
@@ -73,7 +72,7 @@ The v0.1 release is a runnable Kotlin/JVM seed:
 - no-key Markdown and JSON workspace analysis reports
 - Workspace Index with language stats, notable files, and source maps
 - project-aware runs with `kaios context`, `.kaiosignore`, and bounded `--context` files and directories
-- one-command KAI OS onboarding after installation, with Homebrew and the hosted installer as delivery options
+- one-command KAI OS onboarding after installation
 - kaios demo for a no-key first run with process table and trace artifact
 - kaios next for one read-only workspace-aware recommendation
 - kaios quickstart for one-command no-key onboarding with setup, CI gate, verify, evidence, and next actions
@@ -90,13 +89,8 @@ The v0.1 release is a runnable Kotlin/JVM seed:
 - kaios init --ci for a ready-to-commit GitHub Actions Agent Gate powered by `kaios verify --evidence`
 - kaios bug-report for safe GitHub issue diagnostics and support handoff
 
-Try:
+Try KAI OS:
 
-# install the kaios CLI (Homebrew is one option)
-brew tap morning-verlu/tap
-brew install kaios
-
-# run KAI OS
 kaios next
 kaios quickstart --dry-run
 kaios quickstart
@@ -113,6 +107,7 @@ Site: https://morning-verlu.github.io/KAI/
 GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
 Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.84/kaios-0.1.84.zip
 Installer: curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
+Install options after the product demo: Homebrew, hosted installer, release ZIP, or source build
 ```
 
 ## Show HN Draft
@@ -158,14 +153,9 @@ https://morning-verlu.github.io/KAI/
 
 ## First Demo Flow
 
-KAI OS product flow, with Homebrew shown only as one installation option:
+KAI OS product flow. Lead with what KAI OS does; installation is a separate adoption step:
 
 ```bash
-# install the kaios CLI
-brew tap morning-verlu/tap
-brew install kaios
-
-# run KAI OS
 kaios next
 kaios quickstart --dry-run
 kaios quickstart

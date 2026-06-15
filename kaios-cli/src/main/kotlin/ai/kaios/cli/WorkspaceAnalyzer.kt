@@ -3,6 +3,8 @@ package ai.kaios.cli
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.nio.file.Path
+import java.util.concurrent.TimeUnit
 
 internal class WorkspaceAnalyzer {
     private val json = Json {
@@ -10,8 +12,9 @@ internal class WorkspaceAnalyzer {
         encodeDefaults = true
     }
 
-    fun analyze(index: WorkspaceIndex): WorkspaceAnalysis =
-        WorkspaceAnalysis(
+    fun analyze(index: WorkspaceIndex): WorkspaceAnalysis {
+        val changeSummary = detectGitChanges(index.root)
+        return WorkspaceAnalysis(
             schemaVersion = 1,
             summary = WorkspaceAnalysisSummary(
                 root = index.root.toString(),
@@ -36,9 +39,11 @@ internal class WorkspaceAnalyzer {
                 WorkspaceAnalysisFile(file.path, file.language, file.lines, file.bytes)
             },
             qualitySignals = qualitySignals(index),
-            actionPlan = actionPlan(index),
+            changeSummary = changeSummary,
+            actionPlan = actionPlan(index, changeSummary),
             suggestedCommands = suggestedCommands(index),
         )
+    }
 
     fun render(index: WorkspaceIndex): String = renderMarkdown(analyze(index))
 
@@ -101,6 +106,23 @@ internal class WorkspaceAnalyzer {
         appendLine()
         analysis.qualitySignals.forEach { appendLine("- $it") }
         appendLine()
+
+        if (analysis.changeSummary.available) {
+            appendLine("## Change Signals")
+            appendLine()
+            if (analysis.changeSummary.dirty) {
+                appendLine("- Git working tree has `${analysis.changeSummary.changedFiles}` changed file(s).")
+                if (analysis.changeSummary.untrackedFiles > 0) {
+                    appendLine("- Untracked files: `${analysis.changeSummary.untrackedFiles}`.")
+                }
+                analysis.changeSummary.files.take(12).forEach { file ->
+                    appendLine("- `${file.status}` `${file.path}`")
+                }
+            } else {
+                appendLine("- Git working tree is clean.")
+            }
+            appendLine()
+        }
 
         appendLine("## Recommended Action Plan")
         appendLine()
@@ -184,8 +206,9 @@ internal class WorkspaceAnalyzer {
         return signals
     }
 
-    private fun actionPlan(index: WorkspaceIndex): List<WorkspaceAnalysisAction> {
+    private fun actionPlan(index: WorkspaceIndex, changeSummary: WorkspaceChangeSummary): List<WorkspaceAnalysisAction> {
         val files = index.files.map { it.path }
+        val indexedFiles = files.toSet()
         val hasKaiosConfig = files.any { it == "kaios.json" }
         val hasGradle = files.any { it == "settings.gradle.kts" || it == "build.gradle.kts" || it == "settings.gradle" || it == "build.gradle" }
         val hasTests = files.any { "/src/test/" in it || it.startsWith("test/") || it.contains("/test/") }
@@ -193,6 +216,24 @@ internal class WorkspaceAnalyzer {
         val largest = index.largestFiles.firstOrNull()
 
         val actions = mutableListOf<WorkspaceAnalysisAction>()
+        val changedContextFiles = changeSummary.files
+            .map { it.path }
+            .filter { it in indexedFiles }
+            .take(4)
+
+        if (changedContextFiles.isNotEmpty()) {
+            actions += WorkspaceAnalysisAction(
+                id = "review-current-change",
+                priority = "P0",
+                action = "Review the current change set",
+                command = buildString {
+                    append("kaios run --index .")
+                    changedContextFiles.forEach { path -> append(" --context ${shellArg(path)}") }
+                    append(" --out artifacts/change-review.md --force \"review current code change\"")
+                },
+                reason = "Git has ${changeSummary.changedFiles} changed file(s); attach the changed files as bounded context before asking an agent to review them.",
+            )
+        }
 
         if (hasKaiosConfig) {
             actions += WorkspaceAnalysisAction(
@@ -261,6 +302,43 @@ internal class WorkspaceAnalyzer {
         return actions.distinctBy { it.id }
     }
 
+    private fun detectGitChanges(root: Path): WorkspaceChangeSummary {
+        val process = runCatching {
+            ProcessBuilder("git", "-C", root.toString(), "status", "--porcelain=v1", "--untracked-files=all")
+                .redirectErrorStream(true)
+                .start()
+        }.getOrNull() ?: return WorkspaceChangeSummary.Unavailable
+
+        val finished = process.waitFor(2, TimeUnit.SECONDS)
+        if (!finished) {
+            process.destroyForcibly()
+            return WorkspaceChangeSummary.Unavailable
+        }
+        if (process.exitValue() != 0) return WorkspaceChangeSummary.Unavailable
+
+        val files = process.inputStream
+            .bufferedReader()
+            .readLines()
+            .mapNotNull(::parseGitStatusLine)
+
+        return WorkspaceChangeSummary(
+            available = true,
+            dirty = files.isNotEmpty(),
+            changedFiles = files.size,
+            untrackedFiles = files.count { it.status == "??" },
+            files = files.take(20),
+        )
+    }
+
+    private fun parseGitStatusLine(line: String): WorkspaceChangedFile? {
+        if (line.length < 4) return null
+        val status = line.take(2).trim().ifBlank { line.take(2) }
+        val rawPath = line.drop(3)
+        val path = rawPath.substringAfter(" -> ", rawPath).trim().trim('"')
+        if (path.isBlank()) return null
+        return WorkspaceChangedFile(status = status, path = path)
+    }
+
     private fun suggestedCommands(index: WorkspaceIndex): List<String> {
         val commands = mutableListOf(
             "kaios index .",
@@ -306,6 +384,7 @@ internal data class WorkspaceAnalysis(
     val notableFiles: List<WorkspaceAnalysisFile>,
     val hotspots: List<WorkspaceAnalysisFile>,
     val qualitySignals: List<String>,
+    val changeSummary: WorkspaceChangeSummary,
     val actionPlan: List<WorkspaceAnalysisAction>,
     val suggestedCommands: List<String>,
 )
@@ -342,6 +421,31 @@ internal data class WorkspaceAnalysisFile(
     val language: String,
     val lines: Int,
     val bytes: Long,
+)
+
+@Serializable
+internal data class WorkspaceChangeSummary(
+    val available: Boolean,
+    val dirty: Boolean,
+    val changedFiles: Int,
+    val untrackedFiles: Int,
+    val files: List<WorkspaceChangedFile>,
+) {
+    companion object {
+        val Unavailable = WorkspaceChangeSummary(
+            available = false,
+            dirty = false,
+            changedFiles = 0,
+            untrackedFiles = 0,
+            files = emptyList(),
+        )
+    }
+}
+
+@Serializable
+internal data class WorkspaceChangedFile(
+    val status: String,
+    val path: String,
 )
 
 @Serializable

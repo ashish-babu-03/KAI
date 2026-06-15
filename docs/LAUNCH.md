@@ -51,7 +51,7 @@ The process table is the visual proof of the idea. The trace is the durable proo
 - demo GIF shows run, ps, and inspect
 - release ZIP/TAR assets are attached for download-first trial
 - install script supports one-command local setup
-- Homebrew tap supports `brew install kaios`
+- at least one low-friction install path works after the concept lands
 - `kaios doctor` helps new users diagnose local setup
 - architecture diagram is visible
 - example output is included
