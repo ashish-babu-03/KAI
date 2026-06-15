@@ -79,13 +79,13 @@ internal data class WorkspaceIndex(
 
         appendLine("NOTABLE FILES")
         notableFiles.ifEmpty { largestFiles.take(8) }.forEach { file ->
-            appendLine("- ${file.path} (${file.language}, ${file.lines} lines, ${file.bytes} bytes)")
+            appendLine("- ${file.path} (${file.language}, ${countLabel(file.lines, "line")}, ${countLabel(file.bytes, "byte")})")
         }
         appendLine()
 
         appendLine("LARGEST TEXT FILES")
         largestFiles.forEach { file ->
-            appendLine("- ${file.path} (${file.language}, ${file.lines} lines, ${file.bytes} bytes)")
+            appendLine("- ${file.path} (${file.language}, ${countLabel(file.lines, "line")}, ${countLabel(file.bytes, "byte")})")
         }
     }.trimEnd()
 
@@ -136,6 +136,12 @@ internal data class WorkspaceIndex(
             stat.files.toString().padEnd(7),
             stat.bytes.toString(),
         ).joinToString("  ")
+
+    private fun countLabel(count: Int, singular: String, plural: String = "${singular}s"): String =
+        countLabel(count.toLong(), singular, plural)
+
+    private fun countLabel(count: Long, singular: String, plural: String = "${singular}s"): String =
+        "$count ${if (count == 1L) singular else plural}"
 
     companion object {
         val Empty: WorkspaceIndex = WorkspaceIndex(

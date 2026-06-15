@@ -4337,7 +4337,7 @@ class KaiosCli(
                 appendLine("Workspace Index:")
                 appendLine("- ${workspaceIndex.summary()}")
                 workspaceIndex.notableFiles.take(10).forEach { file ->
-                    appendLine("- ${file.path} (${file.language}, ${file.lines} lines)")
+                    appendLine("- ${file.path} (${file.language}, ${countLabel(file.lines, "line")})")
                 }
             }
             if (context.sources.isNotEmpty()) {
@@ -4345,14 +4345,17 @@ class KaiosCli(
                 appendLine("Context:")
                 context.sources.forEach { source ->
                     val suffix = if (source.truncated) ", truncated from ${source.originalChars}" else ""
-                    appendLine("- ${source.path} (${source.content.length} chars$suffix)")
+                    appendLine("- ${source.path} (${countLabel(source.content.length, "char")}$suffix)")
                 }
                 if (context.truncated) {
-                    appendLine("- total context truncated at ${context.maxChars} chars")
+                    appendLine("- total context truncated at ${countLabel(context.maxChars, "char")}")
                 }
             }
         }.trimEnd()
     }
+
+    private fun countLabel(count: Int, singular: String, plural: String = "${singular}s"): String =
+        "$count ${if (count == 1) singular else plural}"
 
     private fun displayPath(path: Path): String =
         if (path.startsWith(workingDir)) {

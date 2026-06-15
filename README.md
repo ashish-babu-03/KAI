@@ -121,6 +121,7 @@ kaios run --index . --context README.md --out artifacts/project.md --trace-out a
 ```
 
 If your project uses `README.markdown` or `README`, use that path instead. README matching is case-insensitive, so lowercase variants work too. If it has no README, omit `--context`; KAI OS still uses the Workspace Index to orient the run. `kaios next` chooses the first available README path automatically.
+The Markdown artifact starts with an Operational Summary, then separates the task, bounded inputs, final output, process table, and lifecycle events so another developer can inspect or hand off the run without reading raw JSON first.
 
 Every command has local examples when you need the next move without opening docs:
 
