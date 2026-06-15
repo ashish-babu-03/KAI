@@ -4350,7 +4350,7 @@ class KaiosCli(
 
                   - name: Upload KAI OS artifacts
                     if: always()
-                    uses: actions/upload-artifact@v4
+                    uses: actions/upload-artifact@v7.0.1
                     with:
                       name: $CI_AGENT_GATE_ARTIFACT_NAME
                       path: |

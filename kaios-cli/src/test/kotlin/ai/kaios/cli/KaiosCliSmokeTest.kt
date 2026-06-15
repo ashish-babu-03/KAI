@@ -2246,7 +2246,7 @@ class KaiosCliSmokeTest {
         assertTrue(workflowText.contains("set -euo pipefail"))
         assertTrue(workflowText.contains("kaios gate --config 'kaios.json' --summary-out \"\$GITHUB_STEP_SUMMARY\" --json | tee artifacts/kaios-verify.json"))
         assertTrue(workflowText.contains("kaios bug-report --config 'kaios.json' --json --out artifacts/kaios-bug-report.json --force"))
-        assertTrue(workflowText.contains("uses: actions/upload-artifact@v4"))
+        assertTrue(workflowText.contains("uses: actions/upload-artifact@v7.0.1"))
         assertTrue(workflowText.contains("name: kaios-agent-gate"))
         assertTrue(workflowText.contains("artifacts/kaios-verify.json"))
         assertTrue(workflowText.contains("artifacts/kaios-run.capsule.json"))
