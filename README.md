@@ -34,6 +34,7 @@ Memory   = Process state
 KAI OS is intentionally small in v0.1. If you only need a chatbot UI or a thin prompt wrapper, this project is probably lower-level than you need.
 
 For concrete workflows, read [KAI OS Use Cases](docs/USE_CASES.md).
+For safety, reproducibility, and artifact-sharing boundaries, read the [KAI OS Trust Contract](docs/TRUST.md).
 
 ## Why This Exists
 
@@ -331,6 +332,7 @@ Modules:
 
 Read the deeper design notes in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Read concrete workflows in [docs/USE_CASES.md](docs/USE_CASES.md).
+Read the safety and reproducibility boundary in [docs/TRUST.md](docs/TRUST.md).
 Read the JSON automation contracts in [docs/JSON_CONTRACTS.md](docs/JSON_CONTRACTS.md).
 Read the trace schema contract in [docs/TRACE.md](docs/TRACE.md).
 Read the capsule schema contract in [docs/CAPSULE.md](docs/CAPSULE.md).

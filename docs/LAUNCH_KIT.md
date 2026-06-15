@@ -9,6 +9,7 @@ KAI OS is an AI Agent Operating System in Kotlin: agents run like processes, wor
 Launch site: https://morning-verlu.github.io/KAI/
 Social preview image: https://morning-verlu.github.io/KAI/assets/kaios-social-card.png
 Demo GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
+Trust contract: https://github.com/morning-verlu/KAI/blob/main/docs/TRUST.md
 Installer: https://morning-verlu.github.io/KAI/install.sh
 Install options: Homebrew, hosted installer, release ZIP, or source build
 
