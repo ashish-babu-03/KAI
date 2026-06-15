@@ -605,8 +605,9 @@ class KaiosCliSmokeTest {
     }
 
     @Test
-    fun `next recommends gate after setup and process inspection after healthy evidence`() {
+    fun `next recommends gate after setup and project artifact after onboarding evidence`() {
         val workspace = Files.createTempDirectory("kaios-cli-next-states")
+        Files.writeString(workspace.resolve("README.md"), "# Demo\nUseful public overview.\n")
         val cli = cliFor(workspace)
 
         val setupCode = cli.run(arrayOf("setup", "--ci"), PrintStream(ByteArrayOutputStream()), PrintStream(ByteArrayOutputStream()))
@@ -633,11 +634,42 @@ class KaiosCliSmokeTest {
 
         assertEquals(0, readyCode)
         assertEquals("ready", readyJson.getValue("status").jsonPrimitive.content)
-        assertEquals("show-processes", readyAction.getValue("id").jsonPrimitive.content)
-        assertEquals("kaios ps", readyAction.getValue("command").jsonPrimitive.content)
+        assertEquals("create-project-artifact", readyAction.getValue("id").jsonPrimitive.content)
+        assertEquals(
+            "kaios run --index . --context README.md --out artifacts/project.md --force \"summarize this project\"",
+            readyAction.getValue("command").jsonPrimitive.content,
+        )
         assertEquals(JsonNull, readyJson.getValue("fixFirst"))
+        assertNextAction(readyJson, "show-processes", "kaios ps")
         assertNextAction(readyJson, "package-evidence", "kaios evidence")
         assertNextAction(readyJson, "collect-support-report", "kaios bug-report")
+
+        val projectRunCode = cli.run(
+            arrayOf(
+                "run",
+                "--index",
+                ".",
+                "--context",
+                "README.md",
+                "--out",
+                "artifacts/project.md",
+                "--force",
+                "summarize this project",
+            ),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        assertEquals(0, projectRunCode)
+
+        val projectNextOut = ByteArrayOutputStream()
+        val projectNextCode = cli.run(arrayOf("next", "--json"), PrintStream(projectNextOut), PrintStream(ByteArrayOutputStream()))
+        val projectNextJson = Json.parseToJsonElement(projectNextOut.toString()).jsonObject
+        val projectNextAction = projectNextJson.getValue("action").jsonObject
+
+        assertEquals(0, projectNextCode)
+        assertEquals("ready", projectNextJson.getValue("status").jsonPrimitive.content)
+        assertEquals("show-processes", projectNextAction.getValue("id").jsonPrimitive.content)
+        assertEquals("kaios ps", projectNextAction.getValue("command").jsonPrimitive.content)
     }
 
     @Test

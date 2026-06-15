@@ -95,6 +95,7 @@ The `command` value in every `nextActions` item is also present in `next`.
 | `show-config` | Inspect agents, tools, dependencies, and fallback routes. |
 | `verify-project` | Run the readiness gate and optionally write evidence. |
 | `run-demo` | Create a no-key run snapshot for inspection and support. |
+| `create-project-artifact` | Turn the current workspace into a saved run, trace, and Markdown handoff artifact. |
 | `run-workflow` | Run an inspectable agent workflow. |
 | `analyze-workspace` | Generate a deterministic workspace report. |
 | `show-processes` | Inspect agent process metrics. |
@@ -122,7 +123,7 @@ kaios next --json
 
 Read:
 
-- `status`: `repair`, `verify`, `inspect`, or `ready`.
+- `status`: `repair`, `review`, `verify`, `inspect`, or `ready`.
 - `action`: the single command to show first.
 - `fixFirst`: the first repair or verification action, or `null` when the workspace is already inspectable.
 - `signals`: compact doctor, config, latest run, and trace state.
@@ -131,8 +132,10 @@ Read:
 The priority order is intentionally product-facing:
 
 - repair invalid configs or failed diagnostics first.
+- review current Git changes before gates when the working tree is dirty.
 - verify with `kaios gate --config ...` when config is valid but no run evidence exists.
-- inspect with `kaios ps` once config, run, and trace are healthy.
+- create a bounded project artifact after onboarding-only evidence is healthy.
+- inspect with `kaios ps` once a real task run is already healthy.
 
 ### Onboarding Gate
 

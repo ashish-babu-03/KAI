@@ -241,6 +241,7 @@ class KaiosCli(
             command == "kaios gate" || command.startsWith("kaios gate ") -> "verify-project"
             command.startsWith("kaios verify ") -> "verify-project"
             command.startsWith("kaios demo") -> "run-demo"
+            command.startsWith("kaios run --index .") && command.contains("--out artifacts/project.md") -> "create-project-artifact"
             command.startsWith("kaios run ") -> "run-workflow"
             command.startsWith("kaios analyze ") -> "analyze-workspace"
             command == "kaios ps" || command.startsWith("kaios ps ") -> "show-processes"
@@ -272,6 +273,7 @@ class KaiosCli(
             "show-config" -> "Inspect agents, tools, dependencies, and fallback routes."
             "verify-project" -> "Run the deterministic readiness gate and write evidence when requested."
             "run-demo" -> "Create a no-key run snapshot for inspection and support."
+            "create-project-artifact" -> "Turn the current workspace into a saved run, trace, and Markdown handoff artifact."
             "run-workflow" -> "Run an inspectable agent workflow for a real task."
             "analyze-workspace" -> "Generate a deterministic workspace report without a model key."
             "show-processes" -> "Inspect agent process metrics for the run."
@@ -2154,7 +2156,22 @@ class KaiosCli(
         )
 
     private fun nextHealthyAction(latestRun: BugReportRun?): NextAction =
-        nextAction(if (latestRun?.success == false) "kaios inspect" else "kaios ps")
+        when {
+            latestRun?.success == false -> nextAction("kaios inspect")
+            latestRun?.task?.let(::isOnboardingRunTask) == true -> nextAction(projectArtifactCommand())
+            else -> nextAction("kaios ps")
+        }
+
+    private fun isOnboardingRunTask(task: String): Boolean =
+        task == "verify KAI OS project workflow" ||
+            task == "show KAI OS as Agent=Process, Workflow=Scheduler, Tool=Syscall"
+
+    private fun projectArtifactCommand(): String =
+        if (Files.exists(workingDir.resolve("README.md"))) {
+            "kaios run --index . --context README.md --out artifacts/project.md --force \"summarize this project\""
+        } else {
+            "kaios run --index . --out artifacts/project.md --force \"summarize this project\""
+        }
 
     private fun nextStatus(
         doctor: DoctorReport,

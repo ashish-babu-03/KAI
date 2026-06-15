@@ -112,7 +112,8 @@ kaios next
 - repair first when config or diagnostics are broken.
 - analyze current changes before gates when the Git working tree is dirty.
 - run the Agent Gate when evidence is missing.
-- inspect processes when the workspace is healthy.
+- create a bounded project artifact after onboarding evidence is healthy.
+- inspect processes when a real task run is already healthy.
 
 ## Production Posture In v0.1
 
