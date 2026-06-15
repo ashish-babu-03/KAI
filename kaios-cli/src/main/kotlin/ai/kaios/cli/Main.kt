@@ -2158,20 +2158,13 @@ class KaiosCli(
     private fun nextHealthyAction(latestRun: BugReportRun?): NextAction =
         when {
             latestRun?.success == false -> nextAction("kaios inspect")
-            latestRun?.task?.let(::isOnboardingRunTask) == true -> nextAction(projectArtifactCommand())
+            latestRun?.task?.let(::isOnboardingRunTask) == true -> nextAction(firstProjectRunCommand())
             else -> nextAction("kaios ps")
         }
 
     private fun isOnboardingRunTask(task: String): Boolean =
         task == "verify KAI OS project workflow" ||
             task == "show KAI OS as Agent=Process, Workflow=Scheduler, Tool=Syscall"
-
-    private fun projectArtifactCommand(): String =
-        if (Files.exists(workingDir.resolve("README.md"))) {
-            "kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\""
-        } else {
-            "kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\""
-        }
 
     private fun nextStatus(
         doctor: DoctorReport,

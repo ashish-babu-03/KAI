@@ -707,6 +707,29 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `next project artifact command uses README variants`() {
+        val workspace = Files.createTempDirectory("kaios-cli-next-readme-variant")
+        Files.writeString(workspace.resolve("README.markdown"), "# Demo\nUseful public overview.\n")
+        val cli = cliFor(workspace)
+
+        val setupCode = cli.run(arrayOf("setup", "--ci"), PrintStream(ByteArrayOutputStream()), PrintStream(ByteArrayOutputStream()))
+        assertEquals(0, setupCode)
+        val gateCode = cli.run(arrayOf("gate"), PrintStream(ByteArrayOutputStream()), PrintStream(ByteArrayOutputStream()))
+        assertEquals(0, gateCode)
+
+        val out = ByteArrayOutputStream()
+        val code = cli.run(arrayOf("next", "--json"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val json = Json.parseToJsonElement(out.toString()).jsonObject
+        val action = json.getValue("action").jsonObject
+        val command = action.getValue("command").jsonPrimitive.content
+
+        assertEquals(0, code)
+        assertEquals("create-project-artifact", action.getValue("id").jsonPrimitive.content)
+        assertTrue(command.contains("--context README.markdown"))
+        assertTrue(command.contains("--trace-out artifacts/trace.json"))
+    }
+
+    @Test
     fun `help command help flag shows global help`() {
         val cli = cliFor(Files.createTempDirectory("kaios-cli-help-help"))
         val out = ByteArrayOutputStream()

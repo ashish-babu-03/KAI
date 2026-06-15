@@ -120,7 +120,7 @@ When the gate is ready, create a project artifact:
 kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
-If the project does not have `README.md`, omit `--context README.md`. KAI OS still uses the Workspace Index to orient the run.
+If your project uses `README.markdown` or `README`, use that path instead. If it has no README, omit `--context`; KAI OS still uses the Workspace Index to orient the run. `kaios next` chooses the first available README path automatically.
 
 Every command has local examples when you need the next move without opening docs:
 
