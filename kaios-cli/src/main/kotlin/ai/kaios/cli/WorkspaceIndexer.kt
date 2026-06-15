@@ -258,7 +258,7 @@ private fun languageFor(path: Path): String {
     val name = path.name
     if (name == "Dockerfile") return "Dockerfile"
     if (name == "Makefile") return "Makefile"
-    if (name == "README" || name.endsWith(".md", ignoreCase = true)) return "Markdown"
+    if (name == "README" || name.endsWith(".md", ignoreCase = true) || name.endsWith(".markdown", ignoreCase = true)) return "Markdown"
     if (name == "LICENSE") return "Text"
     if (name == ".gitignore") return "Git Ignore"
 
@@ -289,7 +289,7 @@ private fun notableRank(path: String): Int {
     val lower = path.lowercase()
 
     return when {
-        name.equals("README.md", ignoreCase = true) || name.equals("README", ignoreCase = true) -> 0
+        name.equals("README.md", ignoreCase = true) || name.equals("README.markdown", ignoreCase = true) || name.equals("README", ignoreCase = true) -> 0
         name.equals("build.gradle.kts", ignoreCase = true) -> 1
         name.equals("settings.gradle.kts", ignoreCase = true) -> 2
         name.equals("gradle.properties", ignoreCase = true) -> 3
@@ -297,10 +297,10 @@ private fun notableRank(path: String): Int {
         name.equals("CONTRIBUTING.md", ignoreCase = true) -> 5
         name.equals("SECURITY.md", ignoreCase = true) -> 6
         name.equals("ROADMAP.md", ignoreCase = true) -> 7
-        lower.startsWith("docs/") && lower.endsWith(".md") -> 8
+        lower.startsWith("docs/") && (lower.endsWith(".md") || lower.endsWith(".markdown")) -> 8
         lower.startsWith("src/main/") || "/src/main/" in lower -> 9
         lower.startsWith("src/test/") || "/src/test/" in lower -> 10
-        lower.endsWith(".md") -> 11
+        lower.endsWith(".md") || lower.endsWith(".markdown") -> 11
         else -> Int.MAX_VALUE
     }
 }

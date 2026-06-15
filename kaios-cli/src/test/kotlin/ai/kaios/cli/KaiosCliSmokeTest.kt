@@ -2153,6 +2153,33 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `analyze project artifact command uses README variants`() {
+        val workspace = Files.createTempDirectory("kaios-cli-analyze-readme-variant")
+        Files.writeString(workspace.resolve("README.markdown"), "# Demo\nUseful public overview.\n")
+        Files.createDirectories(workspace.resolve("src/main/kotlin"))
+        Files.writeString(workspace.resolve("src/main/kotlin/App.kt"), "fun main() = println(\"kai\")\n")
+        val cli = cliFor(workspace)
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("analyze", ".", "--json"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val text = out.toString()
+        val root = Json.parseToJsonElement(text).jsonObject
+        val stackSignals = root.getValue("stackSignals").jsonArray.map { it.jsonPrimitive.content }
+        val projectAction = root.getValue("actionPlan")
+            .jsonArray
+            .map { it.jsonObject }
+            .single { action -> action.getValue("id").jsonPrimitive.content == "create-project-artifact" }
+        val suggestedCommands = root.getValue("suggestedCommands").jsonArray.map { it.jsonPrimitive.content }
+
+        assertEquals(0, code)
+        assertTrue(stackSignals.contains("README documentation is present."))
+        assertTrue(projectAction.getValue("command").jsonPrimitive.content.contains("--context README.markdown"))
+        assertTrue(projectAction.getValue("command").jsonPrimitive.content.contains("--trace-out artifacts/trace.json"))
+        assertTrue(suggestedCommands.any { command -> command.contains("--context README.markdown") })
+        assertTrue(!text.contains("Useful public overview."))
+    }
+
+    @Test
     fun `analyze json reports git changes and review action`() {
         val workspace = Files.createTempDirectory("kaios-cli-analyze-git")
         runGit(workspace, "init")

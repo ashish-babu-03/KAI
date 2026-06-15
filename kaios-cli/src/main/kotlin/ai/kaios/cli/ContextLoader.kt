@@ -182,6 +182,7 @@ internal object WorkspaceFileRules {
         "json",
         "kt",
         "kts",
+        "markdown",
         "md",
         "properties",
         "py",

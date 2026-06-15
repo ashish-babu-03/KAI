@@ -160,7 +160,7 @@ internal class WorkspaceAnalyzer {
         if ((languages["Kotlin"] ?: 0) > 0) signals += "Kotlin is present and likely a primary implementation language."
         if ((languages["Java"] ?: 0) > 0) signals += "Java sources are present."
         if ((languages["TypeScript"] ?: 0) + (languages["JavaScript"] ?: 0) > 0) signals += "JavaScript/TypeScript sources are present."
-        if ("README.md" in files || "README" in files) signals += "README documentation is present."
+        if (files.any(::isReadmePath)) signals += "README documentation is present."
         if ("LICENSE" in files) signals += "License file is present."
         if ("SECURITY.md" in files) signals += "Security policy is present."
         if (files.any { it.startsWith(".github/workflows/") }) signals += "GitHub Actions workflow files are present."
@@ -212,7 +212,7 @@ internal class WorkspaceAnalyzer {
         val hasKaiosConfig = files.any { it == "kaios.json" }
         val hasGradle = files.any { it == "settings.gradle.kts" || it == "build.gradle.kts" || it == "settings.gradle" || it == "build.gradle" }
         val hasTests = files.any { "/src/test/" in it || it.startsWith("test/") || it.contains("/test/") }
-        val readme = index.files.firstOrNull { it.path.equals("README.md", ignoreCase = true) || it.path == "README" }
+        val readme = preferredReadmeFile(index)
         val largest = index.largestFiles.firstOrNull()
 
         val actions = mutableListOf<WorkspaceAnalysisAction>()
@@ -310,7 +310,7 @@ internal class WorkspaceAnalyzer {
             "kaios run --index . \"summarize the project shape\"",
         )
 
-        val readme = index.files.firstOrNull { it.path.equals("README.md", ignoreCase = true) || it.path == "README" }
+        val readme = preferredReadmeFile(index)
         if (readme != null) {
             commands += projectArtifactCommand(contextPath = readme.path, force = false)
         }
@@ -346,6 +346,24 @@ internal class WorkspaceAnalyzer {
         append(" \"summarize this project\"")
     }
 
+    private fun preferredReadmeFile(index: WorkspaceIndex): WorkspaceIndexFile? =
+        index.files
+            .sortedBy { readmeRank(it.path) }
+            .firstOrNull { isReadmePath(it.path) }
+
+    private fun isReadmePath(path: String): Boolean =
+        path.equals("README.md", ignoreCase = true) ||
+            path.equals("README.markdown", ignoreCase = true) ||
+            path == "README"
+
+    private fun readmeRank(path: String): Int =
+        when {
+            path.equals("README.md", ignoreCase = true) -> 0
+            path.equals("README.markdown", ignoreCase = true) -> 1
+            path == "README" -> 2
+            else -> 3
+        }
+
     private fun changedContextPriority(path: String): Int =
         when {
             "/src/main/" in path || path.startsWith("src/main/") -> 0
@@ -353,7 +371,7 @@ internal class WorkspaceAnalyzer {
             path.startsWith("src/") -> 0
             path.endsWith(".gradle.kts") || path.endsWith(".gradle") || path == "pom.xml" || path == "package.json" -> 2
             path == "kaios.json" || path.endsWith(".yml") || path.endsWith(".yaml") || path.endsWith(".json") -> 3
-            path.equals("README.md", ignoreCase = true) || path.startsWith("docs/") -> 4
+            isReadmePath(path) || path.startsWith("docs/") -> 4
             else -> 5
         }
 }
