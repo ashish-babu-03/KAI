@@ -231,9 +231,9 @@ internal class WorkspaceAnalyzer {
                 command = buildString {
                     append("kaios run --index .")
                     changedContextFiles.forEach { path -> append(" --context ${shellArg(path)}") }
-                    append(" --out artifacts/change-review.md --force \"review current code change\"")
+                    append(" --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"")
                 },
-                reason = "Git has ${changeSummary.changedFiles} changed file(s); attach the changed files as bounded context before asking an agent to review them.",
+                reason = "Git has ${changeSummary.changedFiles} changed file(s); attach the changed files as bounded context and write a trace before asking an agent to review them.",
             )
         }
 
@@ -260,9 +260,9 @@ internal class WorkspaceAnalyzer {
             priority = "P1",
             action = "Create a reviewable project artifact",
             command = if (readme == null) {
-                "kaios run --index . --out artifacts/project.md --force \"summarize this project\""
+                projectArtifactCommand(contextPath = null)
             } else {
-                "kaios run --index . --context ${shellArg(readme.path)} --out artifacts/project.md --force \"summarize this project\""
+                projectArtifactCommand(contextPath = readme.path)
             },
             reason = "Turn the static workspace map into a saved run, process table, trace, and Markdown handoff artifact.",
         )
@@ -312,7 +312,7 @@ internal class WorkspaceAnalyzer {
 
         val readme = index.files.firstOrNull { it.path.equals("README.md", ignoreCase = true) || it.path == "README" }
         if (readme != null) {
-            commands += "kaios run --index . --context ${readme.path} --out artifacts/project.md \"summarize this project\""
+            commands += projectArtifactCommand(contextPath = readme.path, force = false)
         }
 
         if (index.files.any { it.path.startsWith("docs/") }) {
@@ -337,6 +337,14 @@ internal class WorkspaceAnalyzer {
         } else {
             "'${value.replace("'", "'\"'\"'")}'"
         }
+
+    private fun projectArtifactCommand(contextPath: String?, force: Boolean = true): String = buildString {
+        append("kaios run --index .")
+        if (contextPath != null) append(" --context ${shellArg(contextPath)}")
+        append(" --out artifacts/project.md --trace-out artifacts/trace.json")
+        if (force) append(" --force")
+        append(" \"summarize this project\"")
+    }
 
     private fun changedContextPriority(path: String): Int =
         when {

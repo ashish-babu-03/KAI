@@ -2141,7 +2141,14 @@ class KaiosCliSmokeTest {
         assertTrue(actionPlan.any { action ->
             action.jsonObject.getValue("id").jsonPrimitive.content == "create-project-artifact"
         })
-        assertTrue(root.getValue("suggestedCommands").jsonArray.isNotEmpty())
+        val projectAction = actionPlan.single { action ->
+            action.jsonObject.getValue("id").jsonPrimitive.content == "create-project-artifact"
+        }.jsonObject
+        assertTrue(projectAction.getValue("command").jsonPrimitive.content.contains("--trace-out artifacts/trace.json"))
+        val suggestedCommands = root.getValue("suggestedCommands").jsonArray.map { it.jsonPrimitive.content }
+        assertTrue(suggestedCommands.any { command ->
+            command.contains("--out artifacts/project.md --trace-out artifacts/trace.json")
+        })
         assertTrue(!text.contains("Useful public overview."))
     }
 
@@ -2175,6 +2182,7 @@ class KaiosCliSmokeTest {
         assertEquals("P0", reviewAction.getValue("priority").jsonPrimitive.content)
         assertTrue(reviewAction.getValue("command").jsonPrimitive.content.contains("--context README.md"))
         assertTrue(reviewAction.getValue("command").jsonPrimitive.content.contains("--context src/main/kotlin/App.kt"))
+        assertTrue(reviewAction.getValue("command").jsonPrimitive.content.contains("--trace-out artifacts/change-review.trace.json"))
         assertTrue(!text.contains("Useful public overview."))
     }
 
