@@ -27,6 +27,21 @@ sha256_file() {
   fi
 }
 
+readme_context_arg() {
+  for candidate in README.md README.markdown README; do
+    if [ -f "$candidate" ]; then
+      printf ' --context %s' "$candidate"
+      return
+    fi
+  done
+}
+
+project_run_command() {
+  kaios_cmd="$1"
+  context="$(readme_context_arg)"
+  printf '%s run --index .%s --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"' "$kaios_cmd" "$context"
+}
+
 need curl
 need unzip
 need awk
@@ -70,11 +85,7 @@ echo "KAI OS CLI installed:"
 echo "  ${BIN_DIR}/kaios"
 echo
 if command -v kaios >/dev/null 2>&1; then
-  if [ -f README.md ]; then
-    PROJECT_RUN="kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\""
-  else
-    PROJECT_RUN="kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\""
-  fi
+  PROJECT_RUN="$(project_run_command kaios)"
   echo "Try:"
   echo "  kaios demo"
   echo "  kaios setup --ci"
@@ -84,11 +95,7 @@ if command -v kaios >/dev/null 2>&1; then
   echo "  kaios trace"
   echo "  kaios evidence --out artifacts/run.capsule.json --force"
 else
-  if [ -f README.md ]; then
-    PROJECT_RUN="${BIN_DIR}/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\""
-  else
-    PROJECT_RUN="${BIN_DIR}/kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\""
-  fi
+  PROJECT_RUN="$(project_run_command "${BIN_DIR}/kaios")"
   echo "Add this to your shell profile if kaios is not on PATH:"
   echo "  export PATH=\"${BIN_DIR}:\$PATH\""
   echo
