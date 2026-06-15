@@ -1,0 +1,292 @@
+{
+    "schema": "kaios.process-trace/v1",
+    "runId": "run-9c888ffe",
+    "workflowName": "default",
+    "task": "review current code change\n\nWorkspace Index:\n- 2 files, 7 lines, Markdown:1, Kotlin:1\n- README.md (Markdown, 3 lines)\n- src/main/kotlin/App.kt (Kotlin, 4 lines)\n\nContext:\n- src/main/kotlin/App.kt (77 chars)",
+    "success": true,
+    "metrics": {
+        "processCount": 3,
+        "tokenTotal": 582,
+        "inputTokens": 465,
+        "outputTokens": 117,
+        "contextBytes": 4600,
+        "syscallCount": 3,
+        "processDurationMillis": 6,
+        "wallDurationMillis": 8,
+        "toolTimeMillis": 0,
+        "estimatedCostMicros": 0,
+        "deniedSyscallCount": 0,
+        "recoveredProcessCount": 0,
+        "eventCount": 18
+    },
+    "path": [
+        "planner(pid=1)",
+        "executor(pid=2)",
+        "validator(pid=3)"
+    ],
+    "processes": [
+        {
+            "pid": 1,
+            "agent": "planner",
+            "state": "SUCCEEDED",
+            "tokens": 145,
+            "inputTokens": 133,
+            "outputTokens": 12,
+            "contextBytes": 1131,
+            "syscallCount": 1,
+            "attempt": 1,
+            "parentPid": null,
+            "recoveryOfPid": null,
+            "failureKind": null,
+            "memoryScopeId": "run-9c888ffe:planner",
+            "toolTimeMillis": 0,
+            "estimatedCostMicros": 0,
+            "deniedSyscallCount": 0,
+            "workerId": "in-process",
+            "durationMillis": 6,
+            "failure": null
+        },
+        {
+            "pid": 2,
+            "agent": "executor",
+            "state": "SUCCEEDED",
+            "tokens": 192,
+            "inputTokens": 147,
+            "outputTokens": 45,
+            "contextBytes": 1550,
+            "syscallCount": 1,
+            "attempt": 1,
+            "parentPid": null,
+            "recoveryOfPid": null,
+            "failureKind": null,
+            "memoryScopeId": "run-9c888ffe:executor",
+            "toolTimeMillis": 0,
+            "estimatedCostMicros": 0,
+            "deniedSyscallCount": 0,
+            "workerId": "in-process",
+            "durationMillis": 0,
+            "failure": null
+        },
+        {
+            "pid": 3,
+            "agent": "validator",
+            "state": "SUCCEEDED",
+            "tokens": 245,
+            "inputTokens": 185,
+            "outputTokens": 60,
+            "contextBytes": 1919,
+            "syscallCount": 1,
+            "attempt": 1,
+            "parentPid": null,
+            "recoveryOfPid": null,
+            "failureKind": null,
+            "memoryScopeId": "run-9c888ffe:validator",
+            "toolTimeMillis": 0,
+            "estimatedCostMicros": 0,
+            "deniedSyscallCount": 0,
+            "workerId": "in-process",
+            "durationMillis": 0,
+            "failure": null
+        }
+    ],
+    "scheduler": {
+        "executorBackend": "in-process",
+        "priorityEnabled": false,
+        "triggerCount": 0,
+        "recoveryEnabled": false
+    },
+    "syscalls": [
+        {
+            "callId": "sys-1",
+            "pid": 1,
+            "agent": "planner",
+            "tool": "echo",
+            "permission": "ECHO",
+            "allowed": true,
+            "denied": false,
+            "durationMillis": 0,
+            "estimatedCostMicros": 0,
+            "redactedArguments": {
+                "message": "planning:5f3f275e"
+            },
+            "error": null
+        },
+        {
+            "callId": "sys-2",
+            "pid": 2,
+            "agent": "executor",
+            "tool": "mock-http",
+            "permission": "NETWORK",
+            "allowed": true,
+            "denied": false,
+            "durationMillis": 0,
+            "estimatedCostMicros": 0,
+            "redactedArguments": {
+                "method": "GET",
+                "url": "mock://kaios/tasks/15a7b387"
+            },
+            "error": null
+        },
+        {
+            "callId": "sys-3",
+            "pid": 3,
+            "agent": "validator",
+            "tool": "echo",
+            "permission": "ECHO",
+            "allowed": true,
+            "denied": false,
+            "durationMillis": 0,
+            "estimatedCostMicros": 0,
+            "redactedArguments": {
+                "message": "validated:0edf3419"
+            },
+            "error": null
+        }
+    ],
+    "cost": {
+        "tokenTotal": 582,
+        "toolTimeMillis": 0,
+        "estimatedCostMicros": 0,
+        "deniedSyscallCount": 0
+    },
+    "recovery": {
+        "recoveredProcessCount": 0,
+        "crashCount": 0,
+        "recoverableProcessCount": 0
+    },
+    "eventCounts": {
+        "MEMORY_APPENDED": 6,
+        "SPAWNED": 3,
+        "STARTED": 3,
+        "SUCCEEDED": 3,
+        "TOOL_CALLED": 3
+    },
+    "events": [
+        {
+            "timestamp": "2026-06-15T16:52:23.590533Z",
+            "pid": 1,
+            "agent": "planner",
+            "type": "SPAWNED",
+            "message": "spawned 'planner'"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.590729Z",
+            "pid": 1,
+            "agent": "planner",
+            "type": "STARTED",
+            "message": "started"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.590906Z",
+            "pid": 1,
+            "agent": "planner",
+            "type": "MEMORY_APPENDED",
+            "message": "memory user +501 chars"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.596731Z",
+            "pid": 1,
+            "agent": "planner",
+            "type": "TOOL_CALLED",
+            "message": "syscall echo -> ok"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.596799Z",
+            "pid": 1,
+            "agent": "planner",
+            "type": "MEMORY_APPENDED",
+            "message": "memory assistant +129 chars"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.597252Z",
+            "pid": 1,
+            "agent": "planner",
+            "type": "SUCCEEDED",
+            "message": "succeeded"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.598047Z",
+            "pid": 2,
+            "agent": "executor",
+            "type": "SPAWNED",
+            "message": "spawned 'executor'"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.598053Z",
+            "pid": 2,
+            "agent": "executor",
+            "type": "STARTED",
+            "message": "started"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.598059Z",
+            "pid": 2,
+            "agent": "executor",
+            "type": "MEMORY_APPENDED",
+            "message": "memory user +501 chars"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.598728Z",
+            "pid": 2,
+            "agent": "executor",
+            "type": "TOOL_CALLED",
+            "message": "syscall mock-http -> ok"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.598739Z",
+            "pid": 2,
+            "agent": "executor",
+            "type": "MEMORY_APPENDED",
+            "message": "memory assistant +419 chars"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.598746Z",
+            "pid": 2,
+            "agent": "executor",
+            "type": "SUCCEEDED",
+            "message": "succeeded"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.598950Z",
+            "pid": 3,
+            "agent": "validator",
+            "type": "SPAWNED",
+            "message": "spawned 'validator'"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.598955Z",
+            "pid": 3,
+            "agent": "validator",
+            "type": "STARTED",
+            "message": "started"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.598960Z",
+            "pid": 3,
+            "agent": "validator",
+            "type": "MEMORY_APPENDED",
+            "message": "memory user +501 chars"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.599388Z",
+            "pid": 3,
+            "agent": "validator",
+            "type": "TOOL_CALLED",
+            "message": "syscall echo -> ok"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.599398Z",
+            "pid": 3,
+            "agent": "validator",
+            "type": "MEMORY_APPENDED",
+            "message": "memory assistant +498 chars"
+        },
+        {
+            "timestamp": "2026-06-15T16:52:23.599404Z",
+            "pid": 3,
+            "agent": "validator",
+            "type": "SUCCEEDED",
+            "message": "succeeded"
+        }
+    ]
+}

@@ -23,6 +23,8 @@ export PATH="$HOME/.kaios/bin:$PATH"
 kaios tour
 ```
 
+Want to inspect the proof artifacts before installing? Open the checked-in [Evidence Sample](examples/evidence-sample/) with a review artifact, process trace, replayable capsule, and `kaios.review/v1` JSON.
+
 ![KAI OS CLI demo](docs/assets/kaios-demo.gif)
 
 ![KAI OS process table preview](docs/assets/kaios-process-table.svg)
@@ -481,6 +483,8 @@ For one-command project setup, see [docs/SETUP.md](docs/SETUP.md).
 For the no-key readiness gate, see [docs/VERIFY.md](docs/VERIFY.md).
 
 For copyable project examples, including the default GitHub Actions Agent Gate, see [examples/README.md](examples/README.md).
+
+For a checked-in no-install proof artifact, see [examples/evidence-sample](examples/evidence-sample/).
 
 For persisted memory, see [docs/MEMORY.md](docs/MEMORY.md).
 

@@ -1,0 +1,153 @@
+{
+    "schema": "kaios.review/v1",
+    "version": "0.3.1",
+    "generatedAt": "2026-06-15T16:52:23.650694Z",
+    "cwd": "/private/tmp/kaios-evidence-sample",
+    "status": "valid",
+    "runId": "run-9c888ffe",
+    "task": "review current code change\n\nWorkspace Index:\n- 2 files, 7 lines, Markdown:1, Kotlin:1\n- README.md (Markdown, 3 lines)\n- src/main/kotlin/App.kt (Kotlin, 4 lines)\n\nContext:\n- src/main/kotlin/App.kt (77 chars)",
+    "changedFiles": {
+        "total": 1,
+        "attached": 1,
+        "untracked": 0,
+        "truncated": false,
+        "files": [
+            {
+                "status": "M",
+                "path": "src/main/kotlin/App.kt",
+                "attached": true
+            }
+        ]
+    },
+    "artifact": {
+        "path": "/private/tmp/kaios-evidence-sample/artifacts/change-review.md",
+        "exists": true,
+        "schema": null,
+        "status": null
+    },
+    "trace": {
+        "path": "/private/tmp/kaios-evidence-sample/artifacts/change-review.trace.json",
+        "exists": true,
+        "schema": "kaios.process-trace/v1",
+        "status": "valid"
+    },
+    "capsule": {
+        "path": "/private/tmp/kaios-evidence-sample/artifacts/change-review.capsule.json",
+        "exists": true,
+        "schema": "kaios.run-capsule/v1",
+        "status": "valid"
+    },
+    "replay": {
+        "status": "valid",
+        "valid": true,
+        "deterministic": true,
+        "rebuiltTraceSha256": "39b8f05d400a8dd626983183c31497081d6ccbe8ab1334fe03babf5732805d0c",
+        "issues": []
+    },
+    "baselineDiff": {
+        "status": "skipped",
+        "valid": true,
+        "same": null,
+        "baselinePath": null,
+        "baselineRunId": null,
+        "currentRunId": null,
+        "leftStableSha256": null,
+        "rightStableSha256": null,
+        "differences": 0,
+        "changes": [],
+        "issues": []
+    },
+    "scheduler": {
+        "executorBackend": "in-process",
+        "priorityEnabled": false,
+        "triggerCount": 0,
+        "recoveryEnabled": false
+    },
+    "syscalls": [
+        {
+            "callId": "sys-1",
+            "pid": 1,
+            "agent": "planner",
+            "tool": "echo",
+            "permission": "ECHO",
+            "allowed": true,
+            "denied": false,
+            "durationMillis": 0,
+            "estimatedCostMicros": 0,
+            "redactedArguments": {
+                "message": "planning:5f3f275e"
+            },
+            "error": null
+        },
+        {
+            "callId": "sys-2",
+            "pid": 2,
+            "agent": "executor",
+            "tool": "mock-http",
+            "permission": "NETWORK",
+            "allowed": true,
+            "denied": false,
+            "durationMillis": 0,
+            "estimatedCostMicros": 0,
+            "redactedArguments": {
+                "method": "GET",
+                "url": "mock://kaios/tasks/15a7b387"
+            },
+            "error": null
+        },
+        {
+            "callId": "sys-3",
+            "pid": 3,
+            "agent": "validator",
+            "tool": "echo",
+            "permission": "ECHO",
+            "allowed": true,
+            "denied": false,
+            "durationMillis": 0,
+            "estimatedCostMicros": 0,
+            "redactedArguments": {
+                "message": "validated:0edf3419"
+            },
+            "error": null
+        }
+    ],
+    "cost": {
+        "tokenTotal": 582,
+        "toolTimeMillis": 0,
+        "estimatedCostMicros": 0,
+        "deniedSyscallCount": 0
+    },
+    "recovery": {
+        "recoveredProcessCount": 0,
+        "crashCount": 0,
+        "recoverableProcessCount": 0
+    },
+    "next": [
+        "kaios ps run-9c888ffe",
+        "kaios trace run-9c888ffe --check",
+        "kaios replay --file artifacts/change-review.capsule.json",
+        "kaios review --baseline artifacts/baseline.capsule.json --check"
+    ],
+    "nextActions": [
+        {
+            "id": "show-processes",
+            "command": "kaios ps run-9c888ffe",
+            "reason": "Inspect agent process metrics for the run."
+        },
+        {
+            "id": "check-trace",
+            "command": "kaios trace run-9c888ffe --check",
+            "reason": "Validate the saved process trace contract."
+        },
+        {
+            "id": "replay-capsule",
+            "command": "kaios replay --file artifacts/change-review.capsule.json",
+            "reason": "Replay the capsule offline to confirm determinism."
+        },
+        {
+            "id": "review-current-change",
+            "command": "kaios review --baseline artifacts/baseline.capsule.json --check",
+            "reason": "Run a local-first agent review and package replayable evidence."
+        }
+    ]
+}
