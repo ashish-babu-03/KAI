@@ -730,6 +730,29 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `next project artifact command uses lowercase README variants`() {
+        val workspace = Files.createTempDirectory("kaios-cli-next-lowercase-readme")
+        Files.writeString(workspace.resolve("readme.md"), "# Demo\nUseful public overview.\n")
+        val cli = cliFor(workspace)
+
+        val setupCode = cli.run(arrayOf("setup", "--ci"), PrintStream(ByteArrayOutputStream()), PrintStream(ByteArrayOutputStream()))
+        assertEquals(0, setupCode)
+        val gateCode = cli.run(arrayOf("gate"), PrintStream(ByteArrayOutputStream()), PrintStream(ByteArrayOutputStream()))
+        assertEquals(0, gateCode)
+
+        val out = ByteArrayOutputStream()
+        val code = cli.run(arrayOf("next", "--json"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val json = Json.parseToJsonElement(out.toString()).jsonObject
+        val action = json.getValue("action").jsonObject
+        val command = action.getValue("command").jsonPrimitive.content
+
+        assertEquals(0, code)
+        assertEquals("create-project-artifact", action.getValue("id").jsonPrimitive.content)
+        assertTrue(command.contains("--context readme.md"))
+        assertTrue(command.contains("--trace-out artifacts/trace.json"))
+    }
+
+    @Test
     fun `help command help flag shows global help`() {
         val cli = cliFor(Files.createTempDirectory("kaios-cli-help-help"))
         val out = ByteArrayOutputStream()
@@ -2153,9 +2176,9 @@ class KaiosCliSmokeTest {
     }
 
     @Test
-    fun `analyze project artifact command uses README variants`() {
-        val workspace = Files.createTempDirectory("kaios-cli-analyze-readme-variant")
-        Files.writeString(workspace.resolve("README.markdown"), "# Demo\nUseful public overview.\n")
+    fun `analyze project artifact command uses lowercase README without extension`() {
+        val workspace = Files.createTempDirectory("kaios-cli-analyze-lowercase-readme")
+        Files.writeString(workspace.resolve("readme"), "# Demo\nUseful public overview.\n")
         Files.createDirectories(workspace.resolve("src/main/kotlin"))
         Files.writeString(workspace.resolve("src/main/kotlin/App.kt"), "fun main() = println(\"kai\")\n")
         val cli = cliFor(workspace)
@@ -2173,9 +2196,9 @@ class KaiosCliSmokeTest {
 
         assertEquals(0, code)
         assertTrue(stackSignals.contains("README documentation is present."))
-        assertTrue(projectAction.getValue("command").jsonPrimitive.content.contains("--context README.markdown"))
+        assertTrue(projectAction.getValue("command").jsonPrimitive.content.contains("--context readme"))
         assertTrue(projectAction.getValue("command").jsonPrimitive.content.contains("--trace-out artifacts/trace.json"))
-        assertTrue(suggestedCommands.any { command -> command.contains("--context README.markdown") })
+        assertTrue(suggestedCommands.any { command -> command.contains("--context readme") })
         assertTrue(!text.contains("Useful public overview."))
     }
 

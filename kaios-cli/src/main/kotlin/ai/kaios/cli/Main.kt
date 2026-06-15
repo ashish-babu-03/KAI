@@ -3908,10 +3908,31 @@ class KaiosCli(
         return "kaios run --index .$context --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\""
     }
 
-    private fun preferredReadmePath(): Path? =
-        listOf("README.md", "README.markdown", "README")
-            .map { workingDir.resolve(it).normalize() }
-            .firstOrNull { it.exists() }
+    private fun preferredReadmePath(): Path? {
+        val entries = runCatching { Files.list(workingDir) }.getOrNull() ?: return null
+        try {
+            return entries
+                .filter { Files.isRegularFile(it) }
+                .filter { readmePathRank(it.fileName.toString()) < Int.MAX_VALUE }
+                .sorted(
+                    compareBy<Path> { readmePathRank(it.fileName.toString()) }
+                        .thenBy { it.fileName.toString().lowercase() }
+                        .thenBy { it.fileName.toString() },
+                )
+                .findFirst()
+                .orElse(null)
+        } finally {
+            entries.close()
+        }
+    }
+
+    private fun readmePathRank(name: String): Int =
+        when {
+            name.equals("README.md", ignoreCase = true) -> 0
+            name.equals("README.markdown", ignoreCase = true) -> 1
+            name.equals("README", ignoreCase = true) -> 2
+            else -> Int.MAX_VALUE
+        }
 
     private fun formatProcessHeader(): String =
         listOf("PID", "AGENT", "STATE", "TOKENS", "MEMORY", "SYSCALLS", "DURATION").joinToString("  ") {

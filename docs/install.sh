@@ -27,13 +27,26 @@ sha256_file() {
   fi
 }
 
-readme_context_arg() {
-  for candidate in README.md README.markdown README; do
+find_readme_context() {
+  pattern="$1"
+  for candidate in ./*; do
     if [ -f "$candidate" ]; then
-      printf ' --context %s' "$candidate"
-      return
+      name="${candidate#./}"
+      case "$name" in
+        $pattern)
+          printf ' --context %s' "$name"
+          return 0
+          ;;
+      esac
     fi
   done
+  return 1
+}
+
+readme_context_arg() {
+  find_readme_context '[Rr][Ee][Aa][Dd][Mm][Ee].[Mm][Dd]' && return
+  find_readme_context '[Rr][Ee][Aa][Dd][Mm][Ee].[Mm][Aa][Rr][Kk][Dd][Oo][Ww][Nn]' && return
+  find_readme_context '[Rr][Ee][Aa][Dd][Mm][Ee]' && return
 }
 
 project_run_command() {

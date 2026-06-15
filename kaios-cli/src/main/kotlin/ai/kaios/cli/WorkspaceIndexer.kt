@@ -258,7 +258,7 @@ private fun languageFor(path: Path): String {
     val name = path.name
     if (name == "Dockerfile") return "Dockerfile"
     if (name == "Makefile") return "Makefile"
-    if (name == "README" || name.endsWith(".md", ignoreCase = true) || name.endsWith(".markdown", ignoreCase = true)) return "Markdown"
+    if (name.equals("README", ignoreCase = true) || name.endsWith(".md", ignoreCase = true) || name.endsWith(".markdown", ignoreCase = true)) return "Markdown"
     if (name == "LICENSE") return "Text"
     if (name == ".gitignore") return "Git Ignore"
 

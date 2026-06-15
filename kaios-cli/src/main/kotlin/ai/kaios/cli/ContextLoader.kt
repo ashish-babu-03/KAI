@@ -198,7 +198,7 @@ internal object WorkspaceFileRules {
 
     fun hasTextExtension(path: Path): Boolean {
         val name = path.name
-        if (name in textFileNames) return true
+        if (textFileNames.any { it.equals(name, ignoreCase = true) }) return true
 
         val extension = name.substringAfterLast('.', missingDelimiterValue = "")
         if (extension.isBlank()) return false

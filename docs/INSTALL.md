@@ -71,7 +71,7 @@ kaios gate
 ```
 
 After `kaios gate` reports `status: ready`, create an artifact with `kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"`.
-If your project uses `README.markdown` or `README`, use that path instead. If it has no README, omit `--context`; `kaios next` chooses the first available README path automatically.
+If your project uses `README.markdown` or `README`, use that path instead. README matching is case-insensitive, so lowercase variants work too. If it has no README, omit `--context`; `kaios next` chooses the first available README path automatically.
 
 ## Hosted Installer
 

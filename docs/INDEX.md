@@ -9,7 +9,7 @@ kaios analyze . --out artifacts/analysis.md --force
 kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
 ```
 
-`kaios next` and `kaios analyze` use `README.md`, `README.markdown`, or `README` as the first project context when one exists.
+`kaios next` and `kaios analyze` use `README.md`, `README.markdown`, or `README` as the first project context when one exists, with case-insensitive matching.
 
 ## Analyze vs Index vs Context
 

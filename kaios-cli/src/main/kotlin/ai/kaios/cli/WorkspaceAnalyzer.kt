@@ -354,13 +354,13 @@ internal class WorkspaceAnalyzer {
     private fun isReadmePath(path: String): Boolean =
         path.equals("README.md", ignoreCase = true) ||
             path.equals("README.markdown", ignoreCase = true) ||
-            path == "README"
+            path.equals("README", ignoreCase = true)
 
     private fun readmeRank(path: String): Int =
         when {
             path.equals("README.md", ignoreCase = true) -> 0
             path.equals("README.markdown", ignoreCase = true) -> 1
-            path == "README" -> 2
+            path.equals("README", ignoreCase = true) -> 2
             else -> 3
         }
 
