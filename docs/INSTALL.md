@@ -9,6 +9,7 @@ kaios --version
 ```
 
 Running `kaios` with no arguments prints the quick start and exits successfully, so it is safe to use as a first smoke test.
+Run `kaios next` when you want one read-only recommendation for the current workspace before writing config, CI, or evidence files.
 Common aliases execute directly: `kaios start --no-ci`, `kaios status`, `kaios ls`, `kaios proc`, and `kaios audit`.
 Mistyped commands still show a suggestion when there is a clear match.
 After a saved run exists, `kaios ps`, `kaios inspect`, `kaios trace`, `kaios capsule`, `kaios evidence`, `kaios report`, and `kaios export` default to the newest run. When no snapshots exist yet, the CLI points back to `kaios quickstart`, `kaios demo`, `kaios setup --ci`, and `kaios gate`.
@@ -18,6 +19,7 @@ Every core command also supports local help with examples and notes:
 
 ```bash
 kaios
+kaios next --help
 kaios quickstart --help
 kaios setup --help
 kaios gate --help
@@ -36,6 +38,7 @@ kaios help bug-report
 brew tap morning-verlu/tap
 brew install kaios
 
+kaios next
 kaios quickstart --dry-run
 kaios quickstart
 ```
@@ -66,6 +69,7 @@ The installer downloads the release ZIP, verifies the published SHA256 checksum,
 ```bash
 curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
+kaios next
 kaios quickstart
 ```
 
@@ -78,9 +82,9 @@ curl -fsSL https://morning-verlu.github.io/KAI/install.sh | KAIOS_INSTALL_DIR="$
 ## Download ZIP
 
 ```bash
-curl -L -o kaios-0.1.83.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.83/kaios-0.1.83.zip
-unzip kaios-0.1.83.zip
-./kaios-0.1.83/bin/kaios quickstart
+curl -L -o kaios-0.1.84.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.84/kaios-0.1.84.zip
+unzip kaios-0.1.84.zip
+./kaios-0.1.84/bin/kaios quickstart
 ```
 
 ## Build From Source
@@ -89,6 +93,7 @@ unzip kaios-0.1.83.zip
 git clone https://github.com/morning-verlu/KAI.git
 cd KAI
 ./gradlew test installDist
+build/install/kaios-cli/bin/kaios next
 build/install/kaios-cli/bin/kaios quickstart
 ```
 
@@ -96,6 +101,7 @@ Useful next commands after the first artifact:
 
 ```bash
 kaios analyze . --format json --out artifacts/analysis.json --force
+kaios next
 kaios quickstart
 kaios doctor --json
 kaios doctor --fix --dry-run

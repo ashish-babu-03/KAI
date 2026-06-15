@@ -13,6 +13,7 @@ The rule of thumb is simple:
 
 | Command | Schema | Primary Use |
 | --- | --- | --- |
+| `kaios next --json` | `kaios.next/v1` | Read-only workspace compass with one prioritized command. |
 | `kaios quickstart --json` | `kaios.quickstart/v1` | One-command onboarding state across demo, setup, verify, and evidence. |
 | `kaios setup --json` | `kaios.setup/v1` | Bootstrap state, generated files, validation, and next actions. |
 | `kaios verify --json` | `kaios.verify/v1` | One-command local and CI readiness gate. |
@@ -43,6 +44,7 @@ These schemas include both `next` and `nextActions`:
 
 - `kaios.setup/v1`
 - `kaios.verify/v1`
+- `kaios.next/v1`
 - `kaios.quickstart/v1`
 - `kaios.config-validation/v1`
 - `kaios.doctor/v1`
@@ -105,10 +107,32 @@ The `command` value in every `nextActions` item is also present in `next`.
 | `replay-capsule` | Replay a capsule offline. |
 | `diff-capsules` | Compare two capsules with stable runtime signatures. |
 | `collect-support-report` | Generate a safe support bundle. |
-| `run-diagnostics` | Run machine-readable local diagnostics. |
+| `run-diagnostics` | Run local diagnostics. |
 | `next` | Generic fallback for uncategorized commands. |
 
 ## Recommended Gates
+
+### Workspace Next Gate
+
+Use `kaios.next/v1` when docs, bots, issue templates, or a future UI need one safe next command without writing files:
+
+```bash
+kaios next --json
+```
+
+Read:
+
+- `status`: `repair`, `verify`, `inspect`, or `ready`.
+- `action`: the single command to show first.
+- `fixFirst`: the first repair or verification action, or `null` when the workspace is already inspectable.
+- `signals`: compact doctor, config, latest run, and trace state.
+- `nextActions`: the full ordered action list for automation.
+
+The priority order is intentionally product-facing:
+
+- repair invalid configs or failed diagnostics first.
+- verify with `kaios gate --config ...` when config is valid but no run evidence exists.
+- inspect with `kaios ps` once config, run, and trace are healthy.
 
 ### Onboarding Gate
 
@@ -248,6 +272,7 @@ Read:
 
 For missing or invalid project configs, `fixFirst.id == "repair-project"` and the command is the dry-run repair preview.
 For a valid project config without a saved run, `fixFirst.id == "verify-project"` so the project gate creates inspectable evidence before deeper debugging.
+Use `kaios.next/v1` when the support surface only needs the first command instead of the full report body.
 
 ## Field Notes
 
@@ -276,6 +301,14 @@ For a valid project config without a saved run, `fixFirst.id == "verify-project"
 - `config.valid`
 - `latestRun`
 - `trace.valid`
+- `nextActions`
+
+`kaios.next/v1` is the best source for a first-class "what should I do now?" UI:
+
+- `status`
+- `action`
+- `fixFirst`
+- `signals`
 - `nextActions`
 
 `schemaVersion: 1` workspace analysis is intentionally separate from the `kaios.*` runtime schemas. Use it for dashboards and onboarding reports, not runtime correctness gates.

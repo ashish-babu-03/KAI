@@ -58,10 +58,12 @@ Install, then run the full no-key onboarding gate:
 brew tap morning-verlu/tap
 brew install kaios
 
+kaios next
 kaios quickstart --dry-run
 kaios quickstart
 ```
 
+`kaios next` is the read-only compass: it inspects doctor diagnostics, project config, latest run evidence, and trace validity, then prints the single best next command for the current workspace.
 `kaios quickstart` runs the deterministic demo, creates a validated `kaios.json`, writes a no-key GitHub Actions Agent Gate, verifies the workflow, writes a portable evidence capsule, and prints the next command to inspect the agent processes. It is safe to rerun: existing config and CI files are kept unless you pass `--force`.
 Use `kaios quickstart --dry-run` first when you want to preview generated files and commands without writing anything.
 Use `kaios quickstart --no-ci` when you want the same local onboarding path without writing `.github/workflows/kaios.yml`.
@@ -90,6 +92,7 @@ Every command has local examples when you need the next move without opening doc
 
 ```bash
 kaios
+kaios help next
 kaios help quickstart
 kaios help demo
 kaios help gate
@@ -107,6 +110,7 @@ Need a support-friendly environment check?
 
 ```bash
 kaios doctor
+kaios next
 kaios doctor --fix --dry-run
 kaios doctor --fix
 kaios doctor --json
@@ -116,6 +120,7 @@ kaios bug-report --config workflows/research.json --out artifacts/kaios-bug-repo
 ```
 
 `kaios bug-report` creates a safe-to-paste Markdown report with a Fix First command, doctor checks, config validation, latest run metrics, and trace contract status.
+`kaios next` gives the same recovery path as one prioritized command: repair invalid configs first, run the Agent Gate when no evidence exists, then inspect process metrics once the workspace is healthy.
 `kaios doctor --fix --dry-run` previews the local repair plan; `kaios doctor --fix` creates the missing project workflow without writing CI unless you add `--ci`. Existing files are kept unless you pass `--force`.
 `kaios doctor`, `kaios gate`, `kaios verify`, and `kaios bug-report` print the same recovery path: `kaios quickstart` for the full no-key onboarding gate, `kaios doctor --fix --dry-run --ci` then `kaios doctor --fix --ci` when no project workflow exists, `kaios gate --config kaios.json` when one is valid, or `kaios config validate --config kaios.json --json` plus `kaios doctor --fix --dry-run --ci --force` before `kaios doctor --fix --ci --force` when an existing config is invalid.
 Use `--config` with `doctor` and `bug-report` when your project workflow lives outside the default `kaios.json`; diagnostics and next commands will follow that exact file instead of falling back to the default.
@@ -295,7 +300,7 @@ Modules:
 - `tool-runtime`: built-in syscall tools including allowlisted HTTP and scoped files.
 - `memory-engine`: in-memory session memory and JSON run snapshots.
 - `model-providers`: OpenAI-compatible and Ollama model provider implementations.
-- `kaios-cli`: `kaios quickstart`, `kaios gate`, `kaios demo`, `kaios init`, `kaios run`, `kaios runs`, `kaios ps`, `kaios inspect`, `kaios trace`, `kaios capsule`, `kaios replay`, `kaios diff`, `kaios report`, workspace analysis, Workspace Index, context-file loading, and `kaios doctor`.
+- `kaios-cli`: `kaios next`, `kaios quickstart`, `kaios gate`, `kaios demo`, `kaios init`, `kaios run`, `kaios runs`, `kaios ps`, `kaios inspect`, `kaios trace`, `kaios capsule`, `kaios replay`, `kaios diff`, `kaios report`, workspace analysis, Workspace Index, context-file loading, and `kaios doctor`.
 
 Read the deeper design notes in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Read the JSON automation contracts in [docs/JSON_CONTRACTS.md](docs/JSON_CONTRACTS.md).
@@ -413,6 +418,7 @@ KAI OS is early v0.1 infrastructure. Today it includes:
 - Session memory and JSON snapshots under `.kaios/runs/`.
 - SQLite memory adapter for persisted agent process memory.
 - No-key `kaios quickstart` that runs demo, setup, verify, evidence, and prints the process inspection path.
+- Read-only `kaios next` workspace compass that returns one prioritized command plus `kaios.next/v1` JSON.
 - No-key `kaios demo` that prints the process table and writes a trace artifact.
 - CLI process table, run registry, and run inspector.
 - KAI Process Trace schema with text and JSON output through `kaios trace`.

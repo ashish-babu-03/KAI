@@ -1,6 +1,14 @@
 # Support Reports
 
-When KAI OS behaves differently across machines, start with a safe support report:
+When KAI OS behaves differently across machines, start with the read-only workspace compass:
+
+```bash
+kaios next
+```
+
+It prints one prioritized command: repair first when config or diagnostics are broken, run the Agent Gate when evidence is missing, and inspect processes when the workspace is healthy.
+
+When you need a pasteable issue payload, create a safe support report:
 
 ```bash
 kaios bug-report
@@ -22,6 +30,7 @@ When your workflow config is not `kaios.json`, pass the same path to support com
 
 ```bash
 kaios doctor
+kaios next
 kaios doctor --fix --dry-run
 kaios doctor --fix
 kaios doctor --config workflows/research.json --json
@@ -45,6 +54,7 @@ kaios bug-report --format json --out artifacts/kaios-bug-report.json --force
 
 JSON output uses schema `kaios.bug-report/v1`.
 Read `fixFirst` first when it is not `null`; it is the same stable `NextAction` shape used by `nextActions`.
+For a smaller machine-readable first step, use `kaios next --json` and read `action` from schema `kaios.next/v1`.
 The report's `next` commands and structured `nextActions` use the same onboarding path as the rest of the CLI:
 
 For the full JSON command matrix and shared action ids, see [JSON_CONTRACTS.md](JSON_CONTRACTS.md).

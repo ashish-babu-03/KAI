@@ -36,7 +36,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.83"
+private const val KAIOS_VERSION = "0.1.84"
 private const val CI_AGENT_GATE_ARTIFACT_NAME = "kaios-agent-gate"
 private const val CI_WORKFLOW_PUSH_NOTE = "Pushing .github/workflows/kaios.yml may require GitHub workflow permission/scope."
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
@@ -46,6 +46,7 @@ private const val RUN_DIFF_SCHEMA = "kaios.run-diff/v1"
 private const val RUN_EVIDENCE_SCHEMA = "kaios.evidence/v1"
 private const val DOCTOR_SCHEMA = "kaios.doctor/v1"
 private const val DOCTOR_FIX_SCHEMA = "kaios.doctor-fix/v1"
+private const val NEXT_SCHEMA = "kaios.next/v1"
 private const val RUNS_SCHEMA = "kaios.runs/v1"
 private const val CONFIG_VALIDATION_SCHEMA = "kaios.config-validation/v1"
 private const val BUG_REPORT_SCHEMA = "kaios.bug-report/v1"
@@ -56,6 +57,7 @@ private const val EVIDENCE_DIFF_CHANGE_LIMIT = 5
 
 private val TOP_LEVEL_COMMANDS = listOf(
     "quickstart",
+    "next",
     "setup",
     "gate",
     "verify",
@@ -139,6 +141,7 @@ class KaiosCli(
         val commandArgs = args.drop(1)
         return when (command) {
             "quickstart" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("quickstart")) else runQuickstart(commandArgs, out, err)
+            "next" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("next")) else printWorkspaceNext(commandArgs, out, err)
             "setup" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("setup")) else setupProject(commandArgs, out, err)
             "gate" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("gate")) else runAgentGate(commandArgs, out, err)
             "verify" -> if (isHelp(commandArgs)) printCommandHelp(out, commandHelp("verify")) else verifyProject(commandArgs, out, err)
@@ -281,7 +284,7 @@ class KaiosCli(
             "open-report" -> "Open the saved Agent Process Manager report."
             "export-artifact" -> "Export the saved run as a Markdown artifact."
             "collect-support-report" -> "Generate a safe support bundle for issues or handoff."
-            "run-diagnostics" -> "Run machine-readable local diagnostics."
+            "run-diagnostics" -> "Run local diagnostics; add --json when automation needs structured output."
             else -> "Continue with the next recommended command."
         }
 
@@ -414,6 +417,20 @@ class KaiosCli(
                     "Existing config and CI files are kept unless --force is passed.",
                     "Evidence is written to a quickstart-owned capsule so repeated runs stay low-friction.",
                     "JSON output uses schema $QUICKSTART_SCHEMA for onboarding checks and docs automation.",
+                ),
+            )
+            "next" -> CommandHelp(
+                usage = "kaios next [--config kaios.json] [--json|--format json]",
+                summary = "Print the single best next command for the current workspace state.",
+                examples = listOf(
+                    "kaios next",
+                    "kaios next --json",
+                    "kaios next --config workflows/research.json",
+                ),
+                notes = listOf(
+                    "The command is read-only: it inspects doctor diagnostics, config validation, latest run state, and trace validity.",
+                    "It chooses repair before verify, verify before inspection, and inspection once evidence is healthy.",
+                    "JSON output uses schema $NEXT_SCHEMA for onboarding, support bots, and docs automation.",
                 ),
             )
             "setup" -> CommandHelp(
@@ -1356,6 +1373,13 @@ class KaiosCli(
             "kaios doctor --config ${displayPath(configPath)} --json"
         }
 
+    private fun doctorTextCommand(configPath: Path): String =
+        if (configPath.toAbsolutePath().normalize() == defaultConfigPath().toAbsolutePath().normalize()) {
+            "kaios doctor"
+        } else {
+            "kaios doctor --config ${displayPath(configPath)}"
+        }
+
     private fun setupCommand(configPath: Path): String =
         if (configPath.toAbsolutePath().normalize() == defaultConfigPath().toAbsolutePath().normalize()) {
             "kaios setup --ci"
@@ -2056,6 +2080,142 @@ class KaiosCli(
         }
 
         return if (report.summary.failed > 0) 2 else 0
+    }
+
+    private fun printWorkspaceNext(args: List<String>, out: PrintStream, err: PrintStream): Int {
+        val command = runCatching { parseNextCommand(args) }.getOrElse { error ->
+            return printCommandUsageError(err, "next", error.message)
+        }
+        val report = buildNextReport(command.configPath)
+
+        when (command.format) {
+            NextFormat.Text -> renderNextText(report, out)
+            NextFormat.Json -> out.println(TRACE_JSON.encodeToString(report))
+        }
+
+        return 0
+    }
+
+    private fun buildNextReport(configPath: Path): NextReport {
+        val doctor = buildDoctorReport(configPath)
+        val config = buildConfigValidationReport(configPath)
+        val snapshots = runCatching { snapshotStore.list() }.getOrElse { emptyList() }
+        val latestSnapshot = snapshots.firstOrNull()
+        val latestRun = latestSnapshot?.let(::bugReportRun)
+        val trace = latestSnapshot?.let(::bugReportTrace)
+        val reportNext = bugReportNextCommands(config, latestRun)
+        val fixFirst = nextFixFirst(configPath, doctor, config, latestRun, trace, reportNext)
+        val action = fixFirst ?: nextHealthyAction(latestRun)
+        val next = buildList {
+            add(action.command)
+            addAll(reportNext)
+            add(bugReportCommand(configPath))
+        }.distinct()
+
+        return NextReport(
+            schema = NEXT_SCHEMA,
+            version = KAIOS_VERSION,
+            cwd = workingDir.toString(),
+            status = nextStatus(doctor, config, latestRun, trace),
+            action = action,
+            fixFirst = fixFirst,
+            signals = nextSignals(doctor, config, latestRun, trace),
+            next = next,
+            nextActions = nextActions(next),
+        )
+    }
+
+    private fun nextFixFirst(
+        configPath: Path,
+        doctor: DoctorReport,
+        config: ConfigValidationReport,
+        latestRun: BugReportRun?,
+        trace: BugReportTrace?,
+        next: List<String>,
+    ): NextAction? =
+        when {
+            !config.valid -> bugReportFixFirst(config, latestRun, trace, next)
+            doctor.summary.failed > 0 -> nextAction(doctorTextCommand(configPath))
+            latestRun == null -> bugReportFixFirst(config, latestRun, trace, next)
+            trace?.valid == false -> bugReportFixFirst(config, latestRun, trace, next)
+            else -> null
+        }
+
+    private fun nextHealthyAction(latestRun: BugReportRun?): NextAction =
+        nextAction(if (latestRun?.success == false) "kaios inspect" else "kaios ps")
+
+    private fun nextStatus(
+        doctor: DoctorReport,
+        config: ConfigValidationReport,
+        latestRun: BugReportRun?,
+        trace: BugReportTrace?,
+    ): String =
+        when {
+            doctor.summary.failed > 0 || !config.valid -> "repair"
+            latestRun == null -> "verify"
+            trace?.valid == false -> "repair"
+            !latestRun.success -> "inspect"
+            else -> "ready"
+        }
+
+    private fun nextSignals(
+        doctor: DoctorReport,
+        config: ConfigValidationReport,
+        latestRun: BugReportRun?,
+        trace: BugReportTrace?,
+    ): List<NextSignal> =
+        listOf(
+            NextSignal(
+                name = "doctor",
+                status = doctor.summary.status,
+                detail = "${doctor.summary.failed} failed, ${doctor.summary.warnings} warning(s)",
+            ),
+            NextSignal(
+                name = "config",
+                status = if (config.valid) "valid" else "invalid",
+                detail = if (config.valid) {
+                    "${config.workflowName ?: "workflow"} (${config.agentCount} agent process node(s))"
+                } else {
+                    config.errors.firstOrNull()?.let(::singleLine) ?: "workflow config is invalid"
+                },
+            ),
+            NextSignal(
+                name = "latest_run",
+                status = when {
+                    latestRun == null -> "missing"
+                    latestRun.success -> "success"
+                    else -> "failed"
+                },
+                detail = latestRun?.let { "${it.runId} ${singleLine(it.task)}" } ?: "no saved run snapshot",
+            ),
+            NextSignal(
+                name = "trace",
+                status = when {
+                    trace == null -> "missing"
+                    trace.valid -> "valid"
+                    else -> "invalid"
+                },
+                detail = when {
+                    trace == null -> "no trace because no saved run snapshot exists"
+                    trace.valid -> "${trace.processCount} process(es), ${trace.eventCount} event(s)"
+                    else -> trace.issues.firstOrNull()?.let(::singleLine) ?: "process trace contract failed"
+                },
+            ),
+        )
+
+    private fun renderNextText(report: NextReport, out: PrintStream) {
+        out.println("KAI OS next")
+        out.println("schema: ${report.schema}")
+        out.println("status: ${report.status}")
+        out.println("command: ${report.action.command}")
+        out.println("reason: ${report.action.reason}")
+        report.fixFirst?.let { action -> out.println("fix_first: ${action.command}") }
+        out.println()
+        out.println("why:")
+        report.signals.forEach { signal ->
+            out.println("  ${signal.name}: ${signal.status} - ${signal.detail}")
+        }
+        renderNextCommands(out, report.next)
     }
 
     private fun bugReport(args: List<String>, out: PrintStream, err: PrintStream): Int {
@@ -3618,6 +3778,9 @@ class KaiosCli(
             """
             KAI OS - AI Agent Operating System in Kotlin
 
+            Need the next move?
+              kaios next
+
             Quick start (one command):
               kaios quickstart --dry-run
               kaios quickstart
@@ -3629,6 +3792,7 @@ class KaiosCli(
 
             Command groups:
               Setup:
+                kaios next [--config kaios.json]
                 kaios quickstart [--dry-run]
                 kaios setup [--ci]
                 kaios gate [--config kaios.json]
@@ -5274,6 +5438,55 @@ class KaiosCli(
             else -> error("Unknown doctor format '$value'. Use text or json.")
         }
 
+    private fun parseNextCommand(args: List<String>): NextCommand {
+        var configPath = defaultConfigPath()
+        var format = NextFormat.Text
+        var index = 0
+
+        while (index < args.size) {
+            val arg = args[index]
+            when {
+                arg == "--config" || arg == "-c" -> {
+                    val value = args.getOrNull(index + 1) ?: error("--config requires a path.")
+                    configPath = resolvePath(value)
+                    index += 2
+                }
+                arg.startsWith("--config=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--config requires a path." }
+                    configPath = resolvePath(value)
+                    index += 1
+                }
+                arg == "--json" -> {
+                    format = NextFormat.Json
+                    index += 1
+                }
+                arg == "--format" -> {
+                    val value = args.getOrNull(index + 1) ?: error("--format requires text or json.")
+                    format = parseNextFormat(value)
+                    index += 2
+                }
+                arg.startsWith("--format=") -> {
+                    val value = arg.substringAfter("=")
+                    require(value.isNotBlank()) { "--format requires text or json." }
+                    format = parseNextFormat(value)
+                    index += 1
+                }
+                arg.startsWith("-") -> error("Unknown next option '$arg'.")
+                else -> error("Unexpected next argument '$arg'.")
+            }
+        }
+
+        return NextCommand(configPath, format)
+    }
+
+    private fun parseNextFormat(value: String): NextFormat =
+        when (value.lowercase().trim()) {
+            "text", "plain" -> NextFormat.Text
+            "json" -> NextFormat.Json
+            else -> error("Unknown next format '$value'. Use text or json.")
+        }
+
     private fun parseBugReportCommand(args: List<String>): BugReportCommand {
         var configPath = defaultConfigPath()
         var outputPath: Path? = null
@@ -5951,6 +6164,16 @@ private enum class ConfigValidationFormat(val id: String) {
     Json("json"),
 }
 
+private data class NextCommand(
+    val configPath: Path,
+    val format: NextFormat,
+)
+
+private enum class NextFormat(val id: String) {
+    Text("text"),
+    Json("json"),
+}
+
 @Serializable
 private data class ConfigValidationReport(
     val schema: String,
@@ -5990,6 +6213,26 @@ private enum class BugReportFormat(val id: String) {
     Markdown("markdown"),
     Json("json"),
 }
+
+@Serializable
+private data class NextReport(
+    val schema: String,
+    val version: String,
+    val cwd: String,
+    val status: String,
+    val action: NextAction,
+    val fixFirst: NextAction?,
+    val signals: List<NextSignal>,
+    val next: List<String>,
+    val nextActions: List<NextAction>,
+)
+
+@Serializable
+private data class NextSignal(
+    val name: String,
+    val status: String,
+    val detail: String,
+)
 
 @Serializable
 private data class DoctorReport(
