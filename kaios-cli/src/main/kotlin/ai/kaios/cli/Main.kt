@@ -36,7 +36,7 @@ import kotlin.io.path.exists
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.81"
+private const val KAIOS_VERSION = "0.1.82"
 private const val CI_AGENT_GATE_ARTIFACT_NAME = "kaios-agent-gate"
 private const val CI_WORKFLOW_PUSH_NOTE = "Pushing .github/workflows/kaios.yml may require GitHub workflow permission/scope."
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"
@@ -1387,8 +1387,12 @@ class KaiosCli(
         buildList {
             if (configPath.exists()) {
                 if (includeValidate) add("kaios config validate --config ${displayPath(configPath)} --json")
+                add(doctorFixCommand(configPath, writeCi = true, force = true, dryRun = true))
+                add(doctorFixCommand(configPath, writeCi = true, force = true))
                 add(setupForceCommand(configPath))
             } else {
+                add(doctorFixCommand(configPath, writeCi = true, dryRun = true))
+                add(doctorFixCommand(configPath, writeCi = true))
                 add(setupCommand(configPath))
             }
         }
@@ -3991,6 +3995,8 @@ class KaiosCli(
         }
         if (!report.config.valid) {
             return report.next.firstOrNull { next ->
+                nextActionId(next) == "repair-project"
+            } ?: report.next.firstOrNull { next ->
                 nextActionId(next) == "regenerate-config" || nextActionId(next) == "setup-project"
             }
         }

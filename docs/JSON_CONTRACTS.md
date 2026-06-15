@@ -192,7 +192,7 @@ Read `diagnosis` before drilling into nested artifacts. It gives people, CI bots
 - `diagnosis.status`: `ready`, `failed`, or `different`.
 - `diagnosis.verdict`: one short user-facing sentence.
 - `diagnosis.reasons`: stable failure or drift reasons suitable for CI annotations.
-- `diagnosis.fixFirst`: the first `nextActions`-style command to run, or `null`.
+- `diagnosis.fixFirst`: the first `nextActions`-style command to run, or `null`. For project config failures this is a `repair-project` dry-run command so users can preview writes before applying them.
 - `diagnosis.diffChanges`: the first stable baseline differences when `--baseline ... --check` finds drift.
 
 ### Evidence Gate
@@ -228,7 +228,7 @@ Gate on:
 - `errors` is empty
 - `agentCount > 0`
 
-If validation fails, read `nextActions` and prefer `regenerate-config` for an existing invalid config or `setup-project` when the config is missing. `repair-config` is retained for older human-readable repair notes.
+If validation fails, read `nextActions` and prefer `repair-project` when present. Existing invalid configs should surface the dry-run repair command before `regenerate-config`; missing configs should surface the dry-run repair command before `setup-project`. `repair-config` is retained for older human-readable repair notes.
 
 ## Field Notes
 

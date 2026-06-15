@@ -60,9 +60,11 @@ Repair an invalid or outdated generated config:
 ```bash
 kaios doctor --fix --dry-run --force
 kaios doctor --fix --force
+kaios doctor --fix --dry-run --ci --force
+kaios doctor --fix --ci --force
 ```
 
-If an existing config is invalid, `kaios doctor --fix` keeps the file by default and prints a dry-run force command before the executable repair command. `kaios setup --ci --force` remains the lower-level equivalent when you want to regenerate the config and CI gate directly. Neither path writes a CI gate for a workflow that cannot pass validation.
+If an existing config is invalid, `kaios doctor --fix` keeps the file by default and prints a dry-run force command before the executable repair command. Add `--ci` when you also want to regenerate the GitHub Actions Agent Gate. `kaios setup --ci --force` remains the lower-level equivalent when you want to regenerate the config and CI gate directly. Neither path writes a CI gate for a workflow that cannot pass validation.
 
 Use JSON for automation:
 
