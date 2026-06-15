@@ -32,7 +32,7 @@ Runtime events create an inspectable trace for every run.
 - `AgentRuntime` creates and transitions processes.
 - `WorkflowScheduler` executes a workflow DAG with coroutine-based structured concurrency.
 - `ModelProvider` abstracts model execution.
-- `MockModelProvider` provides deterministic local behavior for tests and demos.
+- `MockModelProvider` provides deterministic local behavior for tests, demos, and project-aware no-key summaries when Workspace Index or context input is attached.
 - `OpenAiCompatibleModelProvider` and `OllamaModelProvider` connect the same runtime boundary to real model APIs.
 - `ToolRegistry` enforces syscall registration and agent permissions.
 

@@ -2109,6 +2109,9 @@ class KaiosCliSmokeTest {
         assertTrue(artifactText.contains("Workspace Index:"))
         assertTrue(artifactText.contains("README.md"))
         assertTrue(artifactText.contains("src/main/kotlin/App.kt"))
+        assertTrue(artifactText.contains("Project summary for 'summarize the project shape'"))
+        assertTrue(artifactText.contains("Languages: Markdown:1, Kotlin:1."))
+        assertTrue(artifactText.contains("Notable files: README.md, src/main/kotlin/App.kt."))
         assertTrue(!artifactText.contains("1 lines"))
         assertTrue(!artifactText.contains("Useful public overview."))
     }

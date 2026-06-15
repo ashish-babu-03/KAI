@@ -233,9 +233,21 @@ Example output:
 run_id: run-97381ae9
 success: true
 snapshot: .kaios/runs/run-97381ae9.json
+context: 1 file(s), 46 chars
+index: 2 files, 3 lines, Markdown:1, Kotlin:1
+artifact: artifacts/project.md
+trace: artifacts/trace.json
 
-validate:350c4677 accepted result from after executor
-syscall echo: validated:350c4677
+validate:29eb12a1 accepted project summary from after executor
+
+Project summary for 'summarize this project'
+- Shape: 2 files, 3 lines.
+- Languages: Markdown:1, Kotlin:1.
+- Notable files: README.md, src/main/kotlin/App.kt.
+- Context used: README.md.
+- Next: inspect process telemetry with `kaios ps run-97381ae9` and validate trace evidence with `kaios trace run-97381ae9 --check`.
+- Dependency checked: executor produced a bounded project summary.
+syscall echo: validated:29eb12a1
 ```
 
 Inspect the agent process table:
@@ -436,7 +448,7 @@ For all install options, see [docs/INSTALL.md](docs/INSTALL.md).
 
 KAI OS is early v0.1 infrastructure. Today it includes:
 
-- Deterministic `MockModelProvider`, no API key needed.
+- Deterministic project-aware `MockModelProvider`, no API key needed.
 - OpenAI-compatible and Ollama providers for real model execution.
 - Real providers can request tools through `KAIOS_SYSCALL` directives.
 - Agent lifecycle: spawn, start, suspend, resume, cancel, succeed, fail.
