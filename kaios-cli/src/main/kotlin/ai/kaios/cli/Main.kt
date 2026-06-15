@@ -33,6 +33,7 @@ import java.time.Instant
 import kotlin.io.path.createDirectories
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.exists
+import kotlin.io.path.isRegularFile
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
@@ -54,6 +55,7 @@ private const val SETUP_SCHEMA = "kaios.setup/v1"
 private const val VERIFY_SCHEMA = "kaios.verify/v1"
 private const val QUICKSTART_SCHEMA = "kaios.quickstart/v1"
 private const val EVIDENCE_DIFF_CHANGE_LIMIT = 5
+private const val CHANGED_CONTEXT_FILE_LIMIT = 8
 
 private val TOP_LEVEL_COMMANDS = listOf(
     "quickstart",
@@ -515,10 +517,11 @@ class KaiosCli(
                 ),
             )
             "run" -> CommandHelp(
-                usage = "kaios run [--context path] [--index path] [--config kaios.json] [--out artifact.md] [--trace-out trace.json] [--force] \"task\"",
+                usage = "kaios run [--changes] [--context path] [--index path] [--config kaios.json] [--out artifact.md] [--trace-out trace.json] [--force] \"task\"",
                 summary = "Run an inspectable agent workflow and persist a snapshot under .kaios/runs/.",
                 examples = listOf(
                     "kaios run \"summarize this project\"",
+                    "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"",
                     "kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\"",
                     "kaios run --index . --trace-out artifacts/trace.json --force \"summarize this project\"",
                     "kaios run --index . --context README.md --out artifacts/project.md --force \"explain the architecture\"",
@@ -526,6 +529,7 @@ class KaiosCli(
                 ),
                 notes = listOf(
                     "No API key is required by default; the mock provider is deterministic.",
+                    "Use --changes to attach up to $CHANGED_CONTEXT_FILE_LIMIT readable changed Git files as bounded context for code review runs.",
                     "Use --trace-out to write kaios.process-trace/v1 JSON during the run.",
                     "Use -- before a task that starts with '-'.",
                     "After a run, use 'kaios ps', 'kaios inspect', 'kaios trace', and 'kaios evidence'.",
@@ -1124,7 +1128,15 @@ class KaiosCli(
         }
         val runtime = AgentRuntime()
         val tools = toolRegistry()
-        val context = runCatching { contextLoader().load(command.contextPaths) }.getOrElse { error ->
+        val changedContextPaths = if (command.includeChanges) {
+            runCatching { changedContextPaths() }.getOrElse { error ->
+                err.println(error.message)
+                return 1
+            }
+        } else {
+            emptyList()
+        }
+        val context = runCatching { contextLoader().load(command.contextPaths + changedContextPaths) }.getOrElse { error ->
             err.println(error.message)
             return 1
         }
@@ -1176,6 +1188,9 @@ class KaiosCli(
         out.println("success: ${result.success}")
         out.println("snapshot: $path")
         configPath?.let { out.println("config: $it") }
+        if (command.includeChanges) {
+            out.println("changes: ${changedContextPaths.size} changed text file(s)")
+        }
         if (context.sources.isNotEmpty()) {
             out.println("context: ${context.sources.size} file(s), ${context.totalChars} chars")
         }
@@ -1196,6 +1211,51 @@ class KaiosCli(
         out.println("  kaios export")
         return if (result.success) 0 else 2
     }
+
+    private fun changedContextPaths(): List<Path> {
+        val changes = detectWorkspaceGitChanges(workingDir)
+        require(changes.available) {
+            "--changes requires a Git worktree. Use --context path when running outside Git."
+        }
+        require(changes.dirty) {
+            "No Git changes detected for --changes."
+        }
+
+        val ignore = ContextIgnore.load(workingDir)
+        val paths = changes.files
+            .mapNotNull { changed ->
+                val normalized = workingDir.resolve(changed.path).normalize()
+                if (!normalized.startsWith(workingDir)) return@mapNotNull null
+                if (!normalized.exists() || !normalized.isRegularFile()) return@mapNotNull null
+                val relative = workingDir.relativize(normalized)
+                if (WorkspaceFileRules.shouldSkip(relative, false, ignore)) return@mapNotNull null
+                if (!WorkspaceFileRules.hasTextExtension(normalized)) return@mapNotNull null
+                normalized
+            }
+            .distinct()
+            .sortedWith(compareBy<Path> { changedContextPriority(workingDir.relativize(it).toString()) }
+                .thenBy { workingDir.relativize(it).toString() })
+            .take(CHANGED_CONTEXT_FILE_LIMIT)
+
+        require(paths.isNotEmpty()) {
+            "No readable changed text files found for --changes. Use --context path for a specific file."
+        }
+        return paths
+    }
+
+    private fun changedContextPriority(path: String): Int =
+        when {
+            "/src/main/" in path || path.startsWith("src/main/") -> 0
+            "/src/test/" in path || path.startsWith("src/test/") || path.startsWith("test/") || path.contains("/test/") -> 1
+            path.startsWith("src/") -> 0
+            path.endsWith(".gradle.kts") || path.endsWith(".gradle") || path == "pom.xml" || path == "package.json" -> 2
+            path == "kaios.json" || path.endsWith(".yml") || path.endsWith(".yaml") || path.endsWith(".json") -> 3
+            path.equals("README.md", ignoreCase = true) ||
+                path.equals("README.markdown", ignoreCase = true) ||
+                path.equals("README", ignoreCase = true) ||
+                path.startsWith("docs/") -> 4
+            else -> 5
+        }
 
     private fun previewContext(args: List<String>, out: PrintStream, err: PrintStream): Int {
         val paths = runCatching { parseContextCommand(args) }.getOrElse { error ->
@@ -2121,7 +2181,7 @@ class KaiosCli(
             schema = NEXT_SCHEMA,
             version = KAIOS_VERSION,
             cwd = workingDir.toString(),
-            status = nextStatus(doctor, config, latestRun, trace, changes),
+            status = nextStatus(configPath, doctor, config, latestRun, trace, changes),
             action = action,
             fixFirst = fixFirst,
             signals = nextSignals(doctor, config, latestRun, trace, changes),
@@ -2140,6 +2200,7 @@ class KaiosCli(
         next: List<String>,
     ): NextAction? =
         when {
+            changes.available && changes.dirty && canReviewChangesWithDefaultWorkflow(configPath, config) -> nextChangeAction(changes)
             !config.valid -> bugReportFixFirst(config, latestRun, trace, next)
             doctor.summary.failed > 0 -> nextAction(doctorTextCommand(configPath))
             changes.available && changes.dirty -> nextChangeAction(changes)
@@ -2151,9 +2212,12 @@ class KaiosCli(
     private fun nextChangeAction(changes: WorkspaceChangeSummary): NextAction =
         NextAction(
             id = "review-current-change",
-            command = "kaios analyze .",
-            reason = "Git working tree has ${changes.changedFiles} changed file(s); analyze current changes before running gates or packaging evidence.",
+            command = changeReviewRunCommand(),
+            reason = "Git working tree has ${changes.changedFiles} changed file(s); run a bounded agent review before gates or evidence packaging.",
         )
+
+    private fun changeReviewRunCommand(): String =
+        "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\""
 
     private fun nextHealthyAction(latestRun: BugReportRun?): NextAction =
         when {
@@ -2167,6 +2231,7 @@ class KaiosCli(
             task == "show KAI OS as Agent=Process, Workflow=Scheduler, Tool=Syscall"
 
     private fun nextStatus(
+        configPath: Path,
         doctor: DoctorReport,
         config: ConfigValidationReport,
         latestRun: BugReportRun?,
@@ -2174,6 +2239,7 @@ class KaiosCli(
         changes: WorkspaceChangeSummary,
     ): String =
         when {
+            changes.available && changes.dirty && canReviewChangesWithDefaultWorkflow(configPath, config) -> "review"
             doctor.summary.failed > 0 || !config.valid -> "repair"
             changes.available && changes.dirty -> "review"
             latestRun == null -> "verify"
@@ -2181,6 +2247,12 @@ class KaiosCli(
             !latestRun.success -> "inspect"
             else -> "ready"
         }
+
+    private fun canReviewChangesWithDefaultWorkflow(configPath: Path, config: ConfigValidationReport): Boolean =
+        config.valid || isMissingDefaultConfig(configPath)
+
+    private fun isMissingDefaultConfig(configPath: Path): Boolean =
+        configPath.toAbsolutePath().normalize() == defaultConfigPath().toAbsolutePath().normalize() && !configPath.exists()
 
     private fun nextSignals(
         doctor: DoctorReport,
@@ -4436,6 +4508,7 @@ class KaiosCli(
         var outputPath: Path? = null
         var traceOutputPath: Path? = null
         var forceOutput = false
+        var includeChanges = false
         val contextPaths = mutableListOf<Path>()
         val indexPaths = mutableListOf<Path>()
         val taskParts = mutableListOf<String>()
@@ -4485,6 +4558,10 @@ class KaiosCli(
                     forceOutput = true
                     index += 1
                 }
+                arg == "--changes" || arg == "--changed" -> {
+                    includeChanges = true
+                    index += 1
+                }
                 arg == "--context" || arg == "--ctx" -> {
                     val value = args.getOrNull(index + 1) ?: error("$arg requires a path.")
                     contextPaths.add(resolvePath(value))
@@ -4524,7 +4601,7 @@ class KaiosCli(
         val task = taskParts.joinToString(" ").trim()
         require(task.isNotBlank()) { "Task cannot be blank." }
         require(!(configPath != null && useBuiltInDefault)) { "Use either --config or --default, not both." }
-        return RunCommand(task, configPath, useBuiltInDefault, outputPath, traceOutputPath, forceOutput, contextPaths, indexPaths)
+        return RunCommand(task, configPath, useBuiltInDefault, outputPath, traceOutputPath, forceOutput, contextPaths, indexPaths, includeChanges)
     }
 
     private fun parseContextCommand(args: List<String>): List<Path> {
@@ -5707,6 +5784,7 @@ private data class RunCommand(
     val forceOutput: Boolean,
     val contextPaths: List<Path>,
     val indexPaths: List<Path>,
+    val includeChanges: Boolean,
 )
 
 private data class QuickstartCommand(

@@ -228,12 +228,8 @@ internal class WorkspaceAnalyzer {
                 id = "review-current-change",
                 priority = "P0",
                 action = "Review the current change set",
-                command = buildString {
-                    append("kaios run --index .")
-                    changedContextFiles.forEach { path -> append(" --context ${shellArg(path)}") }
-                    append(" --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"")
-                },
-                reason = "Git has ${changeSummary.changedFiles} changed file(s); attach the changed files as bounded context and write a trace before asking an agent to review them.",
+                command = changeReviewRunCommand(),
+                reason = "Git has ${changeSummary.changedFiles} changed file(s); attach the readable changed files as bounded context and write a trace before asking an agent to review them.",
             )
         }
 
@@ -345,6 +341,9 @@ internal class WorkspaceAnalyzer {
         if (force) append(" --force")
         append(" \"summarize this project\"")
     }
+
+    private fun changeReviewRunCommand(): String =
+        "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\""
 
     private fun preferredReadmeFile(index: WorkspaceIndex): WorkspaceIndexFile? =
         index.files

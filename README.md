@@ -96,6 +96,7 @@ Choose the first command by risk level:
 | Run the full no-key onboarding path | `kaios quickstart` |
 | Run onboarding without writing GitHub Actions | `kaios quickstart --no-ci` |
 | Verify an existing `kaios.json` workflow | `kaios gate --config kaios.json` |
+| Review the current Git change set | `kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force "review current code change"` |
 
 Install KAI OS using the path that fits your machine, then come back to the product flow above:
 
@@ -182,6 +183,14 @@ Need the run itself as a machine-readable process trace?
 kaios runs --json
 kaios run --index . --trace-out artifacts/trace.json --force "summarize this project"
 ```
+
+Need a bounded agent review of the code you are changing right now?
+
+```bash
+kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force "review current code change"
+```
+
+`--changes` reads the Git working tree, attaches up to 8 readable changed text files as bounded context, and still keeps the run inspectable with `kaios ps`, `kaios inspect`, `kaios trace --check`, and `kaios evidence`.
 
 Need a portable audit package for CI, review, or future Agent Desktop imports?
 

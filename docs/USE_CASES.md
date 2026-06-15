@@ -50,7 +50,28 @@ Why it matters:
 
 Instead of asking "what did the agent do?", you can inspect which process ran, what it called, how much context it used, and where the workflow path went.
 
-## 3. Package A Reproducible Run For Review Or Support
+## 3. Review The Current Code Change
+
+Use this when you want an agent pass over the files you are changing right now, without hand-picking every `--context` path.
+
+```bash
+kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force "review current code change"
+kaios ps
+kaios trace --check
+```
+
+What KAI OS gives you:
+
+- up to 8 readable changed Git files attached as bounded context.
+- a Workspace Index so the agent sees project shape without copying the whole repo.
+- a Markdown review artifact you can share or inspect.
+- a process trace and saved run snapshot for debugging the review itself.
+
+Why it matters:
+
+The common developer loop becomes one command: current change in, inspectable agent review out.
+
+## 4. Package A Reproducible Run For Review Or Support
 
 Use this when a run needs to be shared, audited, replayed, or compared later.
 
@@ -77,7 +98,7 @@ Why it matters:
 
 Agent output is easier to trust when the runtime state around it can be packaged and replayed.
 
-## 4. Turn A Repository Into Bounded Agent Context
+## 5. Turn A Repository Into Bounded Agent Context
 
 Use this when an agent needs repository awareness without dumping the whole workspace into a prompt.
 
@@ -110,7 +131,7 @@ kaios next
 `kaios next` is read-only. It checks diagnostics, config validity, Git working tree changes, latest run evidence, and trace status, then prints one prioritized command:
 
 - repair first when config or diagnostics are broken.
-- analyze current changes before gates when the Git working tree is dirty.
+- run a bounded current-change review before gates when the Git working tree is dirty.
 - run the Agent Gate when evidence is missing.
 - create a bounded project artifact after onboarding evidence is healthy.
 - inspect processes when a real task run is already healthy.

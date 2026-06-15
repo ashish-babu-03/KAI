@@ -400,8 +400,11 @@ class KaiosCliSmokeTest {
         assertTrue(text.contains("Usage: kaios run"))
         assertTrue(text.contains("Run an inspectable agent workflow"))
         assertTrue(text.contains("Examples:"))
+        assertTrue(text.contains("--changes"))
+        assertTrue(text.contains("kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\""))
         assertTrue(text.contains("kaios run --index . --out artifacts/project.md --trace-out artifacts/trace.json --force \"summarize this project\""))
         assertTrue(text.contains("No API key is required by default"))
+        assertTrue(text.contains("attach up to 8 readable changed Git files"))
         assertTrue(text.contains("kaios ps"))
         assertTrue(text.contains("kaios trace"))
         assertTrue(text.contains("kaios help"))
@@ -605,6 +608,36 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `next recommends change review when git is dirty and default workflow can run`() {
+        val workspace = Files.createTempDirectory("kaios-cli-next-dirty-no-config")
+        runGit(workspace, "init")
+        Files.createDirectories(workspace.resolve("src/main/kotlin"))
+        Files.writeString(workspace.resolve("src/main/kotlin/App.kt"), "fun main() = println(\"kai\")\n")
+        val cli = cliFor(workspace)
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("next", "--json"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val json = Json.parseToJsonElement(out.toString()).jsonObject
+        val action = json.getValue("action").jsonObject
+
+        assertEquals(0, code)
+        assertEquals("review", json.getValue("status").jsonPrimitive.content)
+        assertEquals("review-current-change", action.getValue("id").jsonPrimitive.content)
+        assertEquals(
+            "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"",
+            action.getValue("command").jsonPrimitive.content,
+        )
+        assertNextAction(
+            json,
+            "review-current-change",
+            "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"",
+        )
+        assertTrue(json.getValue("next").jsonArray.any { command ->
+            command.jsonPrimitive.content == "kaios doctor --fix --dry-run --ci"
+        })
+    }
+
+    @Test
     fun `next recommends gate after setup and project artifact after onboarding evidence`() {
         val workspace = Files.createTempDirectory("kaios-cli-next-states")
         Files.writeString(workspace.resolve("README.md"), "# Demo\nUseful public overview.\n")
@@ -698,11 +731,18 @@ class KaiosCliSmokeTest {
         assertEquals(0, code)
         assertEquals("review", json.getValue("status").jsonPrimitive.content)
         assertEquals("review-current-change", action.getValue("id").jsonPrimitive.content)
-        assertEquals("kaios analyze .", action.getValue("command").jsonPrimitive.content)
+        assertEquals(
+            "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"",
+            action.getValue("command").jsonPrimitive.content,
+        )
         assertEquals("review-current-change", fixFirst.getValue("id").jsonPrimitive.content)
         assertEquals("dirty", changeSignal.getValue("status").jsonPrimitive.content)
         assertTrue(changeSignal.getValue("detail").jsonPrimitive.content.contains("changed file(s)"))
-        assertNextAction(json, "review-current-change", "kaios analyze .")
+        assertNextAction(
+            json,
+            "review-current-change",
+            "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"",
+        )
         assertNextAction(json, "verify-project", "kaios gate --config kaios.json")
     }
 
@@ -1962,6 +2002,62 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `run with changes attaches readable git changes as context`() {
+        val workspace = Files.createTempDirectory("kaios-cli-run-changes")
+        runGit(workspace, "init")
+        Files.createDirectories(workspace.resolve("src/main/kotlin"))
+        Files.writeString(workspace.resolve("src/main/kotlin/App.kt"), "fun main() = println(\"kai\")\n")
+        val cli = cliFor(workspace)
+        val artifact = workspace.resolve("artifacts/change-review.md")
+        val trace = workspace.resolve("artifacts/change-review.trace.json")
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(
+            arrayOf(
+                "run",
+                "--index",
+                ".",
+                "--changes",
+                "--out",
+                artifact.toString(),
+                "--trace-out",
+                trace.toString(),
+                "--force",
+                "review current code change",
+            ),
+            PrintStream(out),
+            PrintStream(ByteArrayOutputStream()),
+        )
+        val text = out.toString()
+        val artifactText = Files.readString(artifact)
+
+        assertEquals(0, code)
+        assertTrue(text.contains("changes: 1 changed text file(s)"))
+        assertTrue(text.contains("context: 1 file(s)"))
+        assertTrue(text.contains("index:"))
+        assertTrue(Files.exists(trace))
+        assertTrue(artifactText.contains("Context:"))
+        assertTrue(artifactText.contains("src/main/kotlin/App.kt"))
+    }
+
+    @Test
+    fun `run with changes fails clearly when git tree is clean`() {
+        val workspace = Files.createTempDirectory("kaios-cli-run-changes-clean")
+        runGit(workspace, "init")
+        val cli = cliFor(workspace)
+        val err = ByteArrayOutputStream()
+
+        val code = cli.run(
+            arrayOf("run", "--changes", "review current code change"),
+            PrintStream(ByteArrayOutputStream()),
+            PrintStream(err),
+        )
+
+        assertEquals(1, code)
+        assertTrue(err.toString().contains("No Git changes detected for --changes."))
+    }
+
+    @Test
     fun `run with missing context path fails before spawning agents`() {
         val workspace = Files.createTempDirectory("kaios-cli-missing-context")
         val cli = cliFor(workspace)
@@ -2242,14 +2338,16 @@ class KaiosCliSmokeTest {
             action.getValue("id").jsonPrimitive.content == "review-current-change"
         }
         assertEquals("P0", reviewAction.getValue("priority").jsonPrimitive.content)
-        assertTrue(reviewAction.getValue("command").jsonPrimitive.content.contains("--context README.md"))
-        assertTrue(reviewAction.getValue("command").jsonPrimitive.content.contains("--context src/main/kotlin/App.kt"))
+        assertEquals(
+            "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"",
+            reviewAction.getValue("command").jsonPrimitive.content,
+        )
         assertTrue(reviewAction.getValue("command").jsonPrimitive.content.contains("--trace-out artifacts/change-review.trace.json"))
         assertTrue(!text.contains("Useful public overview."))
     }
 
     @Test
-    fun `analyze review action prioritizes code context before docs`() {
+    fun `analyze review action uses short changes command instead of copying context paths`() {
         val workspace = Files.createTempDirectory("kaios-cli-analyze-prioritize")
         runGit(workspace, "init")
         Files.writeString(workspace.resolve("README.md"), "# Demo\nUseful public overview.\n")
@@ -2273,16 +2371,13 @@ class KaiosCliSmokeTest {
             .map { it.jsonObject }
             .single { action -> action.getValue("id").jsonPrimitive.content == "review-current-change" }
         val command = reviewAction.getValue("command").jsonPrimitive.content
-        val contexts = Regex("--context ([^ ]+)").findAll(command).map { it.groupValues[1] }.toList()
 
         assertEquals(0, code)
-        assertEquals("src/main/kotlin/App.kt", contexts[0])
-        assertEquals("src/test/kotlin/AppTest.kt", contexts[1])
-        assertEquals("build.gradle.kts", contexts[2])
-        assertTrue("README.md" in contexts)
-        assertTrue(contexts.size <= 6)
-        assertTrue("docs/C.md" !in contexts)
-        assertTrue("docs/D.md" !in contexts)
+        assertEquals(
+            "kaios run --index . --changes --out artifacts/change-review.md --trace-out artifacts/change-review.trace.json --force \"review current code change\"",
+            command,
+        )
+        assertTrue(!command.contains("--context"))
     }
 
     @Test
