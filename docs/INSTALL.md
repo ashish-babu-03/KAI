@@ -8,12 +8,23 @@ Check the installed version at any time:
 kaios --version
 ```
 
-Running `kaios` with no arguments prints the quick start and exits successfully, so it is safe to use as a first smoke test.
+Running `kaios` with no arguments prints the product model, concrete use cases, and the three-step path from onboarding to process inspection. It exits successfully, so it is safe to use as a first smoke test.
 Run `kaios next` when you want one read-only recommendation for the current workspace before writing config, CI, or evidence files.
 Common aliases execute directly: `kaios start --no-ci`, `kaios status`, `kaios ls`, `kaios proc`, and `kaios audit`.
 Mistyped commands still show a suggestion when there is a clear match.
 After a saved run exists, `kaios ps`, `kaios inspect`, `kaios trace`, `kaios capsule`, `kaios evidence`, `kaios report`, and `kaios export` default to the newest run. When no snapshots exist yet, the CLI points back to `kaios quickstart`, `kaios demo`, `kaios setup --ci`, and `kaios gate`.
 If `kaios.json` is missing, `kaios config show`, `kaios config validate`, and `kaios doctor` point back to `kaios doctor --fix --dry-run`, `kaios doctor --fix`, or `kaios setup --ci`; use `kaios config templates` when you want to choose a different workflow template before setup.
+
+## Choose The First Command
+
+| Need | Command |
+| --- | --- |
+| See the product model and local entrypoints | `kaios` |
+| Get one read-only recommendation | `kaios next` |
+| Preview onboarding writes | `kaios quickstart --dry-run` |
+| Run the full no-key onboarding path | `kaios quickstart` |
+| Run onboarding without writing GitHub Actions | `kaios quickstart --no-ci` |
+| Verify an existing `kaios.json` workflow | `kaios gate --config kaios.json` |
 
 Every core command also supports local help with examples and notes:
 

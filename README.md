@@ -77,6 +77,17 @@ kaios next
 
 `kaios next` is the read-only compass: it inspects doctor diagnostics, project config, latest run evidence, and trace validity, then prints the single best next command.
 
+Choose the first command by risk level:
+
+| Need | Command |
+| --- | --- |
+| See the product model and local entrypoints | `kaios` |
+| Get one read-only recommendation | `kaios next` |
+| Preview onboarding writes | `kaios quickstart --dry-run` |
+| Run the full no-key onboarding path | `kaios quickstart` |
+| Run onboarding without writing GitHub Actions | `kaios quickstart --no-ci` |
+| Verify an existing `kaios.json` workflow | `kaios gate --config kaios.json` |
+
 Homebrew is one installation option:
 
 ```bash
