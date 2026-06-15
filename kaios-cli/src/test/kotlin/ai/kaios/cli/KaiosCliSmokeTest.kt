@@ -2120,6 +2120,43 @@ class KaiosCliSmokeTest {
     }
 
     @Test
+    fun `analyze review action prioritizes code context before docs`() {
+        val workspace = Files.createTempDirectory("kaios-cli-analyze-prioritize")
+        runGit(workspace, "init")
+        Files.writeString(workspace.resolve("README.md"), "# Demo\nUseful public overview.\n")
+        Files.writeString(workspace.resolve("build.gradle.kts"), "plugins { kotlin(\"jvm\") version \"2.4.0\" }\n")
+        Files.createDirectories(workspace.resolve("docs"))
+        Files.writeString(workspace.resolve("docs/A.md"), "# A\n")
+        Files.writeString(workspace.resolve("docs/B.md"), "# B\n")
+        Files.writeString(workspace.resolve("docs/C.md"), "# C\n")
+        Files.writeString(workspace.resolve("docs/D.md"), "# D\n")
+        Files.createDirectories(workspace.resolve("src/main/kotlin"))
+        Files.writeString(workspace.resolve("src/main/kotlin/App.kt"), "fun main() = println(\"kai\")\n")
+        Files.createDirectories(workspace.resolve("src/test/kotlin"))
+        Files.writeString(workspace.resolve("src/test/kotlin/AppTest.kt"), "class AppTest\n")
+        val cli = cliFor(workspace)
+        val out = ByteArrayOutputStream()
+
+        val code = cli.run(arrayOf("analyze", ".", "--json"), PrintStream(out), PrintStream(ByteArrayOutputStream()))
+        val root = Json.parseToJsonElement(out.toString()).jsonObject
+        val reviewAction = root.getValue("actionPlan")
+            .jsonArray
+            .map { it.jsonObject }
+            .single { action -> action.getValue("id").jsonPrimitive.content == "review-current-change" }
+        val command = reviewAction.getValue("command").jsonPrimitive.content
+        val contexts = Regex("--context ([^ ]+)").findAll(command).map { it.groupValues[1] }.toList()
+
+        assertEquals(0, code)
+        assertEquals("src/main/kotlin/App.kt", contexts[0])
+        assertEquals("src/test/kotlin/AppTest.kt", contexts[1])
+        assertEquals("build.gradle.kts", contexts[2])
+        assertTrue("README.md" in contexts)
+        assertTrue(contexts.size <= 6)
+        assertTrue("docs/C.md" !in contexts)
+        assertTrue("docs/D.md" !in contexts)
+    }
+
+    @Test
     fun `analyze out writes report and protects existing files`() {
         val workspace = Files.createTempDirectory("kaios-cli-analyze-out")
         Files.writeString(workspace.resolve("README.md"), "# Demo\n")

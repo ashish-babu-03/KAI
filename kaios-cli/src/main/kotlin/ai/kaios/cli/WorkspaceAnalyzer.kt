@@ -219,7 +219,9 @@ internal class WorkspaceAnalyzer {
         val changedContextFiles = changeSummary.files
             .map { it.path }
             .filter { it in indexedFiles }
-            .take(4)
+            .distinct()
+            .sortedWith(compareBy<String> { changedContextPriority(it) }.thenBy { it })
+            .take(6)
 
         if (changedContextFiles.isNotEmpty()) {
             actions += WorkspaceAnalysisAction(
@@ -334,6 +336,17 @@ internal class WorkspaceAnalyzer {
             value
         } else {
             "'${value.replace("'", "'\"'\"'")}'"
+        }
+
+    private fun changedContextPriority(path: String): Int =
+        when {
+            "/src/main/" in path || path.startsWith("src/main/") -> 0
+            "/src/test/" in path || path.startsWith("src/test/") || path.startsWith("test/") || path.contains("/test/") -> 1
+            path.startsWith("src/") -> 0
+            path.endsWith(".gradle.kts") || path.endsWith(".gradle") || path == "pom.xml" || path == "package.json" -> 2
+            path == "kaios.json" || path.endsWith(".yml") || path.endsWith(".yaml") || path.endsWith(".json") -> 3
+            path.equals("README.md", ignoreCase = true) || path.startsWith("docs/") -> 4
+            else -> 5
         }
 }
 

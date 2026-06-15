@@ -23,7 +23,7 @@ kaios run --index . --context README.md --out artifacts/project.md --force "summ
 - suggested KAI OS commands
 
 It does not require a model provider or API key.
-When Git metadata is available, the action plan can include a bounded code-review command for the current changed files without reading or printing diff contents.
+When Git metadata is available, the action plan can include a bounded code-review command for the current changed files without reading or printing diff contents. That command spends its limited context budget on source, test, and config files before README or docs files.
 
 Use JSON when CI, dashboards, or other tools need a stable schema:
 
