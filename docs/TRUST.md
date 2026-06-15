@@ -2,7 +2,7 @@
 
 KAI OS is designed to make agent work observable before it becomes powerful.
 
-The v0.1 trust boundary is simple: the default path runs without model credentials, avoids real network access, keeps side effects behind explicit tools, and writes evidence that can be inspected, replayed, and compared.
+The v0.3 trust boundary is simple: the default path runs without model credentials, avoids real network access, keeps side effects behind explicit tools, and writes evidence that can be inspected, replayed, compared, and audited.
 
 ## Default Safety Posture
 
@@ -60,7 +60,7 @@ secrets/
 *.pem
 ```
 
-## What Is Not Promised In v0.1
+## What Is Not Promised In v0.3
 
 - KAI OS is not a security sandbox for arbitrary custom tools.
 - Real model providers can produce nondeterministic text; use the mock provider, traces, capsules, and baseline diffs when you need stable checks.
@@ -88,3 +88,11 @@ kaios gate --config kaios.json
 ```
 
 The generated workflow uses the same local contract: deterministic provider, validated config, process trace validation, portable evidence capsule, and failure-time support report.
+
+`kaios next` applies this order:
+
+- repair first when config or diagnostics are broken.
+- run a bounded current-change review before gates when the Git working tree is dirty.
+- run the Agent Gate when evidence is missing.
+- create a bounded project artifact after onboarding evidence is healthy.
+- inspect processes when a real task run is already healthy.

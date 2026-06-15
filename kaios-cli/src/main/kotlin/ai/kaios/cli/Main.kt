@@ -37,7 +37,7 @@ import kotlin.io.path.isRegularFile
 import kotlin.io.path.writeText
 import kotlin.system.exitProcess
 
-private const val KAIOS_VERSION = "0.1.84"
+private const val KAIOS_VERSION = "0.3.0"
 private const val CI_AGENT_GATE_ARTIFACT_NAME = "kaios-agent-gate"
 private const val CI_WORKFLOW_PUSH_NOTE = "Pushing .github/workflows/kaios.yml may require GitHub workflow permission/scope."
 private const val PROCESS_TRACE_SCHEMA = "kaios.process-trace/v1"

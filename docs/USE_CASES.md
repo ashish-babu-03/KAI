@@ -140,12 +140,15 @@ kaios next
 - create a bounded project artifact after onboarding evidence is healthy.
 - inspect processes when a real task run is already healthy.
 
-## Production Posture In v0.1
+## Production Posture In v0.3
 
-KAI OS v0.1 is deliberately small. The production value is not "many agents" or "many integrations"; it is a stable runtime surface:
+KAI OS v0.3 is deliberately small. The production value is not "many agents" or "many integrations"; it is a stable runtime evidence surface:
 
 - deterministic default provider.
 - explicit tool permissions.
+- process recovery evidence.
+- priority scheduler evidence.
+- syscall audit ledger.
 - validated project configs.
 - inspectable process state.
 - JSON contracts for CI and tooling.

@@ -31,11 +31,12 @@ Memory   = Process state
 - You want portable evidence artifacts for reviews and support: verify JSON, process traces, run capsules, offline replay, baseline diffs, and safe bug reports.
 - You are building JVM/Kotlin agent infrastructure and want runtime boundaries before adding a UI, plugin system, or real provider.
 
-KAI OS is intentionally small in v0.1. If you only need a chatbot UI or a thin prompt wrapper, this project is probably lower-level than you need.
+KAI OS is intentionally small in v0.3. If you only need a chatbot UI or a thin prompt wrapper, this project is probably lower-level than you need.
 
 For concrete workflows, read [KAI OS Use Cases](docs/USE_CASES.md).
 For the product moat, read [Evidence OS for Agents](docs/EVIDENCE_OS.md).
 For safety, reproducibility, and artifact-sharing boundaries, read the [KAI OS Trust Contract](docs/TRUST.md).
+For release highlights, read the [Changelog](CHANGELOG.md).
 
 ## Why This Exists
 
@@ -399,7 +400,7 @@ val defaultWorkflow = workflow("default") {
 }
 ```
 
-See [examples/README.md](examples/README.md) for runnable CLI examples and the current v0.1 behavior.
+See [examples/README.md](examples/README.md) for runnable CLI examples and the current v0.3 Evidence Core behavior.
 
 ## Project Config
 
@@ -471,7 +472,7 @@ For all install options, see [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Current Status
 
-KAI OS is early v0.1 infrastructure. Today it includes:
+KAI OS is early v0.3 infrastructure. Today it includes:
 
 - Deterministic project-aware `MockModelProvider`, no API key needed.
 - OpenAI-compatible and Ollama providers for real model execution.

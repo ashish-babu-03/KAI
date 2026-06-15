@@ -99,7 +99,7 @@ KAIOS_SYSCALL echo message="validated evidence"
 
 KAI OS strips directive lines from the agent's normal text output, executes the requested tools through the same permission checks, records syscall events, and appends syscall results to the process output.
 
-This is intentionally simpler than provider-native function calling in v0.1. It keeps the runtime boundary visible while still letting real models use tools.
+This is intentionally simpler than provider-native function calling. It keeps the runtime boundary visible while still letting real models use tools.
 
 ## Scoped File Access
 

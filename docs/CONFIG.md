@@ -233,7 +233,7 @@ Minimal v0.3 Evidence Core example:
 
 ## Built-In Tools
 
-The v0.1 safe syscall set is intentionally small:
+The safe syscall set is intentionally small:
 
 - `echo`: returns a supplied message.
 - `clock`: returns the current UTC timestamp.

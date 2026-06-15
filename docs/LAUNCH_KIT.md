@@ -51,7 +51,7 @@ KAI OS models AI work as runtime infrastructure:
 - Tool = Syscall
 - Memory = Process state
 
-The v0.1 release is a runnable Kotlin/JVM seed:
+The v0.3 Evidence Core release is a runnable Kotlin/JVM seed:
 
 - agent lifecycle
 - coroutine DAG workflow scheduler
@@ -67,6 +67,9 @@ The v0.1 release is a runnable Kotlin/JVM seed:
 - CLI process table
 - KAI Process Trace schema
 - KAI Run Capsule schema
+- process recovery evidence with new PIDs
+- priority scheduler evidence
+- syscall audit ledger with denied calls, tool time, and estimated cost
 - static Agent Process Manager report
 - Markdown run artifacts for shareable handoff
 - no-key Markdown and JSON workspace analysis reports
@@ -107,7 +110,7 @@ kaios export
 Repo: https://github.com/morning-verlu/KAI
 Site: https://morning-verlu.github.io/KAI/
 GIF: https://morning-verlu.github.io/KAI/assets/kaios-demo.gif
-Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.1.84/kaios-0.1.84.zip
+Release ZIP: https://github.com/morning-verlu/KAI/releases/download/v0.3.0/kaios-0.3.0.zip
 Installer: curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 Install options after the product demo: Homebrew, hosted installer, release ZIP, or source build
 ```
@@ -126,7 +129,7 @@ The core metaphor:
 - Tool = Syscall
 - Memory = Process state
 
-The current v0.1 demo runs a planner -> executor -> validator workflow and lets you inspect each agent process with PID, token usage, context size, syscall count, duration, lifecycle events, optional Workspace Index source maps, project context sources, retry attempts, a reusable `kaios.process-trace/v1` trace, and a portable `kaios.run-capsule/v1` evidence package that can be validated, replayed, or diffed from shared JSON files. The new Evidence OS path is `kaios review`: it turns the current Git change set into a Markdown review artifact, process trace, replayable capsule, and optional baseline gate. You can generate no-key Markdown or JSON project reports with `kaios analyze`, preview project shape with `kaios index`, preview context with `kaios context`, exclude local noise with `.kaiosignore`, opt into real HTTP syscalls with `KAIOS_HTTP_ALLOWLIST`, and let real providers request tools through `KAIOS_SYSCALL` directives.
+The current v0.3 demo runs a planner -> executor -> validator workflow and lets you inspect each agent process with PID, token usage, context size, syscall count, tool time, estimated cost, denied syscall count, duration, lifecycle events, optional Workspace Index source maps, project context sources, retry attempts, recovery lineage, scheduler evidence, a reusable `kaios.process-trace/v1` trace, and a portable `kaios.run-capsule/v1` evidence package that can be validated, replayed, or diffed from shared JSON files. The Evidence OS path is `kaios review`: it turns the current Git change set into a Markdown review artifact, process trace, replayable capsule, and optional baseline gate. You can generate no-key Markdown or JSON project reports with `kaios analyze`, preview project shape with `kaios index`, preview context with `kaios context`, exclude local noise with `.kaiosignore`, opt into real HTTP syscalls with `KAIOS_HTTP_ALLOWLIST`, and let real providers request tools through `KAIOS_SYSCALL` directives.
 
 It uses a deterministic mock model provider, so no API key is needed.
 
@@ -145,7 +148,7 @@ Agent = Process
 Workflow = Scheduler
 Tool = Syscall
 
-The first version is intentionally small but runnable: a default planner -> executor -> validator workflow, current-change review through `kaios review`, process metrics, lifecycle events, KAI Process Trace JSON, KAI Run Capsule JSON, offline capsule replay/diff, observable retries, permissioned tools, no-key Markdown and JSON workspace analysis reports, Workspace Index source maps, previewable bounded project context, allowlisted HTTP, and JSON run snapshots.
+The first Evidence Core release is intentionally small but runnable: a default planner -> executor -> validator workflow, current-change review through `kaios review`, process metrics, lifecycle events, process recovery evidence, priority scheduler evidence, syscall audit ledger, KAI Process Trace JSON, KAI Run Capsule JSON, offline capsule replay/diff, observable retries, permissioned tools, no-key Markdown and JSON workspace analysis reports, Workspace Index source maps, previewable bounded project context, allowlisted HTTP, and JSON run snapshots.
 
 I would love feedback on the Kotlin API/DSL and runtime model.
 
@@ -186,11 +189,11 @@ kaios report
 Download ZIP:
 
 ```bash
-curl -L -o kaios-0.1.84.zip https://github.com/morning-verlu/KAI/releases/download/v0.1.84/kaios-0.1.84.zip
-unzip kaios-0.1.84.zip
-./kaios-0.1.84/bin/kaios quickstart
-./kaios-0.1.84/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
-./kaios-0.1.84/bin/kaios gate --baseline artifacts/baseline.capsule.json --check
+curl -L -o kaios-0.3.0.zip https://github.com/morning-verlu/KAI/releases/download/v0.3.0/kaios-0.3.0.zip
+unzip kaios-0.3.0.zip
+./kaios-0.3.0/bin/kaios quickstart
+./kaios-0.3.0/bin/kaios run --index . --context README.md --out artifacts/project.md --trace-out artifacts/trace.json --force "summarize this project"
+./kaios-0.3.0/bin/kaios gate --baseline artifacts/baseline.capsule.json --check
 ```
 
 Build from source:

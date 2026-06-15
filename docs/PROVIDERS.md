@@ -62,7 +62,7 @@ Environment variables:
 
 ## Current Scope
 
-The v0.1 provider implementations return text output, token usage when available, and lightweight syscall directives. When a model emits a line like:
+The provider implementations return text output, token usage when available, and lightweight syscall directives. When a model emits a line like:
 
 ```text
 KAIOS_SYSCALL echo message="hello"

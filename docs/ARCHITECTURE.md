@@ -51,7 +51,7 @@ The tool system checks:
 
 Every call writes a syscall audit record, including denied calls. The trace and capsule carry tool duration, denied syscall counts, and estimated cost counters so CI can reason about runtime behavior without scraping logs.
 
-Built-in tools in v0.1:
+Built-in syscalls:
 
 - `echo`
 - `clock`

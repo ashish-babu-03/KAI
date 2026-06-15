@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-VERSION="${KAIOS_VERSION:-0.1.84}"
+VERSION="${KAIOS_VERSION:-0.3.0}"
 REPO="morning-verlu/KAI"
 BASE_URL="https://github.com/${REPO}/releases/download/v${VERSION}"
 ARCHIVE="kaios-${VERSION}.zip"
@@ -100,24 +100,24 @@ echo
 if command -v kaios >/dev/null 2>&1; then
   PROJECT_RUN="$(project_run_command kaios)"
   echo "Try:"
-  echo "  kaios demo"
-  echo "  kaios setup --ci"
-  echo "  kaios gate"
+  echo "  kaios quickstart"
+  echo "  kaios review"
+  echo "  kaios evidence --summary"
+  echo "  kaios next"
   echo "  ${PROJECT_RUN}"
   echo "  kaios ps"
-  echo "  kaios trace"
-  echo "  kaios evidence --out artifacts/run.capsule.json --force"
+  echo "  kaios trace --check"
 else
   PROJECT_RUN="$(project_run_command "${BIN_DIR}/kaios")"
   echo "Add this to your shell profile if kaios is not on PATH:"
   echo "  export PATH=\"${BIN_DIR}:\$PATH\""
   echo
   echo "Try now:"
-  echo "  ${BIN_DIR}/kaios demo"
-  echo "  ${BIN_DIR}/kaios setup --ci"
-  echo "  ${BIN_DIR}/kaios gate"
+  echo "  ${BIN_DIR}/kaios quickstart"
+  echo "  ${BIN_DIR}/kaios review"
+  echo "  ${BIN_DIR}/kaios evidence --summary"
+  echo "  ${BIN_DIR}/kaios next"
   echo "  ${PROJECT_RUN}"
   echo "  ${BIN_DIR}/kaios ps"
-  echo "  ${BIN_DIR}/kaios trace"
-  echo "  ${BIN_DIR}/kaios evidence --out artifacts/run.capsule.json --force"
+  echo "  ${BIN_DIR}/kaios trace --check"
 fi
