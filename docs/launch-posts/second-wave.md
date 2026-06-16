@@ -12,13 +12,15 @@ https://morning-verlu.github.io/KAI/assets/kaios-evidence-proof.png
 
 X post:
 
+Note: raw character count is over 280 because of the tagged URL, but X counts URLs through t.co fixed-length handling.
+
 ```text
 Agents are hard to trust because the run disappears after the answer.
 
 KAI OS turns each run into evidence: process table, syscall ledger, replay capsule, baseline gate.
 
 No API key, no install to inspect:
-https://morning-verlu.github.io/KAI/evidence-viewer.html
+https://morning-verlu.github.io/KAI/evidence-viewer.html?utm_source=x&utm_medium=social&utm_campaign=second_wave
 ```
 
 Alternative short version:
@@ -30,7 +32,7 @@ KAI OS turns them into local evidence:
 process table, syscall ledger, replay capsule, CI gate.
 
 Inspect the no-key demo:
-https://morning-verlu.github.io/KAI/evidence-viewer.html
+https://morning-verlu.github.io/KAI/evidence-viewer.html?utm_source=x&utm_medium=social&utm_campaign=second_wave
 ```
 
 Suggested follow-up reply:

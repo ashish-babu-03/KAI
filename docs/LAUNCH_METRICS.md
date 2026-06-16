@@ -15,6 +15,14 @@ The script records:
 - GitHub traffic views and clones
 - top referrers and paths when GitHub exposes them
 
+Use campaign-tagged links in launch posts where possible. The second-wave X link is:
+
+```text
+https://morning-verlu.github.io/KAI/evidence-viewer.html?utm_source=x&utm_medium=social&utm_campaign=second_wave
+```
+
+The Evidence Viewer links back to GitHub with `utm_source=evidence_viewer`, so a later traffic readout can distinguish direct GitHub clicks from viewer-assisted clicks when the hosting/referrer surface exposes enough detail.
+
 If measuring an X post, pass the visible analytics from the browser:
 
 ```bash
