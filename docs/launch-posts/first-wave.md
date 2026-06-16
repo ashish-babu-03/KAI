@@ -176,3 +176,20 @@ social preview: uploaded
 ## Posted Links
 
 - X short post: https://x.com/wurslu/status/2066846887983096042 (posted 2026-06-16)
+
+## 2-Hour Readout
+
+Roughly two hours after the first X post:
+
+```text
+GitHub stars: 0
+GitHub forks: 2
+GitHub watchers: 0
+GitHub views: 0
+X impressions: 1
+X engagements: 0
+X link clicks: 0
+X public replies/reposts/likes/bookmarks: 0/0/0/0
+```
+
+Conclusion: the first text-first X post did not receive distribution. The next external wave should lead with visual proof and community surfaces rather than another concept-only text post.

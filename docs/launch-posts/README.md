@@ -31,6 +31,7 @@ gh repo view morning-verlu/KAI --json description,usesCustomOpenGraphImage,starg
 - [First external wave](first-wave.md)
 - [Evidence Viewer-first posts](evidence-viewer-first.md)
 - [Short social post](short-social.md)
+- [Second wave visual post](second-wave.md)
 - [X / LinkedIn thread](x-linkedin-thread.md)
 - [Kotlin community post](kotlin-community.md)
 - [Show HN post](show-hn.md)
@@ -67,4 +68,10 @@ Use the Evidence Artifact Map when the channel supports images:
 
 ```text
 https://morning-verlu.github.io/KAI/assets/kaios-evidence-map.png
+```
+
+Use the product-proof image for cold social feeds:
+
+```text
+https://morning-verlu.github.io/KAI/assets/kaios-evidence-proof.png
 ```
