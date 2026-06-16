@@ -78,6 +78,7 @@ For the product moat, read [Evidence OS for Agents](docs/EVIDENCE_OS.md).
 For the Kotlin library entrypoint, read [Kotlin Runtime API](docs/KOTLIN_API.md).
 For positioning against LangGraph, OpenAI Agents SDK, Koog, and LangChain4j, read [KAI OS Compared](docs/COMPARISON.md).
 For safety, reproducibility, and artifact-sharing boundaries, read the [KAI OS Trust Contract](docs/TRUST.md).
+For community contributions, read [Contributors](CONTRIBUTORS.md).
 For release highlights, read the [Changelog](CHANGELOG.md).
 
 ## Why This Exists

@@ -4,6 +4,8 @@ Thanks for helping build KAI OS.
 
 This project is early, so the most valuable contributions are focused implementation PRs, tests, examples, and docs that make the Evidence OS loop sharper: agent work in, process trace, replayable capsule, syscall ledger, and CI-grade proof out.
 
+Merged external contributions are acknowledged in [CONTRIBUTORS.md](CONTRIBUTORS.md).
+
 ## Local Setup
 
 ```bash
