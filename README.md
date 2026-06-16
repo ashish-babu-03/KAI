@@ -11,6 +11,7 @@
 Website: [morning-verlu.github.io/KAI](https://morning-verlu.github.io/KAI/)
 
 New here? Start with [START_HERE.md](START_HERE.md) for the browser-only, local CLI, and artifact-only evaluation paths.
+Trying to decide whether KAI OS is worth a star or deeper trial? Use the [5-minute evaluator checklist](docs/EVALUATE.md).
 
 KAI OS is a Kotlin runtime that turns multi-agent work into observable, controllable processes.
 
@@ -72,6 +73,7 @@ Memory   = Process state
 KAI OS is intentionally small in v0.3. If you only need a chatbot UI or a thin prompt wrapper, this project is probably lower-level than you need.
 
 For concrete workflows, read [KAI OS Use Cases](docs/USE_CASES.md).
+For a fast first-time review path, read [Evaluate KAI OS In 5 Minutes](docs/EVALUATE.md).
 For the product moat, read [Evidence OS for Agents](docs/EVIDENCE_OS.md).
 For the Kotlin library entrypoint, read [Kotlin Runtime API](docs/KOTLIN_API.md).
 For positioning against LangGraph, OpenAI Agents SDK, Koog, and LangChain4j, read [KAI OS Compared](docs/COMPARISON.md).

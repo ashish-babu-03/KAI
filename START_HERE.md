@@ -4,6 +4,8 @@ KAI OS is a local-first Evidence OS for AI agents in Kotlin.
 
 ![KAI OS evidence artifact map](docs/assets/kaios-evidence-map.png)
 
+Trying to decide whether to star, try, or ignore it? Use the [5-minute evaluator checklist](docs/EVALUATE.md).
+
 It is for developers who want agent work to be inspectable like runtime infrastructure:
 
 ```text
