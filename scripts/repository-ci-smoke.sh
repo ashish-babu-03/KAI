@@ -48,6 +48,17 @@ assert_contains "$WORKDIR/version.out" "kaios"
 
 run_step "validate checked-in evidence samples" env KAIOS_BIN="$KAIOS_BIN" "$ROOT/scripts/evidence-samples-smoke.sh"
 
+GENERATED_DIFF_DIR="$WORKDIR/generated-baseline-diff"
+run_step "generate baseline diff evidence sample" env KAIOS_BIN="$KAIOS_BIN" "$ROOT/examples/evidence-sample/generate-baseline-diff.sh" "$GENERATED_DIFF_DIR" > "$WORKDIR/generated-baseline-diff.out"
+assert_contains "$WORKDIR/generated-baseline-diff.out" "Generated evidence sample"
+assert_file "$GENERATED_DIFF_DIR/baseline.capsule.json"
+assert_file "$GENERATED_DIFF_DIR/current.capsule.json"
+assert_file "$GENERATED_DIFF_DIR/baseline-current.diff.txt"
+assert_contains "$GENERATED_DIFF_DIR/README.txt" "diff exit code:   1"
+assert_contains "$GENERATED_DIFF_DIR/baseline-current.diff.txt" "schema: kaios.run-diff/v1"
+assert_contains "$GENERATED_DIFF_DIR/baseline-current.diff.txt" "status: different"
+assert_contains "$GENERATED_DIFF_DIR/baseline-current.diff.txt" "same: false"
+
 echo "==> run Kotlin runtime API example" >&2
 (cd "$ROOT" && ./gradlew -p examples/kotlin-runtime-api run --no-daemon > "$WORKDIR/kotlin-runtime-api.out")
 assert_contains "$WORKDIR/kotlin-runtime-api.out" "KAI OS Kotlin Runtime API demo"
