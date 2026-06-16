@@ -48,6 +48,12 @@ assert_contains "$WORKDIR/version.out" "kaios"
 
 run_step "validate checked-in evidence samples" env KAIOS_BIN="$KAIOS_BIN" "$ROOT/scripts/evidence-samples-smoke.sh"
 
+echo "==> run Kotlin runtime API example" >&2
+(cd "$ROOT" && ./gradlew -p examples/kotlin-runtime-api run --no-daemon > "$WORKDIR/kotlin-runtime-api.out")
+assert_contains "$WORKDIR/kotlin-runtime-api.out" "KAI OS Kotlin Runtime API demo"
+assert_contains "$WORKDIR/kotlin-runtime-api.out" "success=true"
+assert_contains "$WORKDIR/kotlin-runtime-api.out" "SYSCALL LEDGER"
+
 TOUR_DIR="$WORKDIR/tour"
 TOUR_WORKSPACE="$TOUR_DIR/workspace"
 TOUR_CAPSULE="$TOUR_WORKSPACE/artifacts/change-review.capsule.json"

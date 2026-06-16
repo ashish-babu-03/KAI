@@ -10,6 +10,18 @@ Verify the checked-in evidence examples locally:
 ./scripts/evidence-samples-smoke.sh
 ```
 
+## Kotlin Runtime API
+
+Want to use KAI OS as a Kotlin/JVM library instead of starting with the CLI?
+
+Open [examples/kotlin-runtime-api](kotlin-runtime-api/) and run:
+
+```bash
+./gradlew -p examples/kotlin-runtime-api run
+```
+
+It creates agents as process specs, runs a priority-aware DAG scheduler, executes tool syscalls through capability grants, records process metrics, and prints a syscall ledger.
+
 ## Evidence Sample
 
 Want to inspect the output before installing anything?
@@ -91,7 +103,7 @@ It runs the same command that maintainers can verify locally:
 ./scripts/repository-ci-smoke.sh
 ```
 
-The smoke command builds, tests, installs the CLI, validates checked-in evidence samples, runs the no-key tour, validates the generated capsule, and replays it offline.
+The smoke command builds, tests, installs the CLI, validates checked-in evidence samples, runs the Kotlin Runtime API example, runs the no-key tour, validates the generated capsule, and replays it offline.
 
 ## Run the Default Workflow
 

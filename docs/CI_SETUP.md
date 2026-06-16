@@ -50,6 +50,7 @@ That script runs the full no-key trust path intended for public CI:
 - `./gradlew clean test installDist --no-daemon`
 - CLI version check
 - checked-in Evidence Sample and Baseline Gate replay checks
+- Kotlin runtime API example execution
 - no-key `kaios tour`
 - generated tour capsule validation
 - generated tour capsule offline replay

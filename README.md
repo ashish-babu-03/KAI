@@ -45,6 +45,8 @@ Want to inspect the evidence artifacts before installing? Open the checked-in [E
 
 Want to run the review loop on a realistic Kotlin/JVM backend change? Try the [JVM Service Review example](examples/jvm-service-review/).
 
+Want to use KAI OS as a Kotlin/JVM runtime library? Try the [Kotlin Runtime API example](examples/kotlin-runtime-api/).
+
 Want to see the CI baseline gate block a stable behavior change? Inspect the [Baseline Gate example](examples/baseline-gate/).
 
 ![KAI OS evidence artifact map](docs/assets/kaios-evidence-map.png)

@@ -52,6 +52,7 @@ docker run --rm kaios:local tour
 - Evidence map SVG: https://morning-verlu.github.io/KAI/assets/kaios-evidence-map.svg
 - Evidence OS: https://github.com/morning-verlu/KAI/blob/main/docs/EVIDENCE_OS.md
 - Comparison: https://github.com/morning-verlu/KAI/blob/main/docs/COMPARISON.md
+- Kotlin runtime API example: https://github.com/morning-verlu/KAI/tree/main/examples/kotlin-runtime-api
 - JVM service review example: https://github.com/morning-verlu/KAI/tree/main/examples/jvm-service-review
 - Baseline gate example: https://github.com/morning-verlu/KAI/tree/main/examples/baseline-gate
 - Local evidence samples smoke: `./scripts/evidence-samples-smoke.sh`
