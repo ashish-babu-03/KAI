@@ -19,11 +19,15 @@ Want the shortest star/watch/fork rationale? Read [Why Star KAI OS](docs/WHY_STA
 Want claim-by-claim proof? Read the [KAI OS Trust Matrix](docs/TRUST_MATRIX.md).
 Community signal: the first external PR is merged and covered by `./scripts/repository-ci-smoke.sh`; see [Contributors](CONTRIBUTORS.md).
 
+![KAI OS evidence proof: process table, syscall ledger, replay capsule, and CI gate](docs/assets/kaios-evidence-proof.png)
+
 KAI OS is a Kotlin runtime that turns multi-agent work into observable, controllable processes.
 
 Agents get lifecycle, memory, permissions, metrics, and syscall-style tool boundaries. Workflows run as DAGs, and every run can be inspected, replayed, compared, and packaged as portable evidence.
 
 It is not a chatbot framework, not a LangChain clone, and not just a CLI. The CLI is the first interface to the KAI OS runtime.
+
+If that evidence layer is useful to your agent stack, star/watch the repo and try the no-key tour. The goal is a local-first runtime standard for trustworthy JVM/Kotlin agents, not another prompt wrapper.
 
 Try the full Evidence OS loop in a disposable local repo:
 
