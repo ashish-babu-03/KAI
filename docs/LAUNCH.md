@@ -64,6 +64,7 @@ The tour is the clearest proof because it shows the full Evidence OS loop withou
 - [x] Roadmap reflects v0.3.1 Evidence OS, not stale milestones.
 - [x] Contributing guide points new contributors at tour/review/evidence.
 - [x] Repository is pinned on the maintainer profile.
+- [ ] Custom GitHub social preview image is uploaded from `docs/assets/kaios-social-card.png`.
 - [ ] Short social post is published.
 - [x] GitHub Discussion is updated with v0.3.1 tour CTA.
 - [ ] Kotlin community post is published.
@@ -83,3 +84,21 @@ Stars should come from real interest, not automation or artificial engagement. T
 - visible issues for contributors
 
 See [LAUNCH_KIT.md](LAUNCH_KIT.md) for copy-paste launch posts, channel-specific drafts, reply guidance, and metrics to capture.
+
+## Manual GitHub Settings Tasks
+
+GitHub's documented path for repository social preview image upload is the repository settings UI. Before posting to external channels, open `Settings -> Social preview` for the repository and upload:
+
+```text
+docs/assets/kaios-social-card.png
+```
+
+Expected verification after upload:
+
+```bash
+gh repo view morning-verlu/KAI --json usesCustomOpenGraphImage,openGraphImageUrl
+```
+
+`usesCustomOpenGraphImage` should be `true`.
+
+Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/customizing-your-repositorys-social-media-preview
