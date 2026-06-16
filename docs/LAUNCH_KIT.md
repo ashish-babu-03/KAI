@@ -65,6 +65,7 @@ docker run --rm kaios:local tour
 - Trust matrix: https://github.com/morning-verlu/KAI/blob/main/docs/TRUST_MATRIX.md
 - Kotlin Runtime API: https://github.com/morning-verlu/KAI/blob/main/docs/KOTLIN_API.md
 - Comparison: https://github.com/morning-verlu/KAI/blob/main/docs/COMPARISON.md
+- Launch metrics: https://github.com/morning-verlu/KAI/blob/main/docs/LAUNCH_METRICS.md
 - Kotlin runtime API example: https://github.com/morning-verlu/KAI/tree/main/examples/kotlin-runtime-api
 - JVM service review example: https://github.com/morning-verlu/KAI/tree/main/examples/jvm-service-review
 - Baseline gate example: https://github.com/morning-verlu/KAI/tree/main/examples/baseline-gate
@@ -79,6 +80,26 @@ docker run --rm kaios:local tour
 - "Kotlin LangChain." KAI OS is lower-level runtime evidence infrastructure.
 - A full feature dump. Lead with the tour and the evidence artifacts.
 - A claim that it is production complete. Be honest: v0.3.1 is small, runnable, and focused.
+
+## Metrics Loop
+
+Before posting, then again at +2h, +24h, and +72h:
+
+```bash
+./scripts/launch-metrics.sh
+```
+
+For X posts, pass visible analytics from the browser:
+
+```bash
+X_POST_URL="https://x.com/wurslu/status/..." \
+X_IMPRESSIONS=1 \
+X_ENGAGEMENTS=0 \
+X_LINK_CLICKS=0 \
+./scripts/launch-metrics.sh
+```
+
+Read [Launch Metrics](LAUNCH_METRICS.md) for the decision rules.
 
 ## Day 0 Posting Order
 

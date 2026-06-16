@@ -83,7 +83,7 @@ Stars should come from real interest, not automation or artificial engagement. T
 - quick follow-up releases from user feedback
 - visible issues for contributors
 
-See [LAUNCH_KIT.md](LAUNCH_KIT.md) for copy-paste launch posts, channel-specific drafts, reply guidance, and metrics to capture. Standalone drafts live in [launch-posts](launch-posts/).
+See [LAUNCH_KIT.md](LAUNCH_KIT.md) for copy-paste launch posts, channel-specific drafts, reply guidance, and metrics to capture. Use [LAUNCH_METRICS.md](LAUNCH_METRICS.md) and `./scripts/launch-metrics.sh` for the repeatable +2h/+24h/+72h readout. Standalone drafts live in [launch-posts](launch-posts/).
 
 ## First External Wave
 

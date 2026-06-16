@@ -32,6 +32,12 @@ https://morning-verlu.github.io/KAI/assets/kaios-evidence-proof.png
 gh repo view morning-verlu/KAI --json description,usesCustomOpenGraphImage,stargazerCount
 ```
 
+Capture a metrics snapshot before posting and again at +2h, +24h, and +72h:
+
+```bash
+./scripts/launch-metrics.sh
+```
+
 4. Use the post that matches the channel:
 
 - [First external wave](first-wave.md)
