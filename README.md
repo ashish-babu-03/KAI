@@ -6,12 +6,15 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.4.0-7F52FF.svg)](https://kotlinlang.org/)
 [![Release](https://img.shields.io/github/v/release/morning-verlu/KAI?label=release)](https://github.com/morning-verlu/KAI/releases)
 [![Discussions](https://img.shields.io/badge/discussions-open-8A63D2.svg)](https://github.com/morning-verlu/KAI/discussions)
+[![Contributors](https://img.shields.io/github/contributors/morning-verlu/KAI?label=contributors)](CONTRIBUTORS.md)
+[![Good first issues](https://img.shields.io/github/issues/morning-verlu/KAI/good%20first%20issue?label=good%20first%20issues)](https://github.com/morning-verlu/KAI/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/morning-verlu/KAI?quickstart=1)
 
 Website: [morning-verlu.github.io/KAI](https://morning-verlu.github.io/KAI/)
 
 New here? Start with [START_HERE.md](START_HERE.md) for the browser-only, local CLI, and artifact-only evaluation paths.
 Trying to decide whether KAI OS is worth a star or deeper trial? Use the [5-minute evaluator checklist](docs/EVALUATE.md).
+Community signal: the first external PR is merged and covered by `./scripts/repository-ci-smoke.sh`; see [Contributors](CONTRIBUTORS.md).
 
 KAI OS is a Kotlin runtime that turns multi-agent work into observable, controllable processes.
 
