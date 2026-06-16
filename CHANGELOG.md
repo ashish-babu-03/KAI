@@ -4,6 +4,8 @@
 
 KAI OS v0.3.1 adds a built-in `kaios tour` command so new users can experience the Evidence OS loop without preparing their own dirty Git repository first.
 
+Full release notes: [docs/releases/v0.3.1.md](docs/releases/v0.3.1.md).
+
 Highlights:
 
 - Added `kaios tour`, a no-key walkthrough that creates a disposable Git workspace, runs quickstart, makes a small code change, runs review, prints process/evidence pointers, and keeps the generated artifacts for inspection.
