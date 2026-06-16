@@ -92,6 +92,7 @@ docker run --rm kaios:local tour
 
 Each channel draft is also available as a standalone file so posting does not require editing this long launch kit:
 
+- [First external wave](launch-posts/first-wave.md)
 - [Evidence Viewer-first posts](launch-posts/evidence-viewer-first.md)
 - [Short social post](launch-posts/short-social.md)
 - [X / LinkedIn thread](launch-posts/x-linkedin-thread.md)

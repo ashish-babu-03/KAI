@@ -85,6 +85,16 @@ Stars should come from real interest, not automation or artificial engagement. T
 
 See [LAUNCH_KIT.md](LAUNCH_KIT.md) for copy-paste launch posts, channel-specific drafts, reply guidance, and metrics to capture. Standalone drafts live in [launch-posts](launch-posts/).
 
+## First External Wave
+
+Use [launch-posts/first-wave.md](launch-posts/first-wave.md) when posting externally. The first wave is intentionally narrow:
+
+1. X or LinkedIn short post.
+2. Kotlin/JVM community post.
+3. Show HN after the first two posts are live or after the repo receives early feedback.
+
+Lead with the no-install Evidence Viewer, then offer the repo and `kaios tour`.
+
 ## Contributor Intake
 
 Visible, scoped issues help turn early attention into participation. Keep these queues maintained during launch:

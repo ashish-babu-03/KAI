@@ -28,6 +28,7 @@ gh repo view morning-verlu/KAI --json description,usesCustomOpenGraphImage,starg
 
 4. Use the post that matches the channel:
 
+- [First external wave](first-wave.md)
 - [Evidence Viewer-first posts](evidence-viewer-first.md)
 - [Short social post](short-social.md)
 - [X / LinkedIn thread](x-linkedin-thread.md)
