@@ -40,6 +40,8 @@ Want to run the review loop on a realistic Kotlin/JVM backend change? Try the [J
 
 Want to see the CI baseline gate block a stable behavior change? Inspect the [Baseline Gate example](examples/baseline-gate/).
 
+![KAI OS evidence artifact map](docs/assets/kaios-evidence-map.svg)
+
 ![KAI OS CLI demo](docs/assets/kaios-demo.gif)
 
 ![KAI OS process table preview](docs/assets/kaios-process-table.svg)

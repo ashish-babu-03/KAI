@@ -1,0 +1,69 @@
+<svg width="1200" height="560" viewBox="0 0 1200 560" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">KAI OS evidence artifact map</title>
+  <desc id="desc">A diagram showing a Git change flowing into kaios review and producing a Markdown review, process trace, replay capsule, and CI baseline gate.</desc>
+  <rect width="1200" height="560" rx="8" fill="#101418"/>
+  <rect x="1" y="1" width="1198" height="558" rx="7" stroke="#2D3844" stroke-width="2"/>
+
+  <text x="48" y="62" fill="#F5F7FB" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="34" font-weight="780">Evidence OS loop</text>
+  <text x="48" y="98" fill="#A8B3C1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">Current change in. Runtime evidence out. Replay and gate without an API key.</text>
+
+  <rect x="48" y="150" width="210" height="130" rx="8" fill="#151F28" stroke="#2D3844" stroke-width="2"/>
+  <text x="76" y="188" fill="#78D9FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16" font-weight="700">INPUT</text>
+  <text x="76" y="224" fill="#F5F7FB" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="25" font-weight="760">Git change</text>
+  <text x="76" y="252" fill="#A8B3C1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="16">bounded diff</text>
+  <text x="76" y="274" fill="#A8B3C1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="16">workspace index</text>
+
+  <path d="M278 215H348" stroke="#78D9FF" stroke-width="3"/>
+  <path d="M348 215L332 205V225L348 215Z" fill="#78D9FF"/>
+
+  <rect x="368" y="136" width="250" height="158" rx="8" fill="#18232C" stroke="#8FF0BD" stroke-width="2"/>
+  <text x="398" y="176" fill="#8FF0BD" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16" font-weight="700">RUNTIME</text>
+  <text x="398" y="216" fill="#F5F7FB" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="29" font-weight="780">kaios review</text>
+  <text x="398" y="250" fill="#A8B3C1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="16">agents run as processes</text>
+  <text x="398" y="276" fill="#A8B3C1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="16">tools execute as syscalls</text>
+
+  <path d="M638 215H708" stroke="#78D9FF" stroke-width="3"/>
+  <path d="M708 215L692 205V225L708 215Z" fill="#78D9FF"/>
+
+  <rect x="728" y="82" width="198" height="120" rx="8" fill="#121A22" stroke="#2D3844" stroke-width="2"/>
+  <text x="752" y="120" fill="#F0B85C" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700">review.md</text>
+  <text x="752" y="154" fill="#F5F7FB" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="730">Human artifact</text>
+  <text x="752" y="180" fill="#A8B3C1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15">fix-first summary</text>
+
+  <rect x="728" y="224" width="198" height="120" rx="8" fill="#121A22" stroke="#2D3844" stroke-width="2"/>
+  <text x="752" y="262" fill="#F0B85C" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700">trace.json</text>
+  <text x="752" y="296" fill="#F5F7FB" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="730">Process trace</text>
+  <text x="752" y="322" fill="#A8B3C1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15">PID, state, syscalls, cost</text>
+
+  <rect x="728" y="366" width="198" height="120" rx="8" fill="#121A22" stroke="#2D3844" stroke-width="2"/>
+  <text x="752" y="404" fill="#F0B85C" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" font-weight="700">capsule.json</text>
+  <text x="752" y="438" fill="#F5F7FB" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="730">Replay capsule</text>
+  <text x="752" y="464" fill="#A8B3C1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15">portable offline evidence</text>
+
+  <path d="M946 142H1016" stroke="#8FF0BD" stroke-width="3"/>
+  <path d="M1016 142L1000 132V152L1016 142Z" fill="#8FF0BD"/>
+  <path d="M946 284H1016" stroke="#8FF0BD" stroke-width="3"/>
+  <path d="M1016 284L1000 274V294L1016 284Z" fill="#8FF0BD"/>
+  <path d="M946 426H1016" stroke="#8FF0BD" stroke-width="3"/>
+  <path d="M1016 426L1000 416V436L1016 426Z" fill="#8FF0BD"/>
+
+  <rect x="1036" y="82" width="116" height="120" rx="8" fill="#17221D" stroke="#8FF0BD" stroke-width="2"/>
+  <text x="1061" y="129" fill="#8FF0BD" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="760">Review</text>
+  <text x="1061" y="158" fill="#D5DDE7" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15">shareable</text>
+  <text x="1061" y="181" fill="#D5DDE7" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15">artifact</text>
+
+  <rect x="1036" y="224" width="116" height="120" rx="8" fill="#17221D" stroke="#8FF0BD" stroke-width="2"/>
+  <text x="1061" y="271" fill="#8FF0BD" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="760">Audit</text>
+  <text x="1061" y="300" fill="#D5DDE7" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15">contract</text>
+  <text x="1061" y="323" fill="#D5DDE7" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15">checks</text>
+
+  <rect x="1036" y="366" width="116" height="120" rx="8" fill="#17221D" stroke="#8FF0BD" stroke-width="2"/>
+  <text x="1061" y="413" fill="#8FF0BD" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="22" font-weight="760">Gate</text>
+  <text x="1061" y="442" fill="#D5DDE7" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15">replay +</text>
+  <text x="1061" y="465" fill="#D5DDE7" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15">baseline</text>
+
+  <rect x="48" y="380" width="570" height="106" rx="8" fill="#0D1116" stroke="#2D3844" stroke-width="2"/>
+  <text x="76" y="420" fill="#8FF0BD" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">$ kaios review</text>
+  <text x="76" y="452" fill="#78D9FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">$ kaios evidence --summary</text>
+  <text x="76" y="474" fill="#A8B3C1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15">No API key required for the deterministic first-run path.</text>
+</svg>
