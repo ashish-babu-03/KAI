@@ -70,6 +70,9 @@ https://github.com/morning-verlu/KAI/tree/main/examples/kotlin-runtime-api
 Kotlin/JVM feedback form:
 https://github.com/morning-verlu/KAI/issues/new?template=kotlin_api_feedback.yml
 
+Contributor board:
+https://github.com/morning-verlu/KAI/blob/main/docs/CONTRIBUTOR_BOARD.md
+
 I would especially like feedback on:
 
 - whether the Agent = Process model is useful for JVM teams
@@ -109,6 +112,9 @@ https://github.com/morning-verlu/KAI
 
 Kotlin/JVM feedback form:
 https://github.com/morning-verlu/KAI/issues/new?template=kotlin_api_feedback.yml
+
+Contributor board:
+https://github.com/morning-verlu/KAI/blob/main/docs/CONTRIBUTOR_BOARD.md
 
 It is early and local-first. I am not claiming it is production complete. I would like feedback on whether the runtime model and Kotlin API shape are worth continuing.
 ```

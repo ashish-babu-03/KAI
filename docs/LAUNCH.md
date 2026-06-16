@@ -84,6 +84,7 @@ Stars should come from real interest, not automation or artificial engagement. T
 - visible issues for contributors
 
 See [LAUNCH_KIT.md](LAUNCH_KIT.md) for copy-paste launch posts, channel-specific drafts, reply guidance, and metrics to capture. Use [LAUNCH_METRICS.md](LAUNCH_METRICS.md) and `./scripts/launch-metrics.sh` for the repeatable +2h/+24h/+72h readout. Standalone drafts live in [launch-posts](launch-posts/).
+Use the [Contributor Board](CONTRIBUTOR_BOARD.md) when someone asks how to help without a large PR.
 
 ## First External Wave
 
@@ -101,6 +102,7 @@ If X/LinkedIn does not distribute the visual post, switch to [launch-posts/commu
 
 Visible, scoped issues help turn early attention into participation. Keep these queues maintained during launch:
 
+- Contributor Board: https://github.com/morning-verlu/KAI/blob/main/docs/CONTRIBUTOR_BOARD.md
 - Good first issues: https://github.com/morning-verlu/KAI/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22
 - Help wanted issues: https://github.com/morning-verlu/KAI/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22
 - Feedback issues: https://github.com/morning-verlu/KAI/issues?q=is%3Aissue%20state%3Aopen%20label%3Afeedback

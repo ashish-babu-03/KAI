@@ -19,6 +19,7 @@ Want the shortest star/watch/fork rationale? Read [Why Star KAI OS](docs/WHY_STA
 Want claim-by-claim proof? Read the [KAI OS Trust Matrix](docs/TRUST_MATRIX.md).
 Kotlin/JVM feedback? Open the [Kotlin API feedback form](https://github.com/morning-verlu/KAI/issues/new?template=kotlin_api_feedback.yml).
 Community signal: the first external PR is merged and covered by `./scripts/repository-ci-smoke.sh`; see [Contributors](CONTRIBUTORS.md).
+Want to help in 5-30 minutes? Pick a concrete action from the [Contributor Board](docs/CONTRIBUTOR_BOARD.md).
 
 ![KAI OS evidence proof: process table, syscall ledger, replay capsule, and CI gate](docs/assets/kaios-evidence-proof.png)
 
@@ -93,6 +94,7 @@ For positioning against LangGraph, OpenAI Agents SDK, Koog, and LangChain4j, rea
 For safety, reproducibility, and artifact-sharing boundaries, read the [KAI OS Trust Contract](docs/TRUST.md).
 For claim-by-claim verification, read the [KAI OS Trust Matrix](docs/TRUST_MATRIX.md).
 For community contributions, read [Contributors](CONTRIBUTORS.md).
+For launch-stage starter tasks, read the [Contributor Board](docs/CONTRIBUTOR_BOARD.md).
 For release highlights, read the [Changelog](CHANGELOG.md).
 
 ## Why This Exists

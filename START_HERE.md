@@ -8,6 +8,7 @@ Trying to decide whether to star, try, or ignore it? Use the [5-minute evaluator
 Want to see a no-install visual sample first? Open the [Evidence Viewer](https://morning-verlu.github.io/KAI/evidence-viewer.html).
 Want the shortest star/watch/fork rationale? Read [Why Star KAI OS](docs/WHY_STAR.md).
 Want claim-by-claim proof? Read the [KAI OS Trust Matrix](docs/TRUST_MATRIX.md).
+Want to help in 5-30 minutes? Use the [Contributor Board](docs/CONTRIBUTOR_BOARD.md).
 
 It is for developers who want agent work to be inspectable like runtime infrastructure:
 

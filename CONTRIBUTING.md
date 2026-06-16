@@ -26,6 +26,7 @@ build/install/kaios-cli/bin/kaios tour
 
 2. Pick a scoped issue:
 
+- Contributor Board: https://github.com/morning-verlu/KAI/blob/main/docs/CONTRIBUTOR_BOARD.md
 - Good first issues: https://github.com/morning-verlu/KAI/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22
 - Help wanted issues: https://github.com/morning-verlu/KAI/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22
 - Feedback issues: https://github.com/morning-verlu/KAI/issues?q=is%3Aissue%20state%3Aopen%20label%3Afeedback
@@ -66,6 +67,7 @@ Use the narrowest command that proves your change. For docs-only changes, `git d
 - CLI output polish that makes process evidence easier to scan.
 - JVM/Kotlin examples that show KAI OS as an evidence layer beside real agent code.
 - Kotlin API feedback that makes the runtime feel more idiomatic for backend teams.
+- Launch-stage feedback and starter tasks from the [Contributor Board](docs/CONTRIBUTOR_BOARD.md).
 
 ## Pull Request Expectations
 
