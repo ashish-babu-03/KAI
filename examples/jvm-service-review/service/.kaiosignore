@@ -1,0 +1,11 @@
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+.gradle/
+.kaios/
+.kotlin/
+artifacts/
+build/

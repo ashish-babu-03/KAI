@@ -4,7 +4,7 @@ Use this page when announcing KAI OS. The launch goal is real feedback and real 
 
 ## Canonical Pitch
 
-KAI OS is a local-first Evidence OS for AI agents in Kotlin. It turns agent runs into process traces, replayable capsules, syscall ledgers, and CI-grade proof.
+KAI OS is a local-first Evidence OS for AI agents in Kotlin. It turns agent runs into process traces, replayable capsules, syscall ledgers, and CI-ready runtime evidence.
 
 ```text
 Agent = Process
@@ -42,13 +42,14 @@ https://codespaces.new/morning-verlu/KAI?quickstart=1
 - Social card: https://morning-verlu.github.io/KAI/assets/kaios-social-card.png
 - Evidence OS: https://github.com/morning-verlu/KAI/blob/main/docs/EVIDENCE_OS.md
 - Comparison: https://github.com/morning-verlu/KAI/blob/main/docs/COMPARISON.md
+- JVM service review example: https://github.com/morning-verlu/KAI/tree/main/examples/jvm-service-review
 - Trust contract: https://github.com/morning-verlu/KAI/blob/main/docs/TRUST.md
 
 ## Do Not Lead With
 
 - Homebrew. It is an install option, not the product.
 - "Kotlin LangChain." KAI OS is lower-level runtime evidence infrastructure.
-- A full feature dump. Lead with the tour and the proof artifacts.
+- A full feature dump. Lead with the tour and the evidence artifacts.
 - A claim that it is production complete. Be honest: v0.3.1 is small, runnable, and focused.
 
 ## Day 0 Posting Order
@@ -133,7 +134,7 @@ Site: https://morning-verlu.github.io/KAI/
 ```text
 Show HN: KAI OS - Local-first Evidence OS for AI agents in Kotlin
 
-I am building KAI OS, a Kotlin/JVM runtime that turns AI agent runs into process traces, replayable capsules, syscall ledgers, and CI-grade proof.
+I am building KAI OS, a Kotlin/JVM runtime that turns AI agent runs into process traces, replayable capsules, syscall ledgers, and CI-ready runtime evidence.
 
 The core model is:
 
@@ -206,7 +207,7 @@ kaios tour
 
 The tour creates a disposable Git repo and outputs a current-change review artifact, process table, trace JSON, replayable capsule, evidence summary, and recovery dry-run report.
 
-The main difference from agent frameworks is the focus on portable evidence: replay, baseline diffs, syscall audit records, process recovery evidence, and CI-grade summaries.
+The main difference from agent frameworks is the focus on portable evidence: replay, baseline diffs, syscall audit records, process recovery evidence, and CI-ready summaries.
 
 I would love feedback, especially from Kotlin/JVM developers and maintainers who care about agent runs being auditable and reproducible.
 
@@ -240,7 +241,7 @@ Use short, concrete replies.
 | Is this another LangChain? | No. KAI OS focuses on local runtime evidence: process traces, capsules, syscall audit, replay, and CI gates. |
 | Does it need an API key? | The default tour/review/evidence path does not. Real providers are optional. |
 | Why Kotlin? | JVM teams need agent runtime infrastructure that fits their build, CI, and backend ecosystem. |
-| Is it production ready? | Not yet. v0.3.1 is a runnable evidence-core seed. The goal is feedback on the runtime model and proof artifacts. |
+| Is it production ready? | Not yet. v0.3.1 is a runnable evidence-core seed. The goal is feedback on the runtime model and evidence artifacts. |
 | Why not build UI first? | The evidence contract comes first; UI can later read the same traces, capsules, syscalls, and recovery records. |
 
 ## Metrics To Capture

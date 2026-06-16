@@ -1,0 +1,7 @@
+.gradle/
+.kaios/
+.kotlin/
+artifacts/
+build/
+review-result.json
+baselines/

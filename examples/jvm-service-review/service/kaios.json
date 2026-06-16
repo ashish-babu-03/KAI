@@ -1,0 +1,56 @@
+{
+    "name": "code-review",
+    "agents": [
+        {
+            "id": "inspector",
+            "instruction": "Inspect the requested Kotlin/JVM service change and identify the important domain, service, and test surfaces.",
+            "tools": [
+                "echo",
+                "file"
+            ],
+            "dependsOn": [],
+            "fallbackOnly": false,
+            "retries": 0,
+            "memory": true,
+            "memoryIsolation": "AGENT",
+            "priority": 10,
+            "triggers": [],
+            "capabilities": []
+        },
+        {
+            "id": "reviewer",
+            "instruction": "Prioritize concrete bugs, regressions, missing tests, and risky assumptions in the Kotlin/JVM service change.",
+            "tools": [
+                "echo",
+                "file"
+            ],
+            "dependsOn": [
+                "inspector"
+            ],
+            "fallbackOnly": false,
+            "retries": 0,
+            "memory": true,
+            "memoryIsolation": "AGENT",
+            "priority": 5,
+            "triggers": [],
+            "capabilities": []
+        },
+        {
+            "id": "validator",
+            "instruction": "Validate whether the review findings are actionable and supported by the changed files.",
+            "tools": [
+                "echo"
+            ],
+            "dependsOn": [
+                "reviewer"
+            ],
+            "fallbackOnly": false,
+            "retries": 0,
+            "memory": true,
+            "memoryIsolation": "AGENT",
+            "priority": 0,
+            "triggers": [],
+            "capabilities": []
+        }
+    ]
+}

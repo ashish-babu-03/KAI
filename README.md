@@ -28,6 +28,8 @@ No local Java setup? [Open KAI OS in GitHub Codespaces](https://codespaces.new/m
 
 Want to inspect the evidence artifacts before installing? Open the checked-in [Evidence Sample](examples/evidence-sample/) with a review artifact, process trace, replayable capsule, and `kaios.review/v1` JSON. Feedback on the evidence path belongs in the [Evidence feedback issue template](https://github.com/morning-verlu/KAI/issues/new?template=evidence_feedback.yml).
 
+Want to run the review loop on a realistic Kotlin/JVM backend change? Try the [JVM Service Review example](examples/jvm-service-review/).
+
 ![KAI OS CLI demo](docs/assets/kaios-demo.gif)
 
 ![KAI OS process table preview](docs/assets/kaios-process-table.svg)
@@ -490,6 +492,7 @@ For the no-key readiness gate, see [docs/VERIFY.md](docs/VERIFY.md).
 For copyable project examples, including the default GitHub Actions Agent Gate, see [examples/README.md](examples/README.md).
 
 For a checked-in no-install evidence artifact, see [examples/evidence-sample](examples/evidence-sample/).
+For a runnable Kotlin/JVM service review, see [examples/jvm-service-review](examples/jvm-service-review/).
 
 For persisted memory, see [docs/MEMORY.md](docs/MEMORY.md).
 

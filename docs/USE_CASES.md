@@ -71,7 +71,9 @@ What KAI OS gives you:
 
 Why it matters:
 
-The common developer loop becomes one command: current change in, inspectable evidence out. The agent review is not just text; it comes with the process trace, replay proof, and optional baseline comparison that lets a team gate runtime behavior.
+The common developer loop becomes one command: current change in, inspectable evidence out. The agent review is not just text; it comes with the process trace, replay result, and optional baseline comparison that lets a team gate runtime behavior.
+
+For a runnable Kotlin/JVM backend example, see [examples/jvm-service-review](../examples/jvm-service-review/).
 
 ## 4. Package A Reproducible Run For Review Or Support
 

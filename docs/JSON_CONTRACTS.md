@@ -16,7 +16,7 @@ The rule of thumb is simple:
 | `kaios tour --json` | `kaios.tour/v1` | Disposable first-run Evidence OS tour with generated review, trace, capsule, and next actions. |
 | `kaios next --json` | `kaios.next/v1` | Read-only workspace compass with one prioritized command. |
 | `kaios quickstart --json` | `kaios.quickstart/v1` | One-command onboarding state across demo, setup, verify, and evidence. |
-| `kaios review --json` | `kaios.review/v1` | Current-change review artifact, process trace, capsule, replay proof, optional baseline diff, and next actions. |
+| `kaios review --json` | `kaios.review/v1` | Current-change review artifact, process trace, capsule, replay result, optional baseline diff, and next actions. |
 | `kaios setup --json` | `kaios.setup/v1` | Bootstrap state, generated files, validation, and next actions. |
 | `kaios verify --json` | `kaios.verify/v1` | One-command local and CI readiness gate. |
 | `kaios config validate --json` | `kaios.config-validation/v1` | Workflow config validation without starting agents. |
