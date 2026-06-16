@@ -1,0 +1,61 @@
+# Launch Posts
+
+Copy-ready drafts for external launch channels.
+
+Status: drafts only. Nothing in this directory proves a post has been published.
+
+## Preflight
+
+Before posting externally:
+
+1. Verify the first-run path:
+
+```bash
+./scripts/repository-ci-smoke.sh
+```
+
+2. Upload the GitHub social preview image in repository settings:
+
+```text
+docs/assets/kaios-social-card.png
+```
+
+3. Verify GitHub metadata:
+
+```bash
+gh repo view morning-verlu/KAI --json description,usesCustomOpenGraphImage,stargazerCount
+```
+
+4. Use the post that matches the channel:
+
+- [Short social post](short-social.md)
+- [X / LinkedIn thread](x-linkedin-thread.md)
+- [Kotlin community post](kotlin-community.md)
+- [Show HN post](show-hn.md)
+- [Reddit post](reddit.md)
+
+## Core Message
+
+KAI OS is a local-first Evidence OS for AI agents in Kotlin.
+
+```text
+Agent    = Process
+Workflow = Scheduler
+Tool     = Syscall
+Memory   = Process state
+```
+
+Lead with `kaios tour`, not with installation mechanics:
+
+```bash
+curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
+export PATH="$HOME/.kaios/bin:$PATH"
+kaios tour
+```
+
+Use the Evidence Artifact Map when the channel supports images:
+
+```text
+https://morning-verlu.github.io/KAI/assets/kaios-evidence-map.png
+```
+

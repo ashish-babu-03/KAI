@@ -1,0 +1,43 @@
+# Kotlin Community Post
+
+Status: draft, not posted.
+
+Use for Kotlin Slack, Kotlin forum, or JVM-focused communities. Adjust the opening sentence to fit the channel norms.
+
+Post:
+
+```text
+I am building KAI OS, a Kotlin/JVM runtime for AI agent evidence.
+
+It is not trying to be a Kotlin LangChain clone. The runtime model is closer to OS infrastructure:
+
+Agent = Process
+Workflow = Scheduler
+Tool = Syscall
+Memory = Process state
+
+The v0.3.1 release has a no-key first-run tour:
+
+curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
+export PATH="$HOME/.kaios/bin:$PATH"
+kaios tour
+
+It generates a process table, trace JSON, replayable capsule, current-change review artifact, and CI-style evidence summary from a disposable local repo.
+
+There is also a Kotlin Runtime API example:
+
+./gradlew -p examples/kotlin-runtime-api run
+
+I would especially like feedback on the Kotlin API shape, the process/scheduler/tool model, and whether local evidence capsules are useful for JVM backend teams.
+
+Repo: https://github.com/morning-verlu/KAI
+Kotlin API: https://github.com/morning-verlu/KAI/blob/main/docs/KOTLIN_API.md
+Start here: https://github.com/morning-verlu/KAI/blob/main/START_HERE.md
+```
+
+Follow-up reply if someone asks what makes it different:
+
+```text
+The difference is the evidence layer. KAI OS records process traces, replayable capsules, syscall audit records, recovery evidence, and baseline diffs so agent runs can be inspected or gated later without relying on provider logs.
+```
+

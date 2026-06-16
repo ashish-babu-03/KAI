@@ -77,6 +77,16 @@ docker run --rm kaios:local tour
 5. Post Show HN after the README and site are stable.
 6. Reply quickly to every real question for the first 24 hours.
 
+## Copy-Ready Drafts
+
+Each channel draft is also available as a standalone file so posting does not require editing this long launch kit:
+
+- [Short social post](launch-posts/short-social.md)
+- [X / LinkedIn thread](launch-posts/x-linkedin-thread.md)
+- [Kotlin community post](launch-posts/kotlin-community.md)
+- [Show HN post](launch-posts/show-hn.md)
+- [Reddit post](launch-posts/reddit.md)
+
 ## Short Social Post
 
 ```text
