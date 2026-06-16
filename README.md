@@ -73,6 +73,7 @@ KAI OS is intentionally small in v0.3. If you only need a chatbot UI or a thin p
 
 For concrete workflows, read [KAI OS Use Cases](docs/USE_CASES.md).
 For the product moat, read [Evidence OS for Agents](docs/EVIDENCE_OS.md).
+For the Kotlin library entrypoint, read [Kotlin Runtime API](docs/KOTLIN_API.md).
 For positioning against LangGraph, OpenAI Agents SDK, Koog, and LangChain4j, read [KAI OS Compared](docs/COMPARISON.md).
 For safety, reproducibility, and artifact-sharing boundaries, read the [KAI OS Trust Contract](docs/TRUST.md).
 For release highlights, read the [Changelog](CHANGELOG.md).

@@ -2,6 +2,8 @@
 
 This example is for Kotlin/JVM developers who want to use KAI OS as a runtime library instead of starting with the CLI.
 
+For the API shape and a smaller snippet, read [Kotlin Runtime API](../../docs/KOTLIN_API.md).
+
 It demonstrates the core model in code:
 
 ```text

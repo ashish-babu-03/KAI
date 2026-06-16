@@ -92,6 +92,7 @@ kaios evidence --summary
 For a runnable Kotlin/JVM backend change, use [examples/jvm-service-review](examples/jvm-service-review/).
 
 For a Kotlin library entrypoint, use [examples/kotlin-runtime-api](examples/kotlin-runtime-api/).
+For the API shape, read [docs/KOTLIN_API.md](docs/KOTLIN_API.md).
 
 For a deterministic baseline gate that intentionally exits `1` on behavior drift, use [examples/baseline-gate](examples/baseline-gate/).
 

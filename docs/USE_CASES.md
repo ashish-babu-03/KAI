@@ -128,6 +128,28 @@ Why it matters:
 
 You can keep agent context explicit and reviewable before moving to real providers.
 
+## 6. Embed KAI OS As A Kotlin Runtime Library
+
+Use this when you want the process/scheduler/syscall model inside a Kotlin/JVM application rather than as a CLI-only workflow.
+
+```bash
+./gradlew -p examples/kotlin-runtime-api run
+```
+
+What KAI OS gives you:
+
+- typed agent and workflow definitions.
+- priority-aware DAG scheduling.
+- local worker execution.
+- capability-granted tool syscalls.
+- process metrics and syscall audit records as Kotlin objects.
+
+Why it matters:
+
+Kotlin teams can adopt the runtime model directly in application code, then use the CLI evidence path for artifacts, replay, and CI gates.
+
+For the API shape, see [Kotlin Runtime API](KOTLIN_API.md).
+
 ## Choosing The First Command
 
 When you are unsure where the workspace is, ask KAI OS:
