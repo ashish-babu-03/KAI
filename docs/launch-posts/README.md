@@ -33,6 +33,7 @@ gh repo view morning-verlu/KAI --json description,usesCustomOpenGraphImage,starg
 - [Kotlin community post](kotlin-community.md)
 - [Show HN post](show-hn.md)
 - [Reddit post](reddit.md)
+- [Why Star KAI OS](../WHY_STAR.md)
 
 ## Core Message
 
@@ -58,4 +59,3 @@ Use the Evidence Artifact Map when the channel supports images:
 ```text
 https://morning-verlu.github.io/KAI/assets/kaios-evidence-map.png
 ```
-
