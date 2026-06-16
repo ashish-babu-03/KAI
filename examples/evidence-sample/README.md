@@ -36,6 +36,39 @@ kaios capsule --file examples/evidence-sample/change-review.capsule.json --check
 kaios replay --file examples/evidence-sample/change-review.capsule.json
 ```
 
+Want a compact baseline/current diff sample without wiring a real model provider?
+
+```bash
+./gradlew installDist
+./examples/evidence-sample/generate-baseline-diff.sh
+```
+
+The script creates a tiny disposable Git repo, captures two deterministic
+`kaios review --json` runs, validates and replays both capsules, then runs:
+
+```bash
+kaios diff examples/evidence-sample/generated/baseline.capsule.json \
+  examples/evidence-sample/generated/current.capsule.json \
+  --check
+```
+
+Generated outputs to inspect:
+
+- `generated/baseline.capsule.json`: the baseline review capsule.
+- `generated/current.capsule.json`: the current review capsule with a small,
+  stable input change.
+- `generated/baseline-current.diff.txt`: the `kaios diff --check` output.
+- `generated/baseline-review-result.json` and
+  `generated/current-review-result.json`: the stable `kaios.review/v1` payloads
+  for both runs.
+
+What to look for in the baseline diff path:
+
+- `replay.valid == true` for both baseline and current capsules.
+- `kaios diff --check` exits `1` when stable runtime behavior changes.
+- The diff output highlights reviewer-facing behavior changes instead of raw
+  timestamps or run ids.
+
 The equivalent live path in your own Git repository is:
 
 ```bash
