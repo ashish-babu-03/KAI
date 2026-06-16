@@ -11,6 +11,7 @@ Highlights:
 - Added `kaios tour`, a no-key walkthrough that creates a disposable Git workspace, runs quickstart, makes a small code change, runs review, prints process/evidence pointers, and keeps the generated artifacts for inspection.
 - Added `kaios.tour/v1` JSON output for docs, launch posts, and smoke checks.
 - Added `kaios try` as a friendly alias for the tour.
+- Added a no-install Evidence Viewer for seeing process, syscall, capsule, replay, and baseline gate evidence from the browser.
 - Updated help, installer recommendations, README, install docs, launch site, and launch kit to make the tour the lowest-friction first command.
 
 Verification:
