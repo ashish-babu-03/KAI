@@ -104,6 +104,7 @@ Visible, scoped issues help turn early attention into participation. Keep these 
 - Good first issues: https://github.com/morning-verlu/KAI/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22
 - Help wanted issues: https://github.com/morning-verlu/KAI/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22
 - Feedback issues: https://github.com/morning-verlu/KAI/issues?q=is%3Aissue%20state%3Aopen%20label%3Afeedback
+- Kotlin/JVM API feedback: https://github.com/morning-verlu/KAI/issues/new?template=kotlin_api_feedback.yml
 
 ## Manual GitHub Settings Tasks
 

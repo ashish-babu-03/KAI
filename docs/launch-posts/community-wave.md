@@ -67,6 +67,9 @@ It shows a checked-in run as a process table, syscall ledger, replayable capsule
 The Kotlin API example is here:
 https://github.com/morning-verlu/KAI/tree/main/examples/kotlin-runtime-api
 
+Kotlin/JVM feedback form:
+https://github.com/morning-verlu/KAI/issues/new?template=kotlin_api_feedback.yml
+
 I would especially like feedback on:
 
 - whether the Agent = Process model is useful for JVM teams
@@ -103,6 +106,9 @@ https://morning-verlu.github.io/KAI/evidence-viewer.html?utm_source=reddit_kotli
 
 The repo is here:
 https://github.com/morning-verlu/KAI
+
+Kotlin/JVM feedback form:
+https://github.com/morning-verlu/KAI/issues/new?template=kotlin_api_feedback.yml
 
 It is early and local-first. I am not claiming it is production complete. I would like feedback on whether the runtime model and Kotlin API shape are worth continuing.
 ```

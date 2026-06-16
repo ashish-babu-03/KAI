@@ -1,0 +1,65 @@
+name: Kotlin/JVM API feedback
+description: Share feedback on the Kotlin runtime API, JVM integration shape, or example projects.
+title: "[Kotlin API]: "
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reviewing KAI OS from a Kotlin/JVM perspective.
+
+        This template is for feedback after reading the Kotlin API docs, trying the runtime example, or thinking about how KAI OS would fit beside a JVM service.
+
+        Useful starting points:
+
+        ```bash
+        ./gradlew -p examples/kotlin-runtime-api run
+        ./scripts/evidence-samples-smoke.sh
+        ```
+  - type: dropdown
+    id: path
+    attributes:
+      label: What did you inspect?
+      options:
+        - Kotlin Runtime API docs
+        - Kotlin runtime API example
+        - JVM service review example
+        - Evidence Viewer only
+        - README / launch site only
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: useful
+    attributes:
+      label: What feels useful or idiomatic?
+      description: Which part of the Kotlin/JVM API, runtime model, or example made sense?
+      placeholder: "The API/example felt useful because..."
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: What feels awkward or unidiomatic?
+      description: Name the smallest API or example change that would make KAI OS easier to try from Kotlin/JVM.
+      placeholder: "I would expect..."
+    validations:
+      required: true
+  - type: textarea
+    id: integration
+    attributes:
+      label: Where would this fit in a JVM project?
+      description: Describe the type of service, CI workflow, review workflow, or agent runtime where this might help.
+  - type: dropdown
+    id: role
+    attributes:
+      label: Your perspective
+      options:
+        - Kotlin backend developer
+        - JVM platform / CI engineer
+        - Open source maintainer
+        - Agent / LLM infrastructure builder
+        - Curious observer
+        - Other
+    validations:
+      required: true

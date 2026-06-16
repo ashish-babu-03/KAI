@@ -29,6 +29,7 @@ build/install/kaios-cli/bin/kaios tour
 - Good first issues: https://github.com/morning-verlu/KAI/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22
 - Help wanted issues: https://github.com/morning-verlu/KAI/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22help%20wanted%22
 - Feedback issues: https://github.com/morning-verlu/KAI/issues?q=is%3Aissue%20state%3Aopen%20label%3Afeedback
+- Kotlin/JVM API feedback: https://github.com/morning-verlu/KAI/issues/new?template=kotlin_api_feedback.yml
 
 3. Keep the PR small and include the command you used to verify it.
 
@@ -64,6 +65,7 @@ Use the narrowest command that proves your change. For docs-only changes, `git d
 - `.kaiosignore`, bounded context, and safe artifact behavior.
 - CLI output polish that makes process evidence easier to scan.
 - JVM/Kotlin examples that show KAI OS as an evidence layer beside real agent code.
+- Kotlin API feedback that makes the runtime feel more idiomatic for backend teams.
 
 ## Pull Request Expectations
 
