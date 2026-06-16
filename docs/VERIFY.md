@@ -40,6 +40,12 @@ The lower-level equivalent is:
 kaios verify --evidence --force
 ```
 
+To validate the checked-in Evidence Sample and Baseline Gate artifacts without a model provider:
+
+```bash
+./scripts/evidence-samples-smoke.sh
+```
+
 When a GitHub Actions workflow wants a human-readable PR summary and a clean JSON artifact at the same time:
 
 ```bash

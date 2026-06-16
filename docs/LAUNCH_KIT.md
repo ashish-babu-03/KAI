@@ -44,6 +44,7 @@ https://codespaces.new/morning-verlu/KAI?quickstart=1
 - Comparison: https://github.com/morning-verlu/KAI/blob/main/docs/COMPARISON.md
 - JVM service review example: https://github.com/morning-verlu/KAI/tree/main/examples/jvm-service-review
 - Baseline gate example: https://github.com/morning-verlu/KAI/tree/main/examples/baseline-gate
+- Local evidence samples smoke: `./scripts/evidence-samples-smoke.sh`
 - Trust contract: https://github.com/morning-verlu/KAI/blob/main/docs/TRUST.md
 
 ## Do Not Lead With

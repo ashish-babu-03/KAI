@@ -4,6 +4,12 @@ These examples use the deterministic mock model provider, so no API key is requi
 
 If you are evaluating what KAI OS is for, start with [KAI OS Use Cases](../docs/USE_CASES.md). The examples below are the copyable commands and config snippets behind those workflows.
 
+Verify the checked-in evidence examples locally:
+
+```bash
+./scripts/evidence-samples-smoke.sh
+```
+
 ## Evidence Sample
 
 Want to inspect the output before installing anything?
