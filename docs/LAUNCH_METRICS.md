@@ -46,6 +46,10 @@ Capture:
 - 24 hours after posting
 - 72 hours after posting
 
+## Saved Snapshots
+
+- [2026-06-17 launch snapshot](launch-snapshots/2026-06-17.md): distribution still at 0 GitHub views; next action is Kotlin/JVM community posting, not more README copy.
+
 ## How To Interpret
 
 - GitHub views stay at 0: distribution failed. Change channel before changing product copy.
