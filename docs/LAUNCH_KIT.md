@@ -23,6 +23,14 @@ https://morning-verlu.github.io/KAI/evidence-viewer.html
 
 The viewer shows the product surface before asking anyone to install Java, Gradle, Docker, Codespaces, or an API key: process table, syscall ledger, replayable capsule, and baseline gate.
 
+For skeptical developer audiences, lead with the checkable Proof Pack:
+
+```text
+https://morning-verlu.github.io/KAI/proof-pack.html
+```
+
+The proof pack maps the Evidence OS claim to checked-in artifacts and repeatable commands before asking for a star, install, or provider setup.
+
 For hands-on audiences, lead to the no-key tour:
 
 ```bash
@@ -51,6 +59,7 @@ docker run --rm kaios:local tour
 - Repo: https://github.com/morning-verlu/KAI
 - Site: https://morning-verlu.github.io/KAI/
 - Evidence viewer: https://morning-verlu.github.io/KAI/evidence-viewer.html
+- Proof pack: https://morning-verlu.github.io/KAI/proof-pack.html
 - Start here: https://github.com/morning-verlu/KAI/blob/main/START_HERE.md
 - Evaluate in 5 minutes: https://github.com/morning-verlu/KAI/blob/main/docs/EVALUATE.md
 - Codespaces: https://codespaces.new/morning-verlu/KAI?quickstart=1

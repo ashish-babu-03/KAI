@@ -8,6 +8,8 @@ KAI OS is early, so the important trust question is not "is every future feature
 Which Evidence OS claims are backed by checked-in artifacts or repeatable commands today?
 ```
 
+For the shorter visitor-facing proof path, open the [KAI OS Proof Pack](PROOF_PACK.md) or the hosted [proof-pack page](https://morning-verlu.github.io/KAI/proof-pack.html).
+
 ## Status At A Glance
 
 | Claim | Current proof | Command or artifact | Status |

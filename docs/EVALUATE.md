@@ -19,6 +19,8 @@ Can an agent run leave process evidence that I can inspect, replay, compare, and
 
 ## Path 1: Inspect Evidence Without Installing
 
+Open the [KAI OS Proof Pack](https://morning-verlu.github.io/KAI/proof-pack.html) when you want the claim-to-artifact map first.
+
 Open the visual [Evidence Viewer](https://morning-verlu.github.io/KAI/evidence-viewer.html) for process table, syscall ledger, capsule, replay, and baseline gate panels.
 
 Open the checked-in [Evidence Sample](../examples/evidence-sample/).
@@ -107,6 +109,7 @@ I need agent work to leave portable evidence that another developer, reviewer, o
 Next links:
 
 - [Start here](../START_HERE.md)
+- [Proof Pack](PROOF_PACK.md)
 - [Evidence OS](EVIDENCE_OS.md)
 - [Kotlin API](KOTLIN_API.md)
 - [Comparison](COMPARISON.md)

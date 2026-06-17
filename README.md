@@ -14,6 +14,7 @@ Website: [morning-verlu.github.io/KAI](https://morning-verlu.github.io/KAI/)
 
 New here? Start with [START_HERE.md](START_HERE.md) for the browser-only, local CLI, and artifact-only evaluation paths.
 Want to see the product without installing? Open the [Evidence Viewer](https://morning-verlu.github.io/KAI/evidence-viewer.html).
+Want the shortest checkable proof? Open the [KAI OS Proof Pack](https://morning-verlu.github.io/KAI/proof-pack.html) or read [docs/PROOF_PACK.md](docs/PROOF_PACK.md).
 Trying to decide whether KAI OS is worth a star or deeper trial? Use the [5-minute evaluator checklist](docs/EVALUATE.md).
 Want the shortest star/watch/fork rationale? Read [Why Star KAI OS](docs/WHY_STAR.md).
 Want claim-by-claim proof? Read the [KAI OS Trust Matrix](docs/TRUST_MATRIX.md).
@@ -101,6 +102,7 @@ KAI OS is intentionally small in v0.3. If you only need a chatbot UI or a thin p
 
 For concrete workflows, read [KAI OS Use Cases](docs/USE_CASES.md).
 For a fast first-time review path, read [Evaluate KAI OS In 5 Minutes](docs/EVALUATE.md).
+For the shortest checkable proof path, read the [KAI OS Proof Pack](docs/PROOF_PACK.md).
 For the short star/watch/fork rationale, read [Why Star KAI OS](docs/WHY_STAR.md).
 For the product moat, read [Evidence OS for Agents](docs/EVIDENCE_OS.md).
 For Kotlin/JVM evaluation, read [Kotlin/JVM Evaluation Path](docs/KOTLIN_JVM_EVALUATION.md).
