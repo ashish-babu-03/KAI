@@ -2,7 +2,7 @@
 
 Status: draft, not posted.
 
-Use this page when you want the next manual launch action without reading every launch draft.
+Use this page when you want the next manual launch action without reading every launch draft. For channel choice and source notes, see [community-targets.md](community-targets.md).
 
 Current diagnosis:
 
