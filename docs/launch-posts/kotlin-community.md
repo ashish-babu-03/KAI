@@ -37,6 +37,7 @@ There is also a Kotlin Runtime API example:
 I would especially like feedback on the Kotlin API shape, the process/scheduler/tool model, and whether local evidence capsules are useful for JVM backend teams.
 
 Repo: https://github.com/morning-verlu/KAI
+Kotlin/JVM evaluation path: https://github.com/morning-verlu/KAI/blob/main/docs/KOTLIN_JVM_EVALUATION.md
 Kotlin API: https://github.com/morning-verlu/KAI/blob/main/docs/KOTLIN_API.md
 Start here: https://github.com/morning-verlu/KAI/blob/main/START_HERE.md
 ```

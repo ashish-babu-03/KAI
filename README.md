@@ -17,6 +17,7 @@ Want to see the product without installing? Open the [Evidence Viewer](https://m
 Trying to decide whether KAI OS is worth a star or deeper trial? Use the [5-minute evaluator checklist](docs/EVALUATE.md).
 Want the shortest star/watch/fork rationale? Read [Why Star KAI OS](docs/WHY_STAR.md).
 Want claim-by-claim proof? Read the [KAI OS Trust Matrix](docs/TRUST_MATRIX.md).
+Kotlin/JVM developer? Use the [Kotlin/JVM evaluation path](docs/KOTLIN_JVM_EVALUATION.md).
 Kotlin/JVM feedback? Open the [Kotlin API feedback form](https://github.com/morning-verlu/KAI/issues/new?template=kotlin_api_feedback.yml).
 Community signal: the first external PR is merged and covered by `./scripts/repository-ci-smoke.sh`; see [Contributors](CONTRIBUTORS.md).
 Want to help in 5-30 minutes? Pick a concrete action from the [Contributor Board](docs/CONTRIBUTOR_BOARD.md).
@@ -101,6 +102,7 @@ For concrete workflows, read [KAI OS Use Cases](docs/USE_CASES.md).
 For a fast first-time review path, read [Evaluate KAI OS In 5 Minutes](docs/EVALUATE.md).
 For the short star/watch/fork rationale, read [Why Star KAI OS](docs/WHY_STAR.md).
 For the product moat, read [Evidence OS for Agents](docs/EVIDENCE_OS.md).
+For Kotlin/JVM evaluation, read [Kotlin/JVM Evaluation Path](docs/KOTLIN_JVM_EVALUATION.md).
 For the Kotlin library entrypoint, read [Kotlin Runtime API](docs/KOTLIN_API.md).
 For positioning against LangGraph, OpenAI Agents SDK, Koog, and LangChain4j, read [KAI OS Compared](docs/COMPARISON.md).
 For safety, reproducibility, and artifact-sharing boundaries, read the [KAI OS Trust Contract](docs/TRUST.md).

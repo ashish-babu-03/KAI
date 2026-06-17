@@ -29,6 +29,9 @@ https://morning-verlu.github.io/KAI/assets/kaios-evidence-proof.png
 
 Contributor Board:
 https://github.com/morning-verlu/KAI/blob/main/docs/CONTRIBUTOR_BOARD.md
+
+Kotlin/JVM evaluation path:
+https://github.com/morning-verlu/KAI/blob/main/docs/KOTLIN_JVM_EVALUATION.md
 ```
 
 ## 1. Kotlin/JVM Community
@@ -52,6 +55,9 @@ It shows a checked-in run as a process table, syscall ledger, replayable capsule
 
 The Kotlin API example is here:
 https://github.com/morning-verlu/KAI/tree/main/examples/kotlin-runtime-api
+
+Kotlin/JVM evaluation path:
+https://github.com/morning-verlu/KAI/blob/main/docs/KOTLIN_JVM_EVALUATION.md
 
 Kotlin/JVM feedback form:
 https://github.com/morning-verlu/KAI/issues/new?template=kotlin_api_feedback.yml

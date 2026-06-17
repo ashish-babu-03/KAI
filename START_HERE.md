@@ -6,6 +6,7 @@ KAI OS is a local-first Evidence OS for AI agents in Kotlin.
 
 Trying to decide whether to star, try, or ignore it? Use the [5-minute evaluator checklist](docs/EVALUATE.md).
 Want to see a no-install visual sample first? Open the [Evidence Viewer](https://morning-verlu.github.io/KAI/evidence-viewer.html).
+Kotlin/JVM developer? Use the [Kotlin/JVM evaluation path](docs/KOTLIN_JVM_EVALUATION.md).
 Want the shortest star/watch/fork rationale? Read [Why Star KAI OS](docs/WHY_STAR.md).
 Want claim-by-claim proof? Read the [KAI OS Trust Matrix](docs/TRUST_MATRIX.md).
 Want to help in 5-30 minutes? Use the [Contributor Board](docs/CONTRIBUTOR_BOARD.md).
@@ -111,6 +112,7 @@ kaios evidence --summary
 
 For a runnable Kotlin/JVM backend change, use [examples/jvm-service-review](examples/jvm-service-review/).
 
+For a Kotlin/JVM evaluation path, read [docs/KOTLIN_JVM_EVALUATION.md](docs/KOTLIN_JVM_EVALUATION.md).
 For a Kotlin library entrypoint, use [examples/kotlin-runtime-api](examples/kotlin-runtime-api/).
 For the API shape, read [docs/KOTLIN_API.md](docs/KOTLIN_API.md).
 

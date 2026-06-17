@@ -134,6 +134,9 @@ https://morning-verlu.github.io/KAI/evidence-viewer.html
 The viewer shows a checked-in run as a process table, syscall ledger, replayable capsule, and baseline gate.
 
 The Kotlin/JVM library path is here:
+https://github.com/morning-verlu/KAI/blob/main/docs/KOTLIN_JVM_EVALUATION.md
+
+The lower-level API guide is here:
 https://github.com/morning-verlu/KAI/blob/main/docs/KOTLIN_API.md
 
 And the no-key tour is:
