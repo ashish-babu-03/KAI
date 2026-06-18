@@ -40,7 +40,7 @@ It is not trying to be a Kotlin LangChain clone. The runtime model is closer to 
 Agent = Process
 Workflow = Scheduler
 Tool = Syscall
-Memory = Process state
+Run = Evidence
 
 No install needed to see the product surface:
 

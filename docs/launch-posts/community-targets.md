@@ -9,10 +9,11 @@ After any post goes live, use [follow-up-playbook.md](follow-up-playbook.md) to 
 
 | Priority | Channel | Why it fits | Use | Risk |
 | --- | --- | --- | --- | --- |
-| 1 | Kotlin Slack / Kotlin community | Official Kotlin community surface; best chance of Kotlin API feedback | Use the Kotlin/JVM version in `post-now.md` | Requires joining or having access |
-| 2 | r/Kotlin | Public Kotlin-specific audience; open-source library posts appear when useful and on-topic | Use the Reddit discussion version from `community-wave.md` | Must avoid self-promo tone |
-| 3 | Show HN | Good fit only because KAI OS is runnable and no-key; HN expects discussion and feedback | Use the Show HN version from `post-now.md` | Needs maintainer available to answer comments |
-| 4 | LinkedIn engineering audience | Useful if the maintainer account has JVM/backend followers | Use the visual version from `post-now.md` | Often weaker for open-source stars |
+| 1 | Show HN | Good fit because KAI OS is runnable, no-key, and has checked-in proof | Use the Show HN version from `show-hn.md` | Needs maintainer available to answer comments |
+| 2 | Kotlin Slack / Kotlin community | Official Kotlin community surface; best chance of Kotlin API feedback | Use the Kotlin/JVM version in `post-now.md` | Requires joining or having access |
+| 3 | X / LinkedIn engineering audience | Useful for short visual explanation and second-order sharing | Use the technical-thread hook in `x-linkedin-thread.md` | Often weaker for deep feedback |
+| 4 | DEV.to / Medium | Best for a durable technical explanation after objections are known | Use the article outline in `second-wave.md` | Slower feedback loop |
+| 5 | Newsletters / curated lists | Useful after there is a proof page and public discussion trail | Submit Proof Pack + repo | Delayed and uncertain publication |
 
 ## Source Notes
 
@@ -23,26 +24,26 @@ After any post goes live, use [follow-up-playbook.md](follow-up-playbook.md) to 
 
 ## Recommended Next Post
 
-Post the Kotlin/JVM community version first:
+Post Show HN first if the maintainer can answer comments for the first 2-3 hours:
 
 ```text
-https://morning-verlu.github.io/KAI/evidence-viewer.html?utm_source=kotlin_community&utm_medium=community&utm_campaign=post_now
+Show HN: KAI OS - an Evidence OS for Kotlin AI agents
 ```
 
-Use this opening angle:
+Use the GitHub repository as the submitted URL:
 
 ```text
-I am building KAI OS, a Kotlin/JVM runtime for AI agent evidence.
-
-It is not trying to be a Kotlin LangChain clone. The runtime model is closer to OS infrastructure:
-
-Agent = Process
-Workflow = Scheduler
-Tool = Syscall
-Memory = Process state
+https://github.com/morning-verlu/KAI
 ```
 
-Ask for specific feedback:
+Then add a first comment with the Proof Pack and Evidence Viewer:
+
+```text
+Proof Pack: https://morning-verlu.github.io/KAI/proof-pack.html
+Evidence Viewer: https://morning-verlu.github.io/KAI/evidence-viewer.html
+```
+
+If Show HN cannot be monitored, use the Kotlin/JVM feedback version first:
 
 ```text
 I would especially like feedback on whether the Kotlin runtime API feels idiomatic, whether the Agent = Process model is useful for JVM teams, and whether replayable capsules / CI evidence gates would help maintainers trust agent reviews.

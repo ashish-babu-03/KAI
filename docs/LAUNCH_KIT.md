@@ -10,7 +10,7 @@ KAI OS is a local-first Evidence OS for AI agents in Kotlin. It turns agent runs
 Agent = Process
 Workflow = Scheduler
 Tool = Syscall
-Memory = Process state
+Run = Evidence
 ```
 
 ## Main CTA
@@ -112,11 +112,11 @@ Read [Launch Metrics](LAUNCH_METRICS.md) for the decision rules.
 
 ## Day 0 Posting Order
 
-1. Update the GitHub launch issue with this outbound plan.
-2. Post the GitHub Discussion as the canonical project announcement.
-3. Post the X/LinkedIn short version with the demo GIF.
-4. Post the Kotlin/JVM community version.
-5. Post Show HN after the README and site are stable.
+1. Update the GitHub launch issue with this outbound plan and the current metrics.
+2. Post Show HN with the GitHub repo URL and Proof Pack in the first comment.
+3. Post the Kotlin/JVM community version if Show HN does not produce enough relevant feedback.
+4. Post the X/LinkedIn technical thread with the evidence proof image.
+5. Turn repeated questions into a DEV.to / Medium article or newsletter submission.
 6. Reply quickly to every real question for the first 24 hours.
 
 ## Copy-Ready Drafts
@@ -132,6 +132,7 @@ Each channel draft is also available as a standalone file so posting does not re
 - [Kotlin community post](launch-posts/kotlin-community.md)
 - [Show HN post](launch-posts/show-hn.md)
 - [Reddit post](launch-posts/reddit.md)
+- [1000 Stars Operating Plan](STAR_GROWTH.md)
 
 ## Short Social Post
 
@@ -143,7 +144,7 @@ It treats agent work like OS runtime evidence:
 Agent = Process
 Workflow = Scheduler
 Tool = Syscall
-Memory = Process state
+Run = Evidence
 
 Run a no-key tour:
 
@@ -160,7 +161,7 @@ Site: https://morning-verlu.github.io/KAI/
 Attach this image when the platform supports image posts:
 
 ```text
-https://morning-verlu.github.io/KAI/assets/kaios-evidence-map.png
+https://morning-verlu.github.io/KAI/assets/kaios-evidence-proof.png
 ```
 
 ## Visual-First Short Post
@@ -198,7 +199,7 @@ The idea: agent work should be inspectable like operating-system processes, not 
 Agent = Process
 Workflow = Scheduler
 Tool = Syscall
-Memory = Process state
+Run = Evidence
 
 3/ The first-run path needs no API key:
 
@@ -233,7 +234,7 @@ Site: https://morning-verlu.github.io/KAI/
 ## Show HN Draft
 
 ```text
-Show HN: KAI OS - Local-first Evidence OS for AI agents in Kotlin
+Show HN: KAI OS - an Evidence OS for Kotlin AI agents
 
 I am building KAI OS, a Kotlin/JVM runtime that turns AI agent runs into process traces, replayable capsules, syscall ledgers, and CI-ready runtime evidence.
 
@@ -242,7 +243,7 @@ The core model is:
 - Agent = Process
 - Workflow = Scheduler
 - Tool = Syscall
-- Memory = Process state
+- Run = Evidence
 
 The current v0.3.1 release is small but runnable. The easiest way to try it is the no-key tour:
 
@@ -270,7 +271,7 @@ It is not trying to be a Kotlin LangChain clone. The runtime model is closer to 
 Agent = Process
 Workflow = Scheduler
 Tool = Syscall
-Memory = Process state
+Run = Evidence
 
 The v0.3.1 release has a no-key first-run tour:
 
@@ -298,7 +299,7 @@ The model:
 - Agent = Process
 - Workflow = Scheduler
 - Tool = Syscall
-- Memory = Process state
+- Run = Evidence
 
 The current release is intentionally small and local-first. It has a deterministic no-key tour:
 

@@ -66,12 +66,13 @@ def render(out: Path) -> None:
     )
 
     draw.text((296, 88), "KAI OS", font=font(68, bold=True), fill=TEXT)
-    draw.text((302, 184), "Local-first Evidence OS for agents", font=mono(24), fill=MUTED)
+    draw.text((302, 172), "Evidence OS for AI agents", font=font(34, bold=True), fill=TEXT)
+    draw.text((304, 220), "process traces, syscall ledgers, replay capsules, CI gates", font=mono(21), fill=MUTED)
 
-    draw_card(draw, 104, 316, "Trace", "Process", MINT)
-    draw_card(draw, 356, 316, "Capsule", "Replay", CYAN)
-    draw_card(draw, 608, 316, "Syscall", "Audit", AMBER)
-    draw_card(draw, 860, 316, "CI Gate", "Baseline", MINT)
+    draw_card(draw, 104, 316, "Agent", "Process", MINT)
+    draw_card(draw, 356, 316, "Workflow", "Scheduler", CYAN)
+    draw_card(draw, 608, 316, "Tool", "Syscall", AMBER)
+    draw_card(draw, 860, 316, "Run", "Evidence", MINT)
 
     draw.rounded_rectangle((104, 454, 1096, 522), radius=10, fill=COMMAND_BG, outline=LINE, width=1)
     draw.text((130, 480), "$ kaios tour && kaios evidence --summary", font=mono(22), fill=MINT)

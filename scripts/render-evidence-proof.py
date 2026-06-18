@@ -139,7 +139,7 @@ def render(out: Path) -> None:
     draw.rounded_rectangle((44, 42, WIDTH - 44, HEIGHT - 42), radius=34, fill=(13, 18, 23), outline=LINE, width=2)
     draw.text((88, 78), "KAI OS", font=font(56, True), fill=TEXT)
     draw.text((88, 142), "Every agent run becomes evidence you can inspect, replay, and gate.", font=font(34, True), fill=TEXT)
-    draw.text((90, 190), "Agent = Process    Workflow = Scheduler    Tool = Syscall", font=mono(24), fill=MUTED)
+    draw.text((90, 190), "Agent = Process    Workflow = Scheduler    Tool = Syscall    Run = Evidence", font=mono(22), fill=MUTED)
 
     pill(draw, (1250, 84, 1456, 126), "NO API KEY", GREEN_BG, MINT)
     pill(draw, (1250, 138, 1456, 180), "LOCAL FIRST", CYAN_BG, CYAN)

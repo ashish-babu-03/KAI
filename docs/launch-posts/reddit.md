@@ -20,7 +20,7 @@ The model:
 - Agent = Process
 - Workflow = Scheduler
 - Tool = Syscall
-- Memory = Process state
+- Run = Evidence
 
 The current release is intentionally small and local-first. It has a deterministic no-key tour:
 

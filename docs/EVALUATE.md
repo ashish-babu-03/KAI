@@ -8,7 +8,7 @@ KAI OS is a local-first Evidence OS for AI agents in Kotlin:
 Agent    = Process
 Workflow = Scheduler
 Tool     = Syscall
-Memory   = Process state
+Run      = Evidence
 ```
 
 The useful question is not "does it chat?" The useful question is:

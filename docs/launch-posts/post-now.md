@@ -7,9 +7,10 @@ After publishing, use [follow-up-playbook.md](follow-up-playbook.md) for replies
 
 Current diagnosis:
 
-- X text-only distribution was too weak.
 - GitHub repo and website conversion paths are ready.
-- The best next channel is a focused Kotlin/JVM community post because KAI OS needs API-shape feedback from people who understand JVM infrastructure.
+- The Reddit attempt was removed before a valid exposure window.
+- The text-only X post did not create enough measurable reach.
+- The best next channel is Show HN if the maintainer can monitor replies; otherwise use a focused Kotlin/JVM feedback post.
 
 ## Preflight
 
@@ -36,11 +37,66 @@ https://github.com/morning-verlu/KAI/blob/main/docs/KOTLIN_JVM_EVALUATION.md
 
 Kotlin/JVM feedback discussion:
 https://github.com/morning-verlu/KAI/discussions/17
+
+Proof Pack:
+https://morning-verlu.github.io/KAI/proof-pack.html
 ```
 
-## 1. Kotlin/JVM Community
+## 1. Show HN
 
-Use this first for Kotlin Slack, Kotlin forum, JVM backend groups, or a Kotlin-focused Discord.
+Use this first if the maintainer can answer comments for the first 2-3 hours.
+
+Title:
+
+```text
+Show HN: KAI OS - an Evidence OS for Kotlin AI agents
+```
+
+URL:
+
+```text
+https://github.com/morning-verlu/KAI
+```
+
+Text:
+
+```text
+I am building KAI OS, a local-first runtime that turns AI agent runs into evidence developers can inspect, replay, and gate in CI.
+
+The model is:
+
+KAI OS  = Evidence OS for AI agents
+Agent   = Process
+Workflow = Scheduler
+Tool    = Syscall
+Run     = Evidence
+
+The goal is not to build another chatbot framework or Kotlin LangChain clone. I am trying to make agent work look more like runtime infrastructure: process traces, syscall ledgers, replayable capsules, baseline diffs, and deterministic no-key first runs.
+
+The current release is early but runnable:
+
+curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
+export PATH="$HOME/.kaios/bin:$PATH"
+kaios tour
+
+I would especially like feedback from Kotlin/JVM developers, OSS maintainers, and people building agent infrastructure: would portable run evidence help you trust or debug agent-driven review/CI work?
+```
+
+First comment:
+
+```text
+For anyone who wants proof before installing:
+
+Proof Pack:
+https://morning-verlu.github.io/KAI/proof-pack.html
+
+Evidence Viewer:
+https://morning-verlu.github.io/KAI/evidence-viewer.html
+```
+
+## 2. Kotlin/JVM Community
+
+Use this for Kotlin Slack, Kotlin forum, JVM backend groups, or a Kotlin-focused Discord.
 
 ### 30-Second Version
 
@@ -103,12 +159,12 @@ It is not trying to be a Kotlin LangChain clone. The runtime model is closer to 
 Agent = Process
 Workflow = Scheduler
 Tool = Syscall
-Memory = Process state
+Run = Evidence
 
-No install needed to see the product surface:
-https://morning-verlu.github.io/KAI/evidence-viewer.html?utm_source=kotlin_community&utm_medium=community&utm_campaign=post_now
+Proof before install:
+https://morning-verlu.github.io/KAI/proof-pack.html?utm_source=kotlin_community&utm_medium=community&utm_campaign=post_now
 
-It shows a checked-in run as a process table, syscall ledger, replayable capsule, and baseline gate.
+The Proof Pack links a checked-in run as a process table, syscall ledger, replayable capsule, and baseline gate.
 
 The Kotlin API example is here:
 https://github.com/morning-verlu/KAI/tree/main/examples/kotlin-runtime-api
@@ -140,52 +196,7 @@ After posting, record the URL in issue #7 and run:
 
 Then follow [follow-up-playbook.md](follow-up-playbook.md) at +2h, +24h, and +72h.
 
-## 2. Show HN
-
-Use this only after the Kotlin/JVM post is live or if there is no realistic Kotlin/JVM channel available.
-
-Title:
-
-```text
-Show HN: KAI OS - Local-first Evidence OS for AI agents in Kotlin
-```
-
-URL:
-
-```text
-https://github.com/morning-verlu/KAI
-```
-
-Text:
-
-```text
-I am building KAI OS, a Kotlin/JVM runtime that turns AI agent runs into process traces, replayable capsules, syscall ledgers, and CI-ready runtime evidence.
-
-The model is:
-
-- Agent = Process
-- Workflow = Scheduler
-- Tool = Syscall
-- Memory = Process state
-
-The current release is small but runnable. The fastest way to understand it is the no-install Evidence Viewer:
-
-https://morning-verlu.github.io/KAI/evidence-viewer.html?utm_source=hacker_news&utm_medium=community&utm_campaign=post_now
-
-It shows a checked-in KAI OS run as a process table, syscall ledger, replayable capsule, offline replay result, and baseline gate drift example.
-
-The hands-on path is also no-key:
-
-curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
-export PATH="$HOME/.kaios/bin:$PATH"
-kaios tour
-
-The point is not to be another Kotlin LangChain clone. I am trying to build the local evidence layer around agent work: what ran, which tools were called, what can be replayed offline, and what can be gated in CI.
-
-I would love feedback from Kotlin/JVM developers, OSS maintainers, and people thinking about agent runtime infrastructure.
-```
-
-## 3. LinkedIn Visual
+## 3. X / LinkedIn Visual
 
 Use this if the maintainer account has an engineering audience.
 
@@ -198,19 +209,26 @@ https://morning-verlu.github.io/KAI/assets/kaios-evidence-proof.png
 Post:
 
 ```text
-Agent runs should not disappear after the answer.
+Most AI agents fail like scripts. KAI OS treats them like processes.
 
-I am building KAI OS: a local-first Evidence OS for AI agents in Kotlin.
+I am building a local-first Evidence OS for AI agents in Kotlin.
 
-It turns each run into evidence:
+The model:
 
-- process table
-- syscall ledger
-- replay capsule
-- CI baseline gate
+Agent = Process
+Workflow = Scheduler
+Tool = Syscall
+Run = Evidence
 
-No API key and no install needed to inspect the current product surface:
-https://morning-verlu.github.io/KAI/evidence-viewer.html?utm_source=linkedin&utm_medium=social&utm_campaign=post_now
+Each run becomes inspectable evidence:
+
+- process traces
+- syscall ledgers
+- replayable capsules
+- CI baseline gates
+
+Proof before install:
+https://morning-verlu.github.io/KAI/proof-pack.html?utm_source=linkedin&utm_medium=social&utm_campaign=post_now
 
 Repo:
 https://github.com/morning-verlu/KAI

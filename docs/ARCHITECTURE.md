@@ -9,6 +9,7 @@ Agent    = Process
 Workflow = Scheduler
 Tool     = Syscall
 Memory   = Process state
+Run      = Evidence
 ```
 
 An agent process has:

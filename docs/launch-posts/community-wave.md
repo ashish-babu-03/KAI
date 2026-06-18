@@ -2,26 +2,26 @@
 
 Status: draft, not posted.
 
-Use this after the visual X post or instead of it if X still has weak distribution. The goal is real feedback from people who understand Kotlin/JVM, CI, observability, and agent infrastructure.
+Use this after Show HN or instead of it if Show HN cannot be monitored. The goal is real feedback from people who understand Kotlin/JVM, CI, observability, and agent infrastructure.
 
 Do not post the same text everywhere. Match the community, disclose that it is early, and ask for specific feedback.
 
 ## Tracking Links
 
-Use channel-specific Evidence Viewer links so the metrics readout can separate distribution paths:
+Use channel-specific Proof Pack or Evidence Viewer links so the metrics readout can separate distribution paths:
 
 ```text
 Kotlin/JVM:
-https://morning-verlu.github.io/KAI/evidence-viewer.html?utm_source=kotlin_community&utm_medium=community&utm_campaign=community_wave
+https://morning-verlu.github.io/KAI/proof-pack.html?utm_source=kotlin_community&utm_medium=community&utm_campaign=community_wave
 
 Reddit Kotlin:
-https://morning-verlu.github.io/KAI/evidence-viewer.html?utm_source=reddit_kotlin&utm_medium=community&utm_campaign=community_wave
+https://morning-verlu.github.io/KAI/proof-pack.html?utm_source=reddit_kotlin&utm_medium=community&utm_campaign=community_wave
 
 Hacker News:
-https://morning-verlu.github.io/KAI/evidence-viewer.html?utm_source=hacker_news&utm_medium=community&utm_campaign=community_wave
+https://morning-verlu.github.io/KAI/proof-pack.html?utm_source=hacker_news&utm_medium=community&utm_campaign=community_wave
 
 LinkedIn:
-https://morning-verlu.github.io/KAI/evidence-viewer.html?utm_source=linkedin&utm_medium=social&utm_campaign=community_wave
+https://morning-verlu.github.io/KAI/proof-pack.html?utm_source=linkedin&utm_medium=social&utm_campaign=community_wave
 ```
 
 Repo:
@@ -38,10 +38,10 @@ https://morning-verlu.github.io/KAI/assets/kaios-evidence-proof.png
 
 ## Posting Order
 
-1. Kotlin/JVM community: best fit for API shape and JVM runtime feedback.
-2. Reddit Kotlin/JVM: only after checking the community rules and choosing the discussion-oriented version.
-3. Hacker News Show HN: only when the README, Evidence Viewer, and no-key tour are stable.
-4. LinkedIn: use the visual version if you have an engineering audience there.
+1. Hacker News Show HN: best fit for runnable OSS with a sharp proof page.
+2. Kotlin/JVM community: best fit for API shape and JVM runtime feedback.
+3. X/LinkedIn: use the visual version if you have an engineering audience there.
+4. Reddit Kotlin/JVM: only after checking the rules and using an ask-first discussion version.
 
 If a post gets real questions, pause cross-posting and answer those first.
 
@@ -57,7 +57,7 @@ It is not trying to be a Kotlin LangChain clone. The runtime model is closer to 
 Agent = Process
 Workflow = Scheduler
 Tool = Syscall
-Memory = Process state
+Run = Evidence
 
 No install needed to see the product surface:
 https://morning-verlu.github.io/KAI/evidence-viewer.html?utm_source=kotlin_community&utm_medium=community&utm_campaign=community_wave
@@ -100,7 +100,7 @@ The model is:
 - Agent = Process
 - Workflow = Scheduler
 - Tool = Syscall
-- Memory = Process state
+- Run = Evidence
 
 The main thing I am testing is whether JVM teams need local evidence artifacts around agent work: process traces, syscall ledgers, replayable capsules, and CI baseline gates.
 
@@ -124,7 +124,7 @@ It is early and local-first. I am not claiming it is production complete. I woul
 Title:
 
 ```text
-Show HN: KAI OS - Local-first Evidence OS for AI agents in Kotlin
+Show HN: KAI OS - an Evidence OS for Kotlin AI agents
 ```
 
 URL:
@@ -143,7 +143,7 @@ The model is:
 - Agent = Process
 - Workflow = Scheduler
 - Tool = Syscall
-- Memory = Process state
+- Run = Evidence
 
 The current release is small but runnable. The fastest way to understand it is the no-install Evidence Viewer:
 

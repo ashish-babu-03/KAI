@@ -1,59 +1,83 @@
-# X / LinkedIn Thread
+# X / LinkedIn Technical Thread
 
 Status: draft, not posted.
 
-Attach to the first post when supported:
+Attach this image to the first post when supported:
 
 ```text
-https://morning-verlu.github.io/KAI/assets/kaios-evidence-map.png
+https://morning-verlu.github.io/KAI/assets/kaios-evidence-proof.png
 ```
 
 Thread:
 
 ```text
-1/ I built KAI OS: a local-first Evidence OS for AI agents in Kotlin.
+1/ Most AI agents fail like scripts.
 
-The idea: agent work should be inspectable like operating-system processes, not just text from a chatbot.
+KAI OS treats them like processes.
 
-2/ The runtime model:
+I am building a Kotlin/JVM Evidence OS for AI agent runs: process traces, syscall ledgers, replayable capsules, and CI-grade proof.
 
-Agent = Process
+2/ The model:
+
+KAI OS  = Evidence OS for AI agents
+Agent   = Process
 Workflow = Scheduler
-Tool = Syscall
-Memory = Process state
+Tool    = Syscall
+Run     = Evidence
 
-3/ No install needed to see the product surface:
+3/ Why this matters:
 
-https://morning-verlu.github.io/KAI/evidence-viewer.html
+When an agent reviews code or touches tools, a maintainer should be able to ask:
 
-It shows a checked-in run as a process table, syscall ledger, replayable capsule, and baseline gate.
+- what ran?
+- which tools were called?
+- what was denied?
+- can I replay this offline?
+- did runtime behavior drift from baseline?
 
-4/ The first-run path needs no API key:
+4/ No API key is required for the first run:
 
 curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
 export PATH="$HOME/.kaios/bin:$PATH"
 kaios tour
 
-5/ `kaios tour` creates a disposable Git repo, runs a current-change review, and writes:
+5/ `kaios tour` creates a disposable Git repo, runs a deterministic review, and writes:
 
 - Markdown review artifact
-- process trace
+- process trace JSON
 - replayable capsule
 - process table
 - evidence summary
 - recovery dry-run report
 
-6/ The moat is evidence, not more agents:
+6/ The product is not the installer.
 
-- process recovery evidence
-- priority scheduler evidence
-- syscall audit ledger
-- offline replay
-- baseline diff gates
-- PR-friendly evidence summaries
+Homebrew / curl / ZIP are just delivery paths.
 
-7/ I would love feedback from Kotlin/JVM developers, OSS maintainers, and people building agent infrastructure.
+The product is the local evidence layer around agent work.
 
+7/ Proof before install:
+
+https://morning-verlu.github.io/KAI/proof-pack.html
+
+Repo:
+https://github.com/morning-verlu/KAI
+
+I would love feedback from Kotlin/JVM developers, OSS maintainers, and agent-infra builders.
+```
+
+Short one-post version:
+
+```text
+Most AI agents fail like scripts. KAI OS treats them like processes.
+
+Agent = Process
+Workflow = Scheduler
+Tool = Syscall
+Run = Evidence
+
+It is a local-first Kotlin/JVM Evidence OS for agent runs: process traces, syscall ledgers, replayable capsules, and CI gates.
+
+Proof: https://morning-verlu.github.io/KAI/proof-pack.html
 Repo: https://github.com/morning-verlu/KAI
-Site: https://morning-verlu.github.io/KAI/
 ```

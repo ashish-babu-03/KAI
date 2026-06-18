@@ -10,7 +10,7 @@ It demonstrates the core model in code:
 Agent    = Process
 Workflow = Scheduler
 Tool     = Syscall
-Memory   = Process state
+Run      = Evidence
 ```
 
 Run it from the repository root:

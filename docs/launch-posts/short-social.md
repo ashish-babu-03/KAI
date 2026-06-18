@@ -5,7 +5,7 @@ Status: draft, not posted.
 Attach:
 
 ```text
-https://morning-verlu.github.io/KAI/assets/kaios-evidence-map.png
+https://morning-verlu.github.io/KAI/assets/kaios-evidence-proof.png
 ```
 
 Post:
@@ -18,12 +18,12 @@ It treats agent work like runtime evidence:
 Agent = Process
 Workflow = Scheduler
 Tool = Syscall
-Memory = Process state
+Run = Evidence
 
-No install needed to see the product surface:
-https://morning-verlu.github.io/KAI/evidence-viewer.html
+Proof before install:
+https://morning-verlu.github.io/KAI/proof-pack.html
 
-It shows a checked-in run as a process table, syscall ledger, replayable capsule, and baseline gate.
+It links a checked-in run as a process table, syscall ledger, replayable capsule, and baseline gate.
 
 Hands-on no-key tour:
 

@@ -45,10 +45,10 @@ The tour is the clearest proof because it shows the full Evidence OS loop withou
 - GitHub Discussion announcement
 - GitHub README and launch site
 - Hacker News "Show HN"
-- Reddit: r/Kotlin first, then broader programming/LLM communities if feedback is healthy
 - Kotlin Slack
-- LinkedIn/X thread with the demo GIF
+- X/LinkedIn thread with the evidence proof image
 - DEV.to or Medium technical post after the first discussion feedback
+- Newsletter or curated-list submissions after the first two public readouts
 
 ## First 100-Star Checklist
 
@@ -83,7 +83,7 @@ Stars should come from real interest, not automation or artificial engagement. T
 - quick follow-up releases from user feedback
 - visible issues for contributors
 
-See [LAUNCH_KIT.md](LAUNCH_KIT.md) for copy-paste launch posts, channel-specific drafts, reply guidance, and metrics to capture. Use [launch-posts/post-now.md](launch-posts/post-now.md) for the next manual post queue and [launch-posts/community-targets.md](launch-posts/community-targets.md) for channel priority. Use [LAUNCH_METRICS.md](LAUNCH_METRICS.md) and `./scripts/launch-metrics.sh` for the repeatable +2h/+24h/+72h readout. Standalone drafts live in [launch-posts](launch-posts/).
+See [STAR_GROWTH.md](STAR_GROWTH.md) for the 1000-stars operating plan. See [LAUNCH_KIT.md](LAUNCH_KIT.md) for copy-paste launch posts, channel-specific drafts, reply guidance, and metrics to capture. Use [launch-posts/post-now.md](launch-posts/post-now.md) for the next manual post queue and [launch-posts/community-targets.md](launch-posts/community-targets.md) for channel priority. Use [LAUNCH_METRICS.md](LAUNCH_METRICS.md) and `./scripts/launch-metrics.sh` for the repeatable +2h/+24h/+72h readout. Standalone drafts live in [launch-posts](launch-posts/).
 Use the [Contributor Board](CONTRIBUTOR_BOARD.md) when someone asks how to help without a large PR.
 Latest saved operating snapshot: [2026-06-17](launch-snapshots/2026-06-17.md).
 Public repository CI is prepared but still blocked on GitHub `workflow` token
@@ -93,13 +93,14 @@ scope; the maintainer procedure is tracked in [CI_ENABLE_RUNBOOK.md](CI_ENABLE_R
 
 Use [launch-posts/first-wave.md](launch-posts/first-wave.md) when posting externally. The first wave is intentionally narrow:
 
-1. X or LinkedIn short post.
-2. Kotlin/JVM community post.
-3. Show HN after the first two posts are live or after the repo receives early feedback.
+1. Show HN with the GitHub repo URL and a first comment pointing to the Proof Pack.
+2. Kotlin/JVM community post with a feedback-first angle.
+3. X/LinkedIn technical thread with the evidence proof image.
+4. DEV.to or Medium article after the first two public readouts clarify objections.
 
-Lead with the no-install Evidence Viewer, then offer the repo and `kaios tour`.
+Lead with the Evidence OS model, then offer Proof Pack, Evidence Viewer, and `kaios tour`.
 
-If X/LinkedIn does not distribute the visual post, switch to [launch-posts/community-wave.md](launch-posts/community-wave.md) instead of repeating the same social copy. The community wave has channel-specific Kotlin/JVM, Reddit, Show HN, and LinkedIn versions with tracked Evidence Viewer links.
+If GitHub views remain near zero after a live post, switch channel before changing product copy. If views rise but stars stay flat, improve README, Proof Pack, or Why Star before the next post.
 
 ## Contributor Intake
 

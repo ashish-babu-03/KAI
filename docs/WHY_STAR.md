@@ -1,76 +1,76 @@
 # Why Star KAI OS
 
-KAI OS is worth a star if you believe agent work should leave runtime evidence that survives beyond a chat transcript.
-
-The project is not trying to be another chatbot framework or Kotlin LangChain clone. It is building a local-first Evidence OS for AI agents in Kotlin:
+Star KAI OS if you want AI agent work to leave runtime evidence instead of disappearing into a chat transcript.
 
 ```text
-Agent    = Process
+KAI OS  = Evidence OS for AI agents
+Agent   = Process
 Workflow = Scheduler
-Tool     = Syscall
-Memory   = Process state
+Tool    = Syscall
+Run     = Evidence
 ```
 
-## The Bet
+## The Short Case
 
-As agents move into code review, CI, operations, and internal automation, teams will need more than "the model said so."
+Most agent projects optimize for prompts, provider calls, or chat UX. KAI OS is betting on a lower layer: the evidence around a run.
 
-They will need:
+That means:
 
-- process traces that show what ran.
-- replayable capsules that travel with a bug report or PR.
-- syscall ledgers that show which tools were allowed, denied, and timed.
-- baseline gates that catch stable runtime behavior drift in CI.
-- local-first evidence that works before any hosted provider or API key is configured.
+- process traces that show which agents ran, failed, recovered, and exited.
+- syscall ledgers that show which tools were requested, allowed, denied, timed, and costed.
+- replayable capsules that can travel with a PR, incident, bug report, or CI artifact.
+- baseline gates that can fail a build when stable runtime behavior changes.
+- a no-key first run, so the proof works before any hosted model or secret is configured.
 
-KAI OS is an early Kotlin/JVM attempt at that evidence layer.
-
-## Star If You Want This To Exist
-
-Star KAI OS if one of these feels useful:
+## Star If
 
 - You build Kotlin/JVM services and want agent infrastructure with typed runtime boundaries.
-- You maintain an open-source repo and want AI review artifacts that can be inspected, replayed, and compared.
-- You care about agent observability, but want portable local artifacts instead of only hosted dashboards.
-- You want tool access to look more like capabilities and syscalls than arbitrary model actions.
-- You think CI should be able to gate agent runtime behavior, not just compile code.
+- You maintain an OSS repo and want AI review output that can be inspected and replayed.
+- You care about agent observability but do not want proof locked inside one hosted dashboard.
+- You think tool access should look like capabilities and syscalls, not arbitrary model action.
+- You want CI to gate agent runtime behavior, not only compile code.
 
-## Watch If You Want The Next Milestones
+## What A Star Helps
 
-The near-term roadmap is focused on making the evidence loop sharper, not on adding a chat UI:
+Early stars are not decoration. They tell Kotlin/JVM developers, maintainers, and infrastructure teams that this direction is worth inspecting.
 
-- richer `kaios review` artifacts for real pull requests.
-- stronger capsule replay and baseline diff contracts.
-- more syscall sandbox examples.
-- public CI templates once GitHub workflow publishing is unblocked.
-- early contributor issues for docs, examples, and Kotlin runtime recipes.
+A star helps KAI OS get:
 
-## Fork If You Want To Build On It
+- more feedback on the Evidence OS model.
+- more Kotlin API review from real JVM users.
+- more small docs and examples from contributors.
+- enough visibility to test whether local-first agent evidence should become a category.
 
-Good first areas:
+## Fast Proof Before You Star
 
-- add a new evidence walkthrough.
-- write a Kotlin API recipe.
-- improve the Codespaces first-run path.
-- add a safe tool integration behind capability grants.
-- try the runtime model against your own JVM service and report what feels missing.
+No install:
 
-Start with:
+- [Proof Pack](https://morning-verlu.github.io/KAI/proof-pack.html)
+- [Evidence Viewer](https://morning-verlu.github.io/KAI/evidence-viewer.html)
 
-- [Start here](../START_HERE.md)
-- [Evaluate in 5 minutes](EVALUATE.md)
-- [Trust Matrix](TRUST_MATRIX.md)
-- [Kotlin Runtime API](KOTLIN_API.md)
-- [Contributor Board](CONTRIBUTOR_BOARD.md)
-- [Good first issues](https://github.com/morning-verlu/KAI/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22)
+Local no-key tour:
+
+```bash
+curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
+export PATH="$HOME/.kaios/bin:$PATH"
+kaios tour
+```
+
+Source checkout verification:
+
+```bash
+./scripts/evidence-samples-smoke.sh
+./scripts/repository-ci-smoke.sh
+```
+
+## Watch Or Fork If
+
+Watch releases if you want the next milestones: stronger `kaios review` artifacts, better capsule replay, public CI templates, and more syscall sandbox examples.
+
+Fork if you want to try KAI OS against your own JVM service, write a Kotlin API recipe, add a denied-syscall walkthrough, or test the no-key first-run path in Codespaces or Docker.
 
 ## Skip It If
 
-KAI OS is intentionally early and low-level. It is probably not the right project if you need:
-
-- a polished hosted chatbot product.
-- a mature provider marketplace.
-- a visual workflow builder today.
-- a production agent platform with managed infrastructure.
+KAI OS is early and low-level. It is probably not what you need if you want a polished hosted chatbot, a visual workflow builder today, or a mature provider marketplace.
 
 That is the point of the star test: star it if the Evidence OS direction should exist, even while the implementation is still small.

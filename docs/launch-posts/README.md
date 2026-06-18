@@ -56,6 +56,7 @@ guesswork.
 - [Show HN post](show-hn.md)
 - [Reddit post](reddit.md)
 - [Why Star KAI OS](../WHY_STAR.md)
+- [1000 Stars Operating Plan](../STAR_GROWTH.md)
 - [Trust Matrix](../TRUST_MATRIX.md)
 
 ## Core Message
@@ -63,19 +64,20 @@ guesswork.
 KAI OS is a local-first Evidence OS for AI agents in Kotlin.
 
 ```text
+KAI OS  = Evidence OS for AI agents
 Agent    = Process
 Workflow = Scheduler
 Tool     = Syscall
-Memory   = Process state
+Run      = Evidence
 ```
 
 Lead with product evidence, not installation mechanics:
 
 ```text
-https://morning-verlu.github.io/KAI/evidence-viewer.html
+https://morning-verlu.github.io/KAI/proof-pack.html
 ```
 
-For cold audiences, lead with the Evidence Viewer first. It shows the product surface without requiring Java, Gradle, Docker, Codespaces, or an API key. Follow with `kaios tour` when someone wants the hands-on path:
+For skeptical developer audiences, lead with the Proof Pack. For visual/social audiences, use the Evidence Viewer or evidence proof image first. Follow with `kaios tour` when someone wants the hands-on path:
 
 ```bash
 curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh

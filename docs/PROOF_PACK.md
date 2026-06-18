@@ -5,6 +5,7 @@ Use this page when you need the shortest proof that KAI OS is a product surface,
 KAI OS is early, but the core claim is already checkable:
 
 ```text
+KAI OS  = Evidence OS for AI agents
 Agent    = Process
 Workflow = Scheduler
 Tool     = Syscall
@@ -106,7 +107,7 @@ That is the product boundary: portable agent-run evidence for developers, review
 
 ## Next Step
 
-If this evidence model is useful, star or watch the repository and run the no-key tour:
+If this evidence model is useful, star or watch the repository and run the no-key tour. Early stars help test whether local-first agent evidence is a real Kotlin/JVM infrastructure category, not just a private experiment:
 
 ```text
 https://github.com/morning-verlu/KAI

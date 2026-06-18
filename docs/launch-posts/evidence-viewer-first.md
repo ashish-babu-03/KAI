@@ -26,7 +26,7 @@ The point is not another chatbot framework. The point is runtime evidence:
 Agent = Process
 Workflow = Scheduler
 Tool = Syscall
-Memory = Process state
+Run = Evidence
 
 No install needed to inspect a checked-in run:
 https://morning-verlu.github.io/KAI/evidence-viewer.html
@@ -49,7 +49,7 @@ The core idea: agent work should leave inspectable runtime evidence, not just a 
 Agent = Process
 Workflow = Scheduler
 Tool = Syscall
-Memory = Process state
+Run = Evidence
 
 3/ No install needed to see the product surface:
 
@@ -94,7 +94,7 @@ The model is:
 - Agent = Process
 - Workflow = Scheduler
 - Tool = Syscall
-- Memory = Process state
+- Run = Evidence
 
 The fastest way to understand it is the no-install Evidence Viewer:
 
@@ -126,7 +126,7 @@ It is not trying to be a Kotlin LangChain clone. The runtime model is closer to 
 Agent = Process
 Workflow = Scheduler
 Tool = Syscall
-Memory = Process state
+Run = Evidence
 
 No install needed to see the product surface:
 https://morning-verlu.github.io/KAI/evidence-viewer.html

@@ -12,29 +12,27 @@
 
 Website: [morning-verlu.github.io/KAI](https://morning-verlu.github.io/KAI/)
 
-New here? Start with [START_HERE.md](START_HERE.md) for the browser-only, local CLI, and artifact-only evaluation paths.
-Want to see the product without installing? Open the [Evidence Viewer](https://morning-verlu.github.io/KAI/evidence-viewer.html).
-Want the shortest checkable proof? Open the [KAI OS Proof Pack](https://morning-verlu.github.io/KAI/proof-pack.html) or read [docs/PROOF_PACK.md](docs/PROOF_PACK.md).
-Trying to decide whether KAI OS is worth a star or deeper trial? Use the [5-minute evaluator checklist](docs/EVALUATE.md).
-Want the shortest star/watch/fork rationale? Read [Why Star KAI OS](docs/WHY_STAR.md).
-Want claim-by-claim proof? Read the [KAI OS Trust Matrix](docs/TRUST_MATRIX.md).
-Kotlin/JVM developer? Use the [Kotlin/JVM evaluation path](docs/KOTLIN_JVM_EVALUATION.md).
-Kotlin/JVM discussion? Join [Feedback wanted: Kotlin/JVM runtime API and Evidence OS model](https://github.com/morning-verlu/KAI/discussions/17).
-Kotlin/JVM feedback? Open the [Kotlin API feedback form](https://github.com/morning-verlu/KAI/issues/new?template=kotlin_api_feedback.yml).
-Community signal: the first external PR is merged and covered by `./scripts/repository-ci-smoke.sh`; see [Contributors](CONTRIBUTORS.md).
-Want to help in 5-30 minutes? Pick a concrete action from the [Contributor Board](docs/CONTRIBUTOR_BOARD.md).
+KAI OS turns agent runs into process traces, syscall ledgers, replayable capsules, and CI-grade proof.
 
-![KAI OS evidence proof: process table, syscall ledger, replay capsule, and CI gate](docs/assets/kaios-evidence-proof.png)
+```text
+KAI OS  = Evidence OS for AI agents
+Agent   = Process
+Workflow = Scheduler
+Tool    = Syscall
+Run     = Evidence
+```
 
-KAI OS is a Kotlin runtime that turns multi-agent work into observable, controllable processes.
+It is not a chatbot framework, not a Kotlin LangChain clone, and not a Homebrew tap. Installation is delivery; the product is the runtime evidence layer around agent work.
 
-Agents get lifecycle, memory, permissions, metrics, and syscall-style tool boundaries. Workflows run as DAGs, and every run can be inspected, replayed, compared, and packaged as portable evidence.
+| Start here | What you get |
+| --- | --- |
+| [See proof](https://morning-verlu.github.io/KAI/proof-pack.html) | Proof Pack + no-install Evidence Viewer |
+| `kaios tour` | Disposable local run with no API key |
+| `kaios evidence --baseline artifacts/baseline.capsule.json --check` | CI-style runtime behavior gate |
 
-It is not a chatbot framework, not a LangChain clone, and not just a CLI. The CLI is the first interface to the KAI OS runtime.
+![KAI OS evidence proof: Agent = Process, Tool = Syscall, Run = Evidence](docs/assets/kaios-evidence-proof.png)
 
-If that evidence layer is useful to your agent stack, star/watch the repo and try the no-key tour. The goal is a local-first runtime standard for trustworthy JVM/Kotlin agents, not another prompt wrapper.
-
-Try the full Evidence OS loop in a disposable local repo:
+The first-run product path is intentionally small:
 
 ```bash
 curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
@@ -42,54 +40,9 @@ export PATH="$HOME/.kaios/bin:$PATH"
 kaios tour
 ```
 
-No local Java setup? [Open KAI OS in GitHub Codespaces](https://codespaces.new/morning-verlu/KAI?quickstart=1), wait for the dev container to build, then run `build/install/kaios-cli/bin/kaios tour`.
+No local setup? [Open KAI OS in GitHub Codespaces](https://codespaces.new/morning-verlu/KAI?quickstart=1) and run `build/install/kaios-cli/bin/kaios tour`.
 
-Want one command to verify the browser path? In Codespaces, run:
-
-```bash
-./scripts/codespaces-smoke.sh
-```
-
-Prefer Docker over local Java/Gradle?
-
-```bash
-docker build -t kaios:local .
-docker run --rm kaios:local tour
-```
-
-Already built the image and just want to rerun the smoke checks?
-
-```bash
-./scripts/docker-smoke.sh --no-build
-```
-
-On a slow Docker Hub connection, run the lightweight preflight first:
-
-```bash
-./scripts/docker-smoke.sh --preflight
-```
-
-Want to inspect the evidence artifacts before installing? Open the checked-in [Evidence Sample](examples/evidence-sample/) with a review artifact, process trace, replayable capsule, and `kaios.review/v1` JSON. Feedback on the evidence path belongs in the [Evidence feedback issue template](https://github.com/morning-verlu/KAI/issues/new?template=evidence_feedback.yml).
-Prefer a visual no-install path? Open the [Evidence Viewer](https://morning-verlu.github.io/KAI/evidence-viewer.html).
-
-Want to run the review loop on a realistic Kotlin/JVM backend change? Try the [JVM Service Review example](examples/jvm-service-review/).
-
-Want to use KAI OS as a Kotlin/JVM runtime library? Try the [Kotlin Runtime API example](examples/kotlin-runtime-api/).
-
-Want to see the CI baseline gate block a stable behavior change? Inspect the [Baseline Gate example](examples/baseline-gate/).
-
-![KAI OS evidence artifact map](docs/assets/kaios-evidence-map.png)
-
-![KAI OS CLI demo](docs/assets/kaios-demo.gif)
-
-![KAI OS process table preview](docs/assets/kaios-process-table.svg)
-
-```text
-Agent    = Process
-Workflow = Scheduler
-Tool     = Syscall
-Memory   = Process state
-```
+Kotlin/JVM developer? Use the [Kotlin/JVM evaluation path](docs/KOTLIN_JVM_EVALUATION.md) or the [Kotlin Runtime API example](examples/kotlin-runtime-api/). Trying to decide whether this deserves a star? Read [Why Star KAI OS](docs/WHY_STAR.md) and the [Trust Matrix](docs/TRUST_MATRIX.md). Want to help in 5-30 minutes? Pick from the [Contributor Board](docs/CONTRIBUTOR_BOARD.md).
 
 ## Use KAI OS When
 
@@ -104,6 +57,7 @@ For concrete workflows, read [KAI OS Use Cases](docs/USE_CASES.md).
 For a fast first-time review path, read [Evaluate KAI OS In 5 Minutes](docs/EVALUATE.md).
 For the shortest checkable proof path, read the [KAI OS Proof Pack](docs/PROOF_PACK.md).
 For the short star/watch/fork rationale, read [Why Star KAI OS](docs/WHY_STAR.md).
+For the 1000-stars operating loop, read [1000 Stars Operating Plan](docs/STAR_GROWTH.md).
 For the product moat, read [Evidence OS for Agents](docs/EVIDENCE_OS.md).
 For Kotlin/JVM evaluation, read [Kotlin/JVM Evaluation Path](docs/KOTLIN_JVM_EVALUATION.md).
 For the Kotlin library entrypoint, read [Kotlin Runtime API](docs/KOTLIN_API.md).

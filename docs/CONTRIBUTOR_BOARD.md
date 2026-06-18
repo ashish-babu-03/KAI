@@ -31,6 +31,17 @@ These queues are maintained during launch:
 
 If GitHub will not assign you yet, comment that you are taking the issue and open a PR from your fork. Repository write access is not required.
 
+## Launch Response Targets
+
+During the first launch waves, the maintainer goal is:
+
+- answer new external contributor comments within 12 hours when possible.
+- review small docs/example PRs within 24 hours when possible.
+- keep 5-8 scoped `good first issue` items open.
+- keep every starter issue narrow enough to verify with one or two commands.
+
+This is part of the product surface. KAI OS is trying to earn real developer trust, so issues should read like small executable tasks, not vague wish lists.
+
 ## Active Now
 
 These are the best currently open tasks during launch:
@@ -39,10 +50,13 @@ These are the best currently open tasks during launch:
 | --- | --- | --- | --- |
 | [#14 Kotlin API capability recipe](https://github.com/morning-verlu/KAI/issues/14) | Kotlin/JVM docs contributor | Add one compact custom-tool/capability recipe to `docs/KOTLIN_API.md` | `git diff --check` and `./gradlew -p examples/kotlin-runtime-api run` |
 | [#15 Denied-syscall walkthrough](https://github.com/morning-verlu/KAI/issues/15) | Evidence/docs contributor | Show where a denied syscall appears in checked-in trace or capsule output | `git diff --check` and `./scripts/evidence-samples-smoke.sh` |
+| [#19 `kaios tour` transcript](https://github.com/morning-verlu/KAI/issues/19) | CLI/docs contributor | Add a short first-run transcript for the no-key tour | `git diff --check` |
+| [#20 Proof Pack FAQ](https://github.com/morning-verlu/KAI/issues/20) | Launch/docs contributor | Answer the first skeptical developer questions in the Proof Pack | `git diff --check` |
+| [#21 Evidence glossary](https://github.com/morning-verlu/KAI/issues/21) | Evidence/docs contributor | Explain review artifact, trace, ledger, capsule, diff, summary, and recovery dry-run | `git diff --check` |
 | [#16 Docker smoke verification](https://github.com/morning-verlu/KAI/issues/16) | Docker/CI tester | Run `./scripts/docker-smoke.sh --preflight`, then full smoke on a normal network | `./scripts/docker-smoke.sh --preflight` and `./scripts/docker-smoke.sh` |
 | [#12 Public repository CI](https://github.com/morning-verlu/KAI/issues/12) | Maintainer with GitHub auth access | Follow [CI_ENABLE_RUNBOOK.md](CI_ENABLE_RUNBOOK.md), refresh `workflow` scope, then copy the repository CI template into `.github/workflows/ci.yml` | `./scripts/repository-ci-smoke.sh` and GitHub Actions green run |
 
-If you are unsure which one to pick, start with #14 or #15. They are docs-first and do not require write access to the repository.
+If you are unsure which one to pick, start with #19, #20, or #21. They are docs-first and do not require write access to the repository.
 
 ## 30-Minute Contribution Ideas
 

@@ -7,50 +7,63 @@ Goal: get the first real feedback and first real stars from people likely to und
 Primary CTA:
 
 ```text
-https://morning-verlu.github.io/KAI/evidence-viewer.html
+https://github.com/morning-verlu/KAI
 ```
 
 Secondary CTA:
 
 ```text
-https://github.com/morning-verlu/KAI
+https://morning-verlu.github.io/KAI/proof-pack.html
 ```
 
 ## Posting Order
 
-1. X or LinkedIn short post.
-2. Kotlin/JVM community post.
-3. Show HN after the first two posts are live or after the repo receives early feedback.
+1. Show HN with the GitHub repo URL and Proof Pack in the first comment.
+2. Kotlin/JVM community post with a feedback-first angle.
+3. X or LinkedIn technical thread with the evidence proof image.
 
 Do not publish every draft everywhere at once. Post, watch replies, then adjust the next post.
 
-## Post 1: X / LinkedIn Short
+## Post 1: Show HN
 
-Use this first because it is short, visual, and links to the no-install viewer.
+Use this first if the maintainer can answer comments for the first 2-3 hours.
+
+Title:
 
 ```text
-I am building KAI OS: a local-first Evidence OS for AI agents in Kotlin.
+Show HN: KAI OS - an Evidence OS for Kotlin AI agents
+```
 
-The point is not another chatbot framework. The point is runtime evidence:
+URL:
 
-Agent = Process
-Workflow = Scheduler
-Tool = Syscall
-Memory = Process state
-
-No install needed to inspect a checked-in run:
-https://morning-verlu.github.io/KAI/evidence-viewer.html
-
-It shows a process table, syscall ledger, replayable capsule, and baseline gate.
-
-Repo:
+```text
 https://github.com/morning-verlu/KAI
 ```
 
-Attach when the platform supports images:
+```text
+I am building KAI OS, a local-first runtime that turns AI agent runs into evidence developers can inspect, replay, and gate in CI.
+
+The model is:
+
+KAI OS = Evidence OS for AI agents
+Agent = Process
+Workflow = Scheduler
+Tool = Syscall
+Run = Evidence
+
+The goal is not to build another chatbot framework or Kotlin LangChain clone. I am trying to make agent work look more like runtime infrastructure: process traces, syscall ledgers, replayable capsules, baseline diffs, and deterministic no-key first runs.
+
+I would especially like feedback from Kotlin/JVM developers, OSS maintainers, and people building agent infrastructure.
+```
+
+First comment:
 
 ```text
-https://morning-verlu.github.io/KAI/assets/kaios-social-card.png
+Proof Pack:
+https://morning-verlu.github.io/KAI/proof-pack.html
+
+Evidence Viewer:
+https://morning-verlu.github.io/KAI/evidence-viewer.html
 ```
 
 ## Post 2: Kotlin / JVM Community
@@ -65,12 +78,12 @@ It is not trying to be a Kotlin LangChain clone. The runtime model is closer to 
 Agent = Process
 Workflow = Scheduler
 Tool = Syscall
-Memory = Process state
+Run = Evidence
 
-No install needed to see the product surface:
-https://morning-verlu.github.io/KAI/evidence-viewer.html
+Proof before install:
+https://morning-verlu.github.io/KAI/proof-pack.html
 
-The viewer shows a checked-in run as a process table, syscall ledger, replayable capsule, and baseline gate.
+The Proof Pack links a checked-in run, process table, syscall ledger, replayable capsule, and baseline gate.
 
 The Kotlin/JVM library path is here:
 https://github.com/morning-verlu/KAI/blob/main/docs/KOTLIN_API.md
@@ -84,50 +97,31 @@ kaios tour
 I would especially like feedback on the Kotlin API shape, the process/scheduler/tool model, and whether local evidence capsules are useful for JVM backend teams.
 ```
 
-## Post 3: Show HN
+## Post 3: X / LinkedIn Short
 
-Title:
-
-```text
-Show HN: KAI OS - Local-first Evidence OS for AI agents in Kotlin
-```
-
-URL:
+Use this after Show HN or Kotlin/JVM feedback clarifies the strongest objection.
 
 ```text
-https://github.com/morning-verlu/KAI
-```
+Most AI agents fail like scripts. KAI OS treats them like processes.
 
-Text:
+I am building a local-first Evidence OS for AI agents in Kotlin:
 
-```text
-I am building KAI OS, a Kotlin/JVM runtime that turns AI agent runs into process traces, replayable capsules, syscall ledgers, and CI-ready runtime evidence.
+Agent = Process
+Workflow = Scheduler
+Tool = Syscall
+Run = Evidence
 
-The model is:
-
-- Agent = Process
-- Workflow = Scheduler
-- Tool = Syscall
-- Memory = Process state
-
-The fastest way to understand it is the no-install Evidence Viewer:
-
-https://morning-verlu.github.io/KAI/evidence-viewer.html
-
-It shows a checked-in KAI OS run as a process table, syscall ledger, replayable capsule, offline replay result, and baseline gate drift example.
-
-The hands-on path is also no-key:
-
-curl -fsSL https://morning-verlu.github.io/KAI/install.sh | sh
-export PATH="$HOME/.kaios/bin:$PATH"
-kaios tour
-
-The point is not to be another Kotlin LangChain clone. I am trying to build the local evidence layer around agent work: what ran, which tools were called, what can be replayed offline, and what can be gated in CI.
-
-I would love feedback from Kotlin/JVM developers, OSS maintainers, and people thinking about agent runtime infrastructure.
+Proof before install:
+https://morning-verlu.github.io/KAI/proof-pack.html
 
 Repo:
 https://github.com/morning-verlu/KAI
+```
+
+Attach when the platform supports images:
+
+```text
+https://morning-verlu.github.io/KAI/assets/kaios-evidence-proof.png
 ```
 
 ## First Reply Template
