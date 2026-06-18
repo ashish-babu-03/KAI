@@ -50,6 +50,8 @@ guesswork.
 - [Evidence Viewer-first posts](evidence-viewer-first.md)
 - [Short social post](short-social.md)
 - [Second wave visual post](second-wave.md)
+- [Technical article draft](technical-article.md)
+- [Newsletter submission pack](newsletter-submissions.md)
 - [Community wave](community-wave.md)
 - [X / LinkedIn thread](x-linkedin-thread.md)
 - [Kotlin community post](kotlin-community.md)

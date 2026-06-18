@@ -55,8 +55,8 @@ Post in sequence, not everywhere at once.
 | 1 | Show HN | GitHub repo | GitHub views from `news.ycombinator.com`, technical comments |
 | 2 | Kotlin/JVM community | Proof Pack or Kotlin/JVM evaluation path | Kotlin API feedback, discussion replies |
 | 3 | X technical thread | Evidence image + repo | profile reach, repo views, quote replies |
-| 4 | Dev.to / Medium | technical article | sustained referrers after 24h |
-| 5 | Newsletter submissions | Proof Pack + repo | delayed referrers and stars |
+| 4 | Dev.to / Medium | [technical article draft](launch-posts/technical-article.md) | sustained referrers after 24h |
+| 5 | Newsletter submissions | [submission pack](launch-posts/newsletter-submissions.md) | delayed referrers and stars |
 
 Default Show HN title:
 
@@ -69,6 +69,11 @@ Default X hook:
 ```text
 Most AI agents fail like scripts. KAI OS treats them like processes.
 ```
+
+Second-wave assets:
+
+- [Technical article draft](launch-posts/technical-article.md)
+- [Newsletter submission pack](launch-posts/newsletter-submissions.md)
 
 ## Metric Loop
 

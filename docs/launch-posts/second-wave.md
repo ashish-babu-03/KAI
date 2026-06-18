@@ -2,7 +2,17 @@
 
 Status: draft, not posted.
 
-Why this exists: the first X post received almost no distribution after roughly two hours, so the next post should lead with visual proof instead of a concept-only text post.
+Why this exists: after Show HN or Kotlin/JVM feedback, the next move should depend on the observed bottleneck. Use this file for a visual X/LinkedIn follow-up, [technical-article.md](technical-article.md) for a durable engineering explanation, and [newsletter-submissions.md](newsletter-submissions.md) for curated-list outreach.
+
+## Choose The Second Wave
+
+| Signal | Use |
+| --- | --- |
+| Comments ask "what is this?" | publish the technical article |
+| Comments ask for proof | share Proof Pack + Evidence Viewer |
+| GitHub views rise but stars stay flat | improve Why Star / Proof Pack before more posts |
+| X or LinkedIn needs a visual follow-up | use the post below |
+| There is a clean public thread or article | submit to newsletters |
 
 Attach:
 
