@@ -58,15 +58,15 @@ What to notice in the transcript:
 - **`artifacts:` points at three files you should open.** The review Markdown is the human-readable summary; the trace is the structured process/agent log; the capsule is the portable, replayable bundle. Together they are what "evidence" means here.
 - **`next:` gives you the next five commands.** Each one inspects the run you just generated, in order from cheapest to most expensive. You do not need to run all five — `kaios ps <run-id>` alone shows you the OS-style process table.
 
-### Inspect These Artifacts
+### Artifacts to Inspect
 
-The three artifact paths the tour prints are the things you actually want to look at after the run:
+Once the tour wraps up, head over to the printed `workspace` directory. You will find three main files worth looking at:
 
-- **`<path-to-artifact>`** — the Markdown review of the change (`change-review.md`). Read this first; it is the closest thing the tour has to a human summary.
-- **`<path-to-trace>`** — the process trace (`change-review.trace.json`). Open it in any JSON viewer to see the per-agent process rows, syscalls, and lifecycle events.
-- **`<path-to-capsule>`** — the replayable capsule (`change-review.capsule.json`). This is the one you can ship to a reviewer or replay offline without re-running the agent: `kaios replay --file <path-to-capsule>`.
+1. **Review Artifact** (`artifacts/change-review.md`) — A readable Markdown summary of what the agent actually did. It includes a process table and a timeline of events.
+2. **Process Trace** (`artifacts/change-review.trace.json`) — The detailed JSON trace behind the run. This tracks token counts, process states, and the **syscall ledger** (which lists every tool call the agent tried to make).
+3. **Replay Capsule** (`artifacts/change-review.capsule.json`) — A standalone bundle containing the run's snapshot and trace. You can copy this to another machine to replay the run offline without needing a model provider.
 
-All three live under the `--dir` you passed to the tour (or under the temp directory KAI OS picked for you). They do not appear in the tour's working tree — the tour redirects generated artifacts into the `--dir` so your real project stays clean.
+---
 
 Use the source-tree script when developing KAI OS itself or when you want to run the tour against an existing local project:
 
